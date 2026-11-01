@@ -111,9 +111,9 @@ class PublicationRecorder implements RecordProductPublication {
 
 `ModularityTests`, `ArchitectureTest` and `ArchitectureRulesNegativeTest` in
 `backend/bootstrap/src/test/java/io/scaffold/starter/`, plus `checkCoreClasspath`. Every rule
-passes with zero areas (`allowEmptyShould(true)`). A new rule goes into `ArchitectureRules.all()`,
-gets a mis-shaped fixture under `backend/bootstrap/src/test/java/archfixture/` and a row in
-`violations()`, and bumps the rule count in `noRuleReportsTheCleanArea` — a rule no fixture
+passes with zero areas (`allowEmptyShould(true)`). A new rule goes into `ArchitectureRules.all()`
+(production classes) or `testRules()` (test classes), gets a mis-shaped fixture under `backend/bootstrap/src/test/java/archfixture/` and a row in
+`violations()`, and bumps its list's count in `noRuleReportsTheCleanArea` — a rule no fixture
 breaks proves nothing.
 
 ## Common mistakes

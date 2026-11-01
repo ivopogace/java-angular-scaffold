@@ -82,6 +82,13 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   unchanged. Port it only if your project wants Groovy: rename the scripts, move the convention
   plugin to `src/main/groovy/`, swap the plugin and translate the syntax, then point the *What's
   inside* Java row and `scripts/readme-versions.test.mjs` at the new path.
+- Backend tests: an area's integration tests are Spring Modulith's `@ApplicationModuleTest`, which
+  starts that area, `shared` and the wiring in the base package, not the whole app; `Scenario`
+  needs no `@EnableScenarios` there. `@SpringBootTest` stays for whole-app tests in the base
+  package (`ApplicationIT`). The ArchUnit rule `areaTestsAreModuleTests`
+  (`ArchitectureRules.testRules()`, checked over the test classes) rejects `@SpringBootTest` in an
+  area. A test of the generic error body needs `extraIncludes = "web"` for `ApiErrorHandler`.
+  Switch your area ITs and copy the rule with its fixtures.
 
 ## 0.1.0 — 2026-11-01
 

@@ -70,11 +70,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/CatalogFlowIT.java",
-    sha256: "6afa994c35a9197cb4f41f1cd2deb8494ed3c4ce4999031f19281c764b10ed20",
+    sha256: "34c520862e3154a28b16c71cb763846d59a0536031b1e4daf067e807eca2426a",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/PublishRollbackIT.java",
-    sha256: "f5c049c56432200a860238f22ae10fb2e03dc1796a2be6d8317e22f566725100",
+    sha256: "ec5725250552bbcb4c8301dc5eba686d582ec4e4fbf40f6b353495ac3774b2c3",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/in/web/ProductControllerTest.java",
@@ -82,7 +82,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepositoryIT.java",
-    sha256: "136dec8fe2afe3485e74edb812f7fa3177758114019205e9fa53634c41527eb9",
+    sha256: "8d3e8b8155935e00652cee3385913aa1044cb4845f97a7459cb8b5303d5219c8",
   },
   {
     path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProduct.java",

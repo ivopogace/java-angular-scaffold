@@ -75,8 +75,9 @@ The listed packages are the whole shape; no sub-packages beneath them.
 - Migrations: infrastructure is `V1…`; project migrations continue after it; never edit an applied
   one (invariant #2).
 - Tests: `core` — plain unit tests with in-memory fakes of `port/out`; web — slice tests;
-  persistence and full-stack — Testcontainers ITs tagged `container` (`-PexcludeTags=container`
-  skips them).
+  persistence and an area's flows — `@ApplicationModuleTest` Testcontainers ITs, which start only
+  that area; the whole app — `@SpringBootTest` in the base package. ITs are tagged `container`
+  (`-PexcludeTags=container` skips them).
 
 ## The structural net
 
@@ -92,8 +93,9 @@ dependencies or annotations:
 `ArchitectureTest` applies the project's structural rules (`ArchitectureRules`): the area package
 shape; `domain` depends only on the JDK, jMolecules, `shared`, its own `domain` and other areas'
 `domain/id`; `port/in` and `domain/event` never depend on `domain/model`; services are
-package-private and `@UseCase` when they implement a `port/in` interface; adapter classes and `web` are
-package-private; adapters never use `application/service`; no JPA anywhere; no Spring beyond `org.springframework.modulith`, and no
-`java.sql`, in `core` — plus jMolecules' DDD and hexagonal rules;
-`ArchitectureRulesNegativeTest` proves each rule fails on a violating fixture. A new rule gets a
-negative fixture in the same change.
+package-private and `@UseCase` when they implement a `port/in` interface; adapter classes and
+`web` are package-private; adapters never use `application/service`; no JPA anywhere; no Spring
+beyond `org.springframework.modulith`, and no `java.sql`, in `core` — plus jMolecules' DDD and
+hexagonal rules; over the test classes, an area's tests are `@ApplicationModuleTest`, never
+`@SpringBootTest`. `ArchitectureRulesNegativeTest` proves each rule fails on a violating fixture.
+A new rule gets a negative fixture in the same change.

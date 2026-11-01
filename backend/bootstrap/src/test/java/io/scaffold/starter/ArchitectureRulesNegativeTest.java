@@ -44,6 +44,8 @@ class ArchitectureRulesNegativeTest {
                         "archfixture.orders.adapter.out.persistence.PublicOrderRepository"),
                 violation("adaptersArePackagePrivate", ArchitectureRules::adaptersArePackagePrivate,
                         "archfixture.web.PublicAdvice"),
+                violation("areaTestsAreModuleTests", ArchitectureRules::areaTestsAreModuleTests,
+                        "archfixture.orders.adapter.out.persistence.FullContextIT"),
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
                         "archfixture.orders.application.port.in.LeakyOrderView"),
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
@@ -65,10 +67,9 @@ class ArchitectureRulesNegativeTest {
 
     @Test
     void noRuleReportsTheCleanArea() {
-        List<ArchRule> rules = RULES.all();
-
-        assertThat(rules).hasSize(8);
-        for (ArchRule rule : rules) {
+        assertThat(RULES.all()).hasSize(8);
+        assertThat(RULES.testRules()).hasSize(1);
+        for (ArchRule rule : Stream.concat(RULES.all().stream(), RULES.testRules().stream()).toList()) {
             EvaluationResult result = rule.evaluate(FIXTURES);
             assertThat(String.join("\n", result.getFailureReport().getDetails()))
                     .as(rule.getDescription())
@@ -80,7 +81,7 @@ class ArchitectureRulesNegativeTest {
     void everyRuleToleratesAnEmptyClassSet() {
         JavaClasses none = new ClassFileImporter().importPackages("archfixture.doesnotexist");
 
-        for (ArchRule rule : RULES.all()) {
+        for (ArchRule rule : Stream.concat(RULES.all().stream(), RULES.testRules().stream()).toList()) {
             assertThat(rule.evaluate(none).hasViolation()).as(rule.getDescription()).isFalse();
         }
     }

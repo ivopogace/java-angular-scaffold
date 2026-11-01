@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.springframework.boot.test.context.SpringBootTest;
 
 /**
  * The project's structural rules for one base package. An <em>area</em> is a direct sub-package of
@@ -53,6 +54,19 @@ final class ArchitectureRules {
                 adaptersDoNotUseServices(),
                 adaptersArePackagePrivate(),
                 publishedSurfaceIsAggregateFree());
+    }
+
+    /** Rules over test classes: an area's integration tests start only that area. */
+    List<ArchRule> testRules() {
+        return List.of(areaTestsAreModuleTests());
+    }
+
+    ArchRule areaTestsAreModuleTests() {
+        return noClasses()
+                .that(isAreaClass())
+                .should().beAnnotatedWith(SpringBootTest.class)
+                .as("area tests use @ApplicationModuleTest, not @SpringBootTest")
+                .allowEmptyShould(true);
     }
 
     ArchRule coreIsSpringFree() {

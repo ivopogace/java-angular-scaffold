@@ -11,11 +11,11 @@ import java.time.Instant;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.modulith.test.ApplicationModuleTest;
 
-@SpringBootTest
+@ApplicationModuleTest
 @Import(TestcontainersConfiguration.class)
 @Tag("container")
 class JdbcProductRepositoryIT {
