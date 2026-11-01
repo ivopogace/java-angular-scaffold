@@ -18,7 +18,7 @@ RC-DOC. Invariant numbers cite the root `AGENTS.md`. Full worked example of conf
 **Not review items** — the build fails on them, so don't spend attention there: package shape,
 crossing rules between areas, an aggregate in a `port.in` or `domain.event` type,
 package-private `@UseCase` services, Spring or JPA in `core`, JPA anywhere, cross-feature
-imports, inline templates, `::ng-deep` / MDC selectors / hex and named colours,
+imports, inline templates, `::ng-deep` / MDC selectors / colour literals in declarations,
 formatting under `frontend/` (Prettier). Review what no test can see; a change that *loosens* one
 of those checks is an item (RC-FE-6, RC-TEST-7).
 
@@ -66,8 +66,9 @@ of those checks is an item (RC-FE-6, RC-TEST-7).
   on (`Publish Poster`); a new page has an axe spec and an e2e axe check in both colour schemes.
 - **RC-FE-6 Loosened guards** — Major. A widened `folder-boundary` table, a new Stylelint
   override `files` entry or a disabled lint rule is argued in the change, never slipped in.
-- **RC-FE-7 Colour by other means** (#8) — Major. `oklch()`, `lab()` and similar escape Stylelint;
-  so does a literal smuggled into an override mixin's value.
+- **RC-FE-7 Colour in an override mixin** (#8) — Major. Stylelint rejects colour literals in
+  declarations, not in an `@include`'s arguments: an `*-overrides` mixin value is a `--mat-sys-*`
+  token, never a literal.
 
 ## Tests
 

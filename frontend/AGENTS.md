@@ -42,7 +42,8 @@ memory.
 - The theme is defined once, with `mat.theme(...)` in `src/styles.scss` (light + dark via
   `color-scheme`).
 - Component `.scss` uses `--mat-sys-*` tokens for colour, typography, shape and elevation; colour
-  literals outside the theme file fail Stylelint.
+  literals in declarations outside the theme file fail Stylelint. Values passed to an
+  `*-overrides` mixin are not linted; they are tokens too.
 - Customise Material components only through their `*-overrides` mixins. `::ng-deep` and
   `.mdc-*` / `.mat-mdc-*` selectors fail Stylelint.
 

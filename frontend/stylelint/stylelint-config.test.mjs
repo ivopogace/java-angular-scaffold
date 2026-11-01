@@ -30,6 +30,26 @@ describe('stylelint config', () => {
     assert.deepEqual(await lint('.x { color: hsla(0 0% 0% / 0.5) }'), ['function-disallowed-list']);
   });
 
+  for (const literal of [
+    'hwb(0 0% 0%)',
+    'lab(50% 40 60)',
+    'lch(50% 40 60)',
+    'oklab(60% 0.1 0.1)',
+    'oklch(70% 0.1 200)',
+    'color(display-p3 1 0 0)',
+  ]) {
+    it(`flags ${literal.slice(0, literal.indexOf('('))}()`, async () => {
+      assert.deepEqual(await lint(`.x { color: ${literal} }`), ['function-disallowed-list']);
+    });
+  }
+
+  it('passes color-mix() over theme tokens', async () => {
+    assert.deepEqual(
+      await lint('.x { color: color-mix(in srgb, var(--mat-sys-primary) 50%, transparent) }'),
+      [],
+    );
+  });
+
   it('flags named colours', async () => {
     assert.deepEqual(await lint('.x { color: red }'), ['color-named']);
   });
@@ -40,6 +60,7 @@ describe('stylelint config', () => {
 
   it('lets the global theme file hold colour literals but not the structural bans', async () => {
     assert.deepEqual(await lint('.x { color: #fff }', 'src/styles.scss'), []);
+    assert.deepEqual(await lint('.x { color: oklch(70% 0.1 200) }', 'src/styles.scss'), []);
     assert.deepEqual(await lint('::ng-deep .x {}', 'src/styles.scss'), [
       'selector-pseudo-element-disallowed-list',
     ]);

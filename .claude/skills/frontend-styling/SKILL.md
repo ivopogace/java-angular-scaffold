@@ -92,9 +92,9 @@ Token names are the component's override keys (`toolbar-overrides`, `button-over
 |---|---|
 | `::ng-deep` | an `*-overrides` mixin on the host |
 | `.mdc-*`, `.mat-mdc-*` selectors | an `*-overrides` mixin; Material's internal classes change between releases |
-| hex, named colours, `rgb()`/`rgba()`/`hsl()`/`hsla()` outside the theme files | a `--mat-sys-*` token |
+| hex, named colours, `rgb()`/`rgba()`/`hsl()`/`hsla()`/`hwb()`/`lab()`/`lch()`/`oklab()`/`oklch()`/`color()` outside the theme files | a `--mat-sys-*` token; `color-mix()` over tokens is allowed |
 
-The colour rules match those spellings only: `oklch()`, `lab()`, `hwb()` and other colour
-functions slip past the linter and still break invariant #8 — use a token.
+These rules check declarations only, not the arguments of an `@include`: a literal passed to an
+`*-overrides` mixin is not linted, so its values are system tokens by review (RC-FE-7).
 `npm run test:eslint-rules` covers the Stylelint config; a new rule gets a case in
 `frontend/stylelint/stylelint-config.test.mjs`.

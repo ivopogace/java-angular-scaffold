@@ -5,7 +5,18 @@
     "selector-disallowed-list": ["/\\.mdc-/", "/\\.mat-mdc-/"],
     "color-no-hex": true,
     "color-named": "never",
-    "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla"]
+    "function-disallowed-list": [
+      "rgb",
+      "rgba",
+      "hsl",
+      "hsla",
+      "hwb",
+      "lab",
+      "lch",
+      "oklab",
+      "oklch",
+      "color"
+    ]
   },
   "overrides": [
     {
