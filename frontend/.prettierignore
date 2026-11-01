@@ -1,6 +1,7 @@
-/dist
-/.angular
-/coverage
-/node_modules
-/test-results
+dist
+.angular
+node_modules
+coverage
+test-results
+playwright-report
 package-lock.json
