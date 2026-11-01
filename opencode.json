@@ -1,49 +1,46 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "mcp": {
-    "angular-cli": {
-      "type": "local",
-      "command": ["node", "scripts/mcp/angular-cli.mjs"],
-      "cwd": ".",
-      "enabled": true,
-      "timeout": 60000
-    },
-    "playwright": {
-      "type": "local",
-      "command": ["node", "scripts/mcp/playwright.mjs"],
-      "cwd": ".",
-      "enabled": true,
-      "timeout": 60000
+    "servers": {
+      "angular-cli": {
+        "type": "local",
+        "command": ["node", "scripts/mcp/angular-cli.mjs"],
+        "cwd": ".",
+        "timeout": { "startup": 60000 }
+      },
+      "playwright": {
+        "type": "local",
+        "command": ["node", "scripts/mcp/playwright.mjs"],
+        "cwd": ".",
+        "timeout": { "startup": 60000 }
+      }
     }
   },
-  "permission": {
-    "read": "allow",
-    "glob": "allow",
-    "grep": "allow",
-    "list": "allow",
-    "edit": "ask",
-    "webfetch": "ask",
-    "bash": {
-      "*": "ask",
-      "node scripts/verify.mjs": "allow",
-      "node scripts/verify.mjs --quick": "allow",
-      "node scripts/check-agent-docs.mjs": "allow",
-      "./gradlew *": "allow",
-      "cd backend && ./gradlew *": "allow",
-      "npm run *": "allow",
-      "npm test": "allow",
-      "npm test *": "allow",
-      "cd frontend && npm run *": "allow",
-      "cd frontend && npm test*": "allow",
-      "git status*": "allow",
-      "git diff*": "allow",
-      "git log*": "allow",
-      "git show*": "allow",
-      "git blame *": "allow",
-      "git branch": "allow",
-      "git branch --show-current": "allow",
-      "git rev-parse *": "allow",
-      "git ls-files*": "allow"
-    }
-  }
+  "permissions": [
+    { "action": "read", "resource": "*", "effect": "allow" },
+    { "action": "glob", "resource": "*", "effect": "allow" },
+    { "action": "grep", "resource": "*", "effect": "allow" },
+    { "action": "edit", "resource": "*", "effect": "ask" },
+    { "action": "webfetch", "resource": "*", "effect": "ask" },
+    { "action": "bash", "resource": "*", "effect": "ask" },
+    { "action": "bash", "resource": "node scripts/verify.mjs", "effect": "allow" },
+    { "action": "bash", "resource": "node scripts/verify.mjs --quick", "effect": "allow" },
+    { "action": "bash", "resource": "node scripts/check-agent-docs.mjs", "effect": "allow" },
+    { "action": "bash", "resource": "node --test \"scripts/**/*.test.mjs\"", "effect": "allow" },
+    { "action": "bash", "resource": "./gradlew *", "effect": "allow" },
+    { "action": "bash", "resource": "npm run *", "effect": "allow" },
+    { "action": "bash", "resource": "npm test", "effect": "allow" },
+    { "action": "bash", "resource": "npm test *", "effect": "allow" },
+    { "action": "bash", "resource": "npx playwright install", "effect": "allow" },
+    { "action": "bash", "resource": "npx playwright install chromium", "effect": "allow" },
+    { "action": "bash", "resource": "git status*", "effect": "allow" },
+    { "action": "bash", "resource": "git diff*", "effect": "allow" },
+    { "action": "bash", "resource": "git log*", "effect": "allow" },
+    { "action": "bash", "resource": "git show*", "effect": "allow" },
+    { "action": "bash", "resource": "git blame *", "effect": "allow" },
+    { "action": "bash", "resource": "git branch", "effect": "allow" },
+    { "action": "bash", "resource": "git branch --show-current", "effect": "allow" },
+    { "action": "bash", "resource": "git rev-parse *", "effect": "allow" },
+    { "action": "bash", "resource": "git ls-files*", "effect": "allow" }
+  ]
 }

@@ -90,11 +90,21 @@ function passingFiles() {
     ".mcp.json": JSON.stringify({
       mcpServers: { one: { command: "node" }, two: { command: "node" } },
     }),
+    ".claude/settings.json": JSON.stringify({
+      permissions: { allow: ["Read", "Bash(git status*)"] },
+    }),
     "opencode.json": JSON.stringify({
       mcp: {
-        two: { type: "local", command: ["node"] },
-        one: { type: "local", command: ["node"] },
+        servers: {
+          two: { type: "local", command: ["node"] },
+          one: { type: "local", command: ["node"] },
+        },
       },
+      permissions: [
+        { action: "bash", resource: "*", effect: "ask" },
+        { action: "read", resource: "*", effect: "allow" },
+        { action: "bash", resource: "git status*", effect: "allow" },
+      ],
     }),
     ".claude/skills/alpha/SKILL.md": OWN_SKILL,
     ".claude/skills/beta/SKILL.md": VENDORED_SKILL,
@@ -358,15 +368,137 @@ test("each missing backticked path is reported once per file", (t) => {
   ]);
 });
 
+/** The passing opencode.json with top-level keys replaced. */
+const opencodeWith = (overrides) =>
+  JSON.stringify({
+    ...JSON.parse(passingFiles()["opencode.json"]),
+    ...overrides,
+  });
+
+const server = { type: "local", command: ["node"] };
+
 test("MCP server names that differ between .mcp.json and opencode.json fail", (t) => {
   assertOneProblem(
     check(t, {
-      "opencode.json": JSON.stringify({
-        mcp: { one: { type: "local", command: ["node"] } },
-      }),
+      "opencode.json": opencodeWith({ mcp: { servers: { one: server } } }),
     }),
     "opencode.json",
     /MCP servers \[one\] differ from \.mcp\.json's \[one, two\]/,
+  );
+});
+
+test("per-name mcp entries, the deprecated opencode shape, fail", (t) => {
+  assertOneProblem(
+    check(t, {
+      "opencode.json": opencodeWith({ mcp: { one: server, two: server } }),
+    }),
+    "opencode.json",
+    /belong under "mcp\.servers"/,
+  );
+});
+
+test("a top-level mcp.timeout is part of the current shape", (t) => {
+  const { mcp } = JSON.parse(passingFiles()["opencode.json"]);
+  assert.deepEqual(
+    check(t, {
+      "opencode.json": opencodeWith({
+        mcp: { ...mcp, timeout: { startup: 60000 } },
+      }),
+    }),
+    [],
+  );
+});
+
+test("a permission object, the deprecated opencode shape, fails", (t) => {
+  assertOneProblem(
+    check(t, {
+      "opencode.json": opencodeWith({ permission: { read: "allow" } }),
+    }),
+    "opencode.json",
+    /"permission" is the deprecated shape/,
+  );
+});
+
+test("a catch-all rule placed after narrower rules of its action fails", (t) => {
+  const { permissions } = JSON.parse(passingFiles()["opencode.json"]);
+  const catchAll = permissions.find(
+    (rule) => rule.action === "bash" && rule.resource === "*",
+  );
+  assert.ok(catchAll);
+  const reordered = [
+    ...permissions.filter((rule) => rule !== catchAll),
+    catchAll,
+  ];
+  assertOneProblem(
+    check(t, {
+      "opencode.json": JSON.stringify({
+        ...JSON.parse(passingFiles()["opencode.json"]),
+        permissions: reordered,
+      }),
+    }),
+    "opencode.json",
+    /catch-all "bash \*" rule comes after narrower "bash" rules/,
+  );
+});
+
+test("an opencode.json without a permissions rule list fails", (t) => {
+  const { permissions, ...rest } = JSON.parse(passingFiles()["opencode.json"]);
+  assert.ok(permissions);
+  assertOneProblem(
+    check(t, { "opencode.json": JSON.stringify(rest) }),
+    "opencode.json",
+    /no "permissions" array/,
+  );
+});
+
+test("a Claude Code allow without its opencode rule fails, naming the grant", (t) => {
+  assertOneProblem(
+    check(t, {
+      ".claude/settings.json": JSON.stringify({
+        permissions: { allow: ["Read", "Bash(git status*)", "Bash(npm test)"] },
+      }),
+    }),
+    "opencode.json",
+    /no allow rule for "bash npm test", which \.claude\/settings\.json allows/,
+  );
+});
+
+test("an opencode allow without its Claude Code entry fails, naming the grant", (t) => {
+  const { permissions } = JSON.parse(passingFiles()["opencode.json"]);
+  assertOneProblem(
+    check(t, {
+      "opencode.json": opencodeWith({
+        permissions: [
+          ...permissions,
+          { action: "glob", resource: "*", effect: "allow" },
+        ],
+      }),
+    }),
+    ".claude/settings.json",
+    /no allow entry for "glob \*", which opencode\.json allows/,
+  );
+});
+
+test("an opencode ask or deny rule needs no Claude Code counterpart", (t) => {
+  const { permissions } = JSON.parse(passingFiles()["opencode.json"]);
+  assert.deepEqual(
+    check(t, {
+      "opencode.json": opencodeWith({
+        permissions: [
+          ...permissions,
+          { action: "bash", resource: "rm *", effect: "deny" },
+        ],
+      }),
+    }),
+    [],
+  );
+});
+
+test("an unreadable .claude/settings.json fails, naming the file", (t) => {
+  assertOneProblem(
+    check(t, { ".claude/settings.json": "{ nope" }),
+    ".claude/settings.json",
+    /not valid JSON/,
   );
 });
 

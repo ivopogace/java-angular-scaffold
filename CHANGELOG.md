@@ -30,6 +30,14 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   `formatMoney` shows a plain amount plus the code for a currency `Intl` rejects instead of
   throwing; table rows are typed through `shared/typed-cell-def/` (`*matCellDef="let product;
   typedBy: …"`). Port the directive and the in-flight pattern to any list page you copied.
+- Agent config: `opencode.json` follows the current schema (`mcp.servers`, an ordered `permissions`
+  rule list with the catch-all first; the `permission` object and per-name `mcp` entries are
+  deprecated), and `check-agent-docs.mjs` fails when it and `.claude/settings.json` do not grant the
+  same allows; `node --test "scripts/**/*.test.mjs"`, `npx playwright install` and
+  `npx playwright install chromium` are allowed on both sides. The MCP launchers run npm's own
+  `npx-cli.js` with the running node instead of the `npx` shell shim (no DEP0190 warning), and
+  Chromium gets `--no-sandbox` only as root on Linux, in a container, or with
+  `PLAYWRIGHT_MCP_NO_SANDBOX=1`.
 - Frontend: Stylelint now rejects colour literals (hex, named, `rgb()` and the other banned
   colour functions) passed to a Material `*-overrides` mixin, through the repo's own rule
   `local/overrides-no-color-literal` (`frontend/stylelint/overrides-no-color-literal.mjs`), so
