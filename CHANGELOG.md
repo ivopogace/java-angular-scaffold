@@ -13,6 +13,11 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
 - Sample backend: the create request strips the name before validation, so a name of Unicode
   whitespace (which `@NotBlank` alone accepts and the domain rejects) is a 400, not a 500. Apply the
   same compact-constructor normalisation to any request whose domain rule strips.
+- `init`: the placeholders are replaced in a single pass, so one answer can never be rewritten by
+  another's token; an answer that contains a placeholder (`scaffold-starter-api`,
+  `com.scaffold_starter.app`, `io.scaffold.starter.orders`) is rejected up front, while a prefix
+  such as `io.scaffold` works; a failure while planning says "Nothing was changed" instead of
+  claiming a partly initialized tree.
 
 ## 0.1.0 — 2026-11-01
 
