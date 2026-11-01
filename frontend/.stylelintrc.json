@@ -1,0 +1,20 @@
+{
+  "customSyntax": "postcss-scss",
+  "rules": {
+    "selector-pseudo-element-disallowed-list": ["ng-deep"],
+    "selector-disallowed-list": ["/\\.mdc-/", "/\\.mat-mdc-/"],
+    "color-no-hex": true,
+    "color-named": "never",
+    "function-disallowed-list": ["rgb", "rgba", "hsl", "hsla"]
+  },
+  "overrides": [
+    {
+      "files": ["src/styles.scss"],
+      "rules": {
+        "color-no-hex": null,
+        "color-named": null,
+        "function-disallowed-list": null
+      }
+    }
+  ]
+}
