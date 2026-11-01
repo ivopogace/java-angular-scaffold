@@ -92,6 +92,7 @@ Cited by number — **never renumber**; append new ones at the end.
 
 Load a skill when its row's condition holds. Vendored rows are pinned in `skills-lock.json` and
 stay verbatim.
+Their licence notices are in `THIRD_PARTY_LICENSES.md`.
 
 | skill | load when |
 |---|---|
