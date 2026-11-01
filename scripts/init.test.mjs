@@ -612,7 +612,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
     assert.equal(result.status, 1);
     assert.ok(
       result.stderr.includes(
-        `Set git user.name and user.email, then run: git add -A && git commit -m "${COMMIT_SUBJECT}"`,
+        `Set git user.name and user.email, then run: git add -A && git commit --no-verify -m "${COMMIT_SUBJECT}"`,
       ),
       result.stderr,
     );
@@ -621,5 +621,57 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       spawnSync("git", ["rev-parse", "HEAD"], { cwd: root }).status,
       128,
     );
+  });
+
+  test("a failing git commit prints the state and the commands that finish the history", async (t) => {
+    const root = await copyRepo(t);
+    const result = await runInit(
+      root,
+      [...VALID, "--sample", "keep", "--ci", "github"],
+      {
+        env: {
+          ...process.env,
+          ...TEST_IDENTITY,
+          GIT_CONFIG_COUNT: "2",
+          GIT_CONFIG_KEY_0: "commit.gpgsign",
+          GIT_CONFIG_VALUE_0: "true",
+          GIT_CONFIG_KEY_1: "gpg.program",
+          GIT_CONFIG_VALUE_1: join(root, "no-such-gpg"),
+        },
+      },
+    );
+
+    assert.equal(result.status, 1);
+    assert.doesNotMatch(result.stderr, /\n\s+at /, "no stack trace");
+    for (const line of [
+      "The files are initialized, but the fresh history is unfinished: .git was replaced and has no commit yet.",
+      "  git init",
+      "  git symbolic-ref HEAD refs/heads/main",
+      "  git config core.hooksPath .githooks",
+      "  git add -A",
+      `  git commit --no-verify -m "${COMMIT_SUBJECT}"`,
+    ]) {
+      assert.ok(
+        result.stderr.includes(line),
+        `missing ${line}\n${result.stderr}`,
+      );
+    }
+    assert.equal(git(root, ["symbolic-ref", "HEAD"]).trim(), "refs/heads/main");
+    assert.equal(
+      spawnSync("git", ["rev-parse", "HEAD"], { cwd: root }).status,
+      128,
+    );
+
+    for (const args of [
+      ["init"],
+      ["symbolic-ref", "HEAD", "refs/heads/main"],
+      ["config", "core.hooksPath", ".githooks"],
+      ["add", "-A"],
+      ["commit", "--no-verify", "-m", COMMIT_SUBJECT],
+    ]) {
+      git(root, args);
+    }
+    assert.equal(git(root, ["log", "--format=%s"]).trim(), COMMIT_SUBJECT);
+    assert.equal(git(root, ["status", "--porcelain"]), "");
   });
 });

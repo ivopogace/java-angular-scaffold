@@ -493,10 +493,24 @@ const titleCase = (name = "") =>
     .map((word) => word[0].toUpperCase() + word.slice(1))
     .join(" ");
 
-/** Replaces `.git` with a fresh repository holding one commit; returns false when git has no identity. */
+/** The commands that finish {@link freshHistory} by hand; each is safe to re-run. */
+const FINISH_HISTORY = [
+  "git init",
+  "git symbolic-ref HEAD refs/heads/main",
+  "git config core.hooksPath .githooks",
+  "git add -A",
+  `git commit --no-verify -m "${COMMIT_MESSAGE}"`,
+];
+
+/**
+ * Replaces `.git` with a fresh repository holding one commit on `main`.
+ *
+ * @returns {boolean} false when git has no identity; throws when a git command fails.
+ */
 function freshHistory(root) {
   rmSync(join(root, ".git"), { recursive: true, force: true });
-  git(root, ["init", "-q", "-b", "main"]);
+  git(root, ["init", "-q"]);
+  git(root, ["symbolic-ref", "HEAD", "refs/heads/main"]);
   git(root, ["config", "core.hooksPath", ".githooks"]);
   git(root, ["add", "-A"]);
   if (
@@ -505,7 +519,7 @@ function freshHistory(root) {
   ) {
     return false;
   }
-  // The hook formats staged files with the frontend toolchain, which a fresh clone has not installed; verify runs next.
+  // The hook needs the frontend toolchain, which a fresh clone has not installed; verify runs next.
   git(root, ["commit", "-q", "--no-verify", "-m", COMMIT_MESSAGE]);
   return true;
 }
@@ -563,9 +577,23 @@ async function main(argv, root) {
     );
     return 1;
   }
-  if (!freshHistory(root)) {
+  let committed;
+  try {
+    committed = freshHistory(root);
+  } catch (error) {
     console.error(
-      `Set git user.name and user.email, then run: git add -A && git commit -m "${COMMIT_MESSAGE}"`,
+      [
+        error.stderr?.trim() || error.message,
+        "The files are initialized, but the fresh history is unfinished: .git was replaced and has no commit yet.",
+        "Fix the git problem above (for a signing failure, set up your signing key or run git config commit.gpgsign false), then run:",
+        ...FINISH_HISTORY.map((command) => `  ${command}`),
+      ].join("\n"),
+    );
+    return 1;
+  }
+  if (!committed) {
+    console.error(
+      `Set git user.name and user.email, then run: git add -A && git commit --no-verify -m "${COMMIT_MESSAGE}"`,
     );
     return 1;
   }
