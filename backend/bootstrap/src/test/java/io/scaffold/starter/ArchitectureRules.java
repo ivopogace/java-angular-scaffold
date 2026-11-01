@@ -158,7 +158,11 @@ final class ArchitectureRules {
         };
     }
 
-    private boolean isPermittedFromDomain(String ownArea, JavaClass target) {
+    private boolean isPermittedFromDomain(String ownArea, JavaClass dependencyTarget) {
+        JavaClass target = dependencyTarget.getBaseComponentType();
+        if (target.isPrimitive()) {
+            return true;
+        }
         if (target.getName().startsWith("java.") || target.getName().startsWith("org.jmolecules.")) {
             return true;
         }
