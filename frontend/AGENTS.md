@@ -26,7 +26,9 @@ memory.
 - One folder per component: `<name>/<name>.ts`, `.html`, `.scss`, `.spec.ts` (no `.component`
   suffix). Inline templates and styles fail lint (`component-max-inline-declarations` is 0; specs
   are exempt for throwaway test hosts).
-- Selectors: elements `app-kebab-case`, attributes `appCamelCase`.
+- Selectors: elements `app-kebab-case`, attributes `appCamelCase`. The one exception is a directive
+  that must share a Material microsyntax prefix (`shared/typed-cell-def/`), argued where it is
+  declared.
 
 ## Angular idioms
 

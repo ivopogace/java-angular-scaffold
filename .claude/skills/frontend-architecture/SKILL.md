@@ -43,7 +43,9 @@ folder per component. `npx ng generate component <feature>/<name>` creates the f
 
 The service owns the API URLs and issues no request on its own; a component that shows a list
 creates the resource in a field initializer, so the request starts and ends with that component
-(a form that only posts never loads the list), and reloads it after a change it made:
+(a form that only posts never loads the list), and reloads it after a change it made. A form on
+its own route relies on the list page being re-created when it navigates back; a form shown over
+the list must reload the list itself.
 
 ```ts
 @Service()

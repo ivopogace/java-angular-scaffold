@@ -37,6 +37,10 @@ describe('CatalogService', () => {
     http.expectNone(LIST_URL);
   });
 
+  it('refuses to create the list resource outside an injection context', () => {
+    expect(() => service.loadProducts()).toThrowError(/loadProducts/);
+  });
+
   it('gives a component a list resource that loads the products', async () => {
     const products = TestBed.runInInjectionContext(() => service.loadProducts());
     TestBed.tick();

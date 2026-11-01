@@ -218,11 +218,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/catalog.service.spec.ts",
-    sha256: "a356f9a236312895e2c6f571ec3ebecdc8802852aa67f35a40f852871390a776",
+    sha256: "8c446a2987bf8589ddbcded6c6aa740abf8f4776b410093a8c0d36be5b11e1e5",
   },
   {
     path: "frontend/src/app/catalog/catalog.service.ts",
-    sha256: "d8b455dfae82c604a29e87581297f3c0e28317462762bad5e3edd87dceaec0ca",
+    sha256: "de38f66c95cb8ee00101d7f004d60126930de24d630cbb62896d06b1efacb6d7",
   },
   {
     path: "frontend/src/app/catalog/product-form/product-form.html",
