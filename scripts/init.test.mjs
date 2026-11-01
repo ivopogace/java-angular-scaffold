@@ -108,6 +108,9 @@ async function copyRepo(t, { crlf = false } = {}) {
   }
   for (const args of [
     ["init", "-q", "-b", "main"],
+    // A background gc or maintenance run would still be writing into .git when init replaces it.
+    ["config", "gc.auto", "0"],
+    ["config", "maintenance.auto", "false"],
     ["add", "-A"],
     ["commit", "-q", "--no-verify", "-m", "template"],
   ]) {
@@ -134,6 +137,10 @@ function run(
     child.stderr.on("data", (chunk) => (out.stderr += chunk));
     child.on("error", fail);
     child.on("close", (status) => done({ status, ...out }));
+    // A process that exits before reading stdin (a refusal) closes the pipe under the write.
+    child.stdin.on("error", (error) => {
+      if (error.code !== "EPIPE") fail(error);
+    });
     child.stdin.end(input);
   });
 }
