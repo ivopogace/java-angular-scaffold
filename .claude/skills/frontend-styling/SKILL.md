@@ -39,7 +39,8 @@ html {
 `color-scheme: light dark` follows the OS; the mocked e2e runs its axe checks in both schemes, so
 contrast is checked in each.
 
-**Changing brand colours:** `npx ng generate @angular/material:theme-color` (from `frontend/`)
+**Changing brand colours:** `npx ng generate @angular/material:theme-color --directory=src/`
+(from `frontend/`; keep the trailing slash — the directory is prefixed to the file name as is)
 turns hex colours into `src/_theme-colors.scss` with `$primary-palette` and `$tertiary-palette`.
 `@use` it from `styles.scss` and pass those palettes to `mat.theme`. The generated file holds hex
 values, so add it to the `files` of the override in `frontend/.stylelintrc.json` next to

@@ -14,5 +14,5 @@ registry still applies. The cost is a little wiring in `bootstrap`.
 - A Spring import in `core` does not compile, `checkCoreClasspath` fails the build if a dependency
   drags Spring or JPA onto `core`'s runtime classpath, and an ArchUnit rule allows
   `org.springframework.modulith` and nothing else from Spring.
-- A service without `@UseCase` is silently not a bean; the architecture tests require every service
-  to be a package-private `@UseCase`.
+- A service without `@UseCase` is silently not a bean; the architecture tests require every
+  service to be non-public and every one implementing a `port.in` interface to carry `@UseCase`.

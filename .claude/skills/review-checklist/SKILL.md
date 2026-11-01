@@ -29,7 +29,8 @@ checks is an item (RC-FE-6, RC-TEST-7).
   answer now; announcing a state change is a `domain.event`. A new grant in `allowedDependencies`
   must be used by the diff.
 - **RC-BE-3 Event shape and delivery** — Major. Payload is typed ids and immutable facts, no
-  aggregate; the listener is idempotent (the registry redelivers); a renamed or moved event class
+  aggregate; the listener is idempotent (delivery is at-least-once: an incomplete publication is
+  republished at the next startup); a renamed or moved event class
   or listener ships a forward migration or a fixed listener `id`.
 - **RC-BE-4 Rule placement** — Major. A choice, calculation or lifecycle rule lives on the
   aggregate (`Product.checkPublish()`), not in a service or controller; a rule needing the time

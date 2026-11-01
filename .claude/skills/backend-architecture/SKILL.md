@@ -48,12 +48,14 @@ The listed packages are exhaustive: `adapter.in.web.dto` or `domain.model.pricin
 - Grant only what is used: `@ApplicationModule(allowedDependencies = {"shared", "<area>::port-in",
   "<area>::id"})`, naming the `@NamedInterface` values (`port-in`, `id`, `event`).
 - Hold another area's entity by its `domain.id` type, never a raw `UUID`.
-- Events are records of ids and immutable facts. Modulith's registry stores each publication with
-  the event's class name and the listener's id, and redelivers incomplete ones on restart: keep
-  listeners idempotent (`JdbcPublicationLog` appends with `on conflict do nothing`), and treat
-  renaming or moving an event class or listener method as a data change — a forward migration
-  rewriting outstanding `event_publication` rows, or `@ApplicationModuleListener(id = …)` fixed
-  before it ships.
+- Events are records of ids and immutable facts. Modulith's registry stores each publication in
+  `event_publication` with the event's class name and the listener's id. A listener that fails
+  leaves its publication incomplete; it is republished at the next startup
+  (`spring.modulith.events.republish-outstanding-events-on-restart=true`), not retried in between.
+  Delivery is at-least-once, so listeners are idempotent (`JdbcPublicationLog` appends with
+  `on conflict do nothing`). Renaming or moving an event class or listener method is a data
+  change: a forward migration rewriting outstanding `event_publication` rows, or
+  `@ApplicationModuleListener(id = …)` fixed before it ships.
 
 ## Spring-free core
 

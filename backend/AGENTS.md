@@ -7,8 +7,9 @@ Run commands from here; the general list is in the root `AGENTS.md`. Decisions b
 ## Layers: Gradle modules, dependencies point inward
 
 - `core/` — domain + application. Runtime classpath: JDK, jMolecules, `jakarta.transaction-api`,
-  `spring-modulith-api` (annotation-only). `checkCoreClasspath` fails the build on anything else, so
-  a Spring import in `core` does not compile (invariant #5).
+  `spring-modulith-api` (annotation-only). Spring is not on `core`'s compile classpath, so a
+  Spring import there does not compile; `checkCoreClasspath` fails the build if a dependency drags
+  anything else onto the runtime classpath (invariant #5).
 - `adapters/` — driving (`adapter/in/web`, `adapter/in/event`) and driven (`adapter/out/persistence`,
   `adapter/out/<gateway>`) adapters; depends on `core` and Spring. Flyway migrations live in
   `adapters/src/main/resources/db/migration/`.
@@ -66,7 +67,8 @@ The listed packages are the whole shape; no sub-packages beneath them.
 - Rich aggregates with jMolecules annotations (`@AggregateRoot`, `@Entity`, `@ValueObject`,
   `@Identity`); typed ids; `Money` from `shared` (invariant #3).
 - Expected failures are sealed outcome types returned from use cases, not exceptions.
-- Errors leave as RFC 9457 `ProblemDetail`, only through `ApiErrorHandler`.
+- Errors leave as RFC 9457 `ProblemDetail`: outcome rejections built in the controller,
+  everything thrown through `ApiErrorHandler`.
 - Time: inject the `Clock` bean; business dates use the `ZoneId` bean from `app.business-time-zone`
   (invariant #4).
 - Migrations: infrastructure is `V1…`; project migrations continue after it; never edit an applied
