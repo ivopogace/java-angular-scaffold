@@ -46,7 +46,7 @@ cd frontend && npm start                    # dev server on :4200, proxies /api 
 REAL_BACKEND=1 npm run test:e2e:real        # from frontend/, with both of the above running
 ```
 
-`bootRun` brings up `compose.yaml`'s `postgres:17-alpine` on port 5432 through Spring Boot's
+`bootRun` brings up `compose.yaml`'s `postgres:18-alpine` on port 5432 through Spring Boot's
 Docker Compose support; Flyway migrates on start. The real-backend specs skip unless
 `REAL_BACKEND=1`.
 
