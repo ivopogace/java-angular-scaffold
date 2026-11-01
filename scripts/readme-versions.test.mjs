@@ -40,7 +40,7 @@ const TESTCONTAINERS_CONFIG =
 const PINS = {
   "Java toolchain": () =>
     pinned(
-      "backend/build-logic/src/main/kotlin/java-conventions.gradle.kts",
+      "backend/build-logic/src/main/groovy/java-conventions.gradle",
       /JavaLanguageVersion\.of\((\d+)\)/,
     ),
   Gradle: () =>

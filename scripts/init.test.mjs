@@ -531,8 +531,8 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       /<!-- fill-in:what -->\r?\nTODO: describe this project\.\r?\n<!-- \/fill-in:what -->/,
     );
     assert.match(
-      readFileSync(join(root, "backend/settings.gradle.kts"), "utf8"),
-      /rootProject\.name = "acme-orders"/,
+      readFileSync(join(root, "backend/settings.gradle"), "utf8"),
+      /rootProject\.name = 'acme-orders'/,
     );
     assert.match(
       readFileSync(join(root, "compose.yaml"), "utf8"),

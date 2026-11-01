@@ -1,0 +1,25 @@
+plugins {
+    id 'java'
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add('-parameters')
+}
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform {
+        // -PexcludeTags=container skips the tests that need Docker.
+        providers.gradleProperty('excludeTags').orNull
+            ?.split(',')
+            ?.collect { it.trim() }
+            ?.findAll { !it.isEmpty() }
+            ?.each { excludeTags(it) }
+    }
+    reports.junitXml.outputPerTestCase = true
+}

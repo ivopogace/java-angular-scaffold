@@ -20,7 +20,7 @@ a row no longer matches its file.
 
 | Component | Version | Pinned in | To bump |
 |---|---|---|---|
-| Java toolchain | `25` | `backend/build-logic/src/main/kotlin/java-conventions.gradle.kts` | edit `JavaLanguageVersion.of(…)` and the JDK your CI wrapper installs |
+| Java toolchain | `25` | `backend/build-logic/src/main/groovy/java-conventions.gradle` | edit `JavaLanguageVersion.of(…)` and the JDK your CI wrapper installs |
 | Gradle | `9.8.2` | `backend/gradle/wrapper/gradle-wrapper.properties` | `./gradlew wrapper --gradle-version <version>` from `backend/`, run twice |
 | Spring Boot | `4.1.2` | `backend/gradle/libs.versions.toml` | edit `spring-boot` |
 | Spring Modulith | `2.1.2` | `backend/gradle/libs.versions.toml` | edit `spring-modulith` |
