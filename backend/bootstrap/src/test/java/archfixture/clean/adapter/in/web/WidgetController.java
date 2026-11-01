@@ -2,11 +2,11 @@ package archfixture.clean.adapter.in.web;
 
 import archfixture.clean.application.port.in.CreateWidget;
 
-public class WidgetController {
+class WidgetController {
 
     private final CreateWidget createWidget;
 
-    public WidgetController(CreateWidget createWidget) {
+    WidgetController(CreateWidget createWidget) {
         this.createWidget = createWidget;
     }
 

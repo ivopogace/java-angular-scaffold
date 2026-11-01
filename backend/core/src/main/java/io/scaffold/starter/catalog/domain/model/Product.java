@@ -35,7 +35,7 @@ public class Product {
 
     /**
      * @param price the price, or {@code null} while undecided
-     * @throws IllegalArgumentException if the trimmed name is empty or longer than 120 characters
+     * @throws IllegalArgumentException if the stripped name is empty or longer than 120 characters
      */
     public static Product draft(ProductId id, String name, Money price) {
         String trimmed = Objects.requireNonNull(name, "name").strip();

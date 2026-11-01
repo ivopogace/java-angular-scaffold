@@ -18,8 +18,7 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
  * 404 problem body. The shell ({@code index.html}, the fallback, anything unhashed) is served with
  * {@code Cache-Control: no-cache}, so a deploy is picked up on the next load; scripts, styles and
  * media whose name carries a content hash ({@code main-ABC123.js}, as Angular's production
- * {@code outputHashing} names them) are cached for a year as immutable. An unhashed file is part
- * of the shell.
+ * {@code outputHashing} names them) are cached for a year as immutable.
  */
 @Configuration(proxyBeanMethods = false)
 class SpaWebConfig implements WebMvcConfigurer {

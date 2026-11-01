@@ -3,10 +3,9 @@ import stylelint from 'stylelint';
 /**
  * Rejects colour literals in the arguments of a Material `*-overrides` mixin (invariant #8).
  *
- * `color-no-hex`, `color-named` and `function-disallowed-list` check declarations only, so
- * `@include mat.button-overrides((filled-container-color: #ff0000))` passed them. This rule looks
- * at every `@include` whose mixin name ends in `-overrides` (with or without a module prefix) and
- * flags a hex colour, one of the banned colour functions or a CSS named colour anywhere in the
+ * `color-no-hex`, `color-named` and `function-disallowed-list` check declarations only. This rule
+ * looks at every `@include` whose mixin name ends in `-overrides` (with or without a module prefix)
+ * and flags a hex colour, one of the banned colour functions or a CSS named colour anywhere in the
  * argument text; `var(--mat-sys-*)`, `transparent`, `currentcolor`, Sass variables, module
  * functions such as `color.adjust()` and quoted strings pass.
  */

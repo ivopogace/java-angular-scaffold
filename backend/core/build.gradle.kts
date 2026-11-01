@@ -20,8 +20,6 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-// core is the domain and application layer: no Spring beyond the annotation-only
-// spring-modulith-api, no JPA. Fails the build, naming each offending module, if one gets in.
 tasks.register("checkCoreClasspath") {
     group = "verification"
     description = "Fails if core's runtime classpath carries Spring (beyond spring-modulith-api) or JPA."

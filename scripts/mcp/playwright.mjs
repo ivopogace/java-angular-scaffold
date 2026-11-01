@@ -1,22 +1,15 @@
 /**
  * Launches the `playwright` MCP server for Claude Code (`.mcp.json`) and opencode (`opencode.json`).
  *
- * The package version is pinned here, not `@latest`: an exact version can start from the npx cache
- * without asking the registry, and the server does not change between sessions. Bump `PACKAGE` by
- * hand. `@playwright/mcp` is not a frontend dependency because it pins its own `playwright-core`,
- * which would sit next to the one `@playwright/test` brings. How npx itself is run is `launch.mjs`.
+ * `PACKAGE` is an exact version, so npx can start it from its cache; bump it by hand. It is not a
+ * frontend dependency: it pins its own `playwright-core` beside the one `@playwright/test` brings.
  *
- * When `PLAYWRIGHT_BROWSERS_PATH` (or `/opt/pw-browsers`, the layout of some hosted agent sandboxes)
- * holds a `chromium` entry, it is passed as `--executable-path`, because the server's own
- * `playwright-core` may expect a browser revision that is not installed there. Otherwise Playwright
- * resolves its own browser.
+ * A `chromium` entry under `PLAYWRIGHT_BROWSERS_PATH` (or `/opt/pw-browsers`) is passed as
+ * `--executable-path`, since the server's `playwright-core` may expect a revision not installed there.
  *
- * `--no-sandbox` turns off Chromium's process sandbox, so it is passed only where the sandbox cannot
- * run: as root on Linux (Chromium refuses to start otherwise) or inside a container (`/.dockerenv`,
- * or podman's `/run/.containerenv`), whose default seccomp profile blocks the user namespaces the
- * sandbox needs. `PLAYWRIGHT_MCP_NO_SANDBOX=1` (or `true`) forces the flag on, `=0` (or `false`)
- * keeps it off; any other value is reported on stderr and ignored. On any other machine Chromium
- * runs sandboxed.
+ * `--no-sandbox` is passed only where Chromium's sandbox cannot run: as root on Linux, or inside a
+ * container (`/.dockerenv`, `/run/.containerenv`). `PLAYWRIGHT_MCP_NO_SANDBOX=1` (or `true`) forces
+ * it on, `=0` (or `false`) off; any other value is reported on stderr and ignored.
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";

@@ -14,8 +14,7 @@ description: >-
 Finds present-tense statements a change made false. It verifies; it does not add documentation.
 `node scripts/check-agent-docs.mjs` (part of `verify`) already fails on a backticked path in an
 `AGENTS.md` that does not exist, a skill missing from the *Skills* table and a malformed skill
-frontmatter — this audit covers everything that check cannot read: prose. Full worked example
-of what the docs describe: the `catalog` sample, while it exists.
+frontmatter — this audit covers everything that check cannot read: prose.
 
 ## Range
 

@@ -13,8 +13,7 @@ description: >-
 # Local development
 
 The command list is in the root `AGENTS.md`; this is how the pieces fit and what to do when one
-breaks for an environmental reason. Full worked example of a running feature: the `catalog`
-sample, while it exists.
+breaks for an environmental reason.
 
 ## Prerequisites
 
@@ -27,9 +26,9 @@ sample, while it exists.
 
 `node scripts/verify.mjs` is the one check entry point; CI runs the same command. It fails fast,
 in order: `npm ci` (only when `frontend/node_modules` is missing), backend `gradlew build`, frontend
-lint (ESLint + Stylelint), Prettier check, the ESLint-rule and Stylelint-config suite, Vitest,
-production build, e2e type check, then `playwright install chromium` and the mocked e2e, then the
-`scripts/` tests and `check-agent-docs.mjs`.
+lint (ESLint + Stylelint), Prettier check of `frontend/` and of `scripts/`, the ESLint-rule and
+Stylelint-config suite, Vitest, production build, e2e type check, then `playwright install
+chromium` and the mocked e2e, then the `scripts/` tests and `check-agent-docs.mjs`.
 
 `--quick` drops the Playwright install, the e2e and every test tagged `container`
 (`-PexcludeTags=container`), so it needs no Docker — use it while iterating, then run the full
@@ -60,8 +59,8 @@ Docker Compose support; Flyway migrates on start. The real-backend specs skip un
   more.
 - `npm run format` (from `frontend/`) fixes what `format:check` reports; its scope is all of
   `frontend/` minus `.prettierignore`.
-- `scripts/*.mjs` use Prettier's defaults: from the repo root run
-  `frontend/node_modules/.bin/prettier --write scripts`. `verify` does not check them.
+- `scripts/` uses Prettier's defaults, checked by `verify`: from the repo root run
+  `frontend/node_modules/.bin/prettier --write scripts` to fix it.
 
 ## Removing the sample
 
@@ -76,7 +75,7 @@ database has applied the sample migration, remove by hand and add a forward drop
 
 | Symptom | Fix |
 |---|---|
-| `Unable to establish loopback connection` from `./gradlew` (on some Windows machines) | point `TMP` and `TEMP` at a short path such as `C:\tmp` for that shell; a JDK local-socket problem with long temp paths, not a Gradle or project bug |
+| `Unable to establish loopback connection` from `./gradlew` (on some Windows machines) | point `TMP` and `TEMP` at a short path such as `C:\tmp` for that shell |
 | `Docker is required for the full verify…` | start Docker, or run `--quick` |
 | Testcontainers `Could not find a valid Docker environment` | `docker info` must succeed for the same user; the ITs do not skip themselves, `-PexcludeTags=container` does |
 | toolchain error naming Java 25 | install JDK 25 and point `JAVA_HOME` at it |

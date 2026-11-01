@@ -51,6 +51,11 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   `outputHashing`) are cached for a year as immutable. `Money` is a jMolecules
   `@ValueObject` and its overflow behaviour is tested. The structural rules no longer reserve a
   `config` package: wiring lives in the base package, so a `config` package is judged as an area.
+- Comments, Javadoc, TSDoc and skill lines that narrated history or restated the code are gone;
+  what stays is contract. Two rules that only prose stated are now enforced: `verify` checks
+  `scripts/` with the frontend's Prettier (`scripts format` step), and the ArchUnit rule
+  `adaptersArePackagePrivate` fails a public top-level class in an area's `adapter` packages. Copy
+  the step and the rule (with its fixture) if your project kept the prose.
 
 ## 0.1.0 — 2026-11-01
 

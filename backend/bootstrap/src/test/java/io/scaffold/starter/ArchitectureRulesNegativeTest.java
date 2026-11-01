@@ -40,6 +40,8 @@ class ArchitectureRulesNegativeTest {
                 violation("areaPackageShape", ArchitectureRules::areaPackageShape, "archfixture.config.StrayWiring"),
                 violation("adaptersDoNotUseServices", ArchitectureRules::adaptersDoNotUseServices,
                         "archfixture.orders.adapter.in.web.ServiceCaller"),
+                violation("adaptersArePackagePrivate", ArchitectureRules::adaptersArePackagePrivate,
+                        "archfixture.orders.adapter.out.persistence.PublicOrderRepository"),
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
                         "archfixture.orders.application.port.in.LeakyOrderView"),
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
@@ -63,7 +65,7 @@ class ArchitectureRulesNegativeTest {
     void noRuleReportsTheCleanArea() {
         List<ArchRule> rules = RULES.all();
 
-        assertThat(rules).hasSize(7);
+        assertThat(rules).hasSize(8);
         for (ArchRule rule : rules) {
             EvaluationResult result = rule.evaluate(FIXTURES);
             assertThat(String.join("\n", result.getFailureReport().getDetails()))
