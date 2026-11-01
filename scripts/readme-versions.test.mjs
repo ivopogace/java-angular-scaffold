@@ -3,11 +3,12 @@ import { existsSync, globSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
+import { normalizeEol } from "./lib/text.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const README_SECTION = "## What's inside";
 
-const read = (path) => readFileSync(join(root, path), "utf8");
+const read = (path) => normalizeEol(readFileSync(join(root, path), "utf8"));
 
 function pinned(path, pattern) {
   const found = pattern.exec(read(path));
@@ -21,9 +22,13 @@ const versionsToml = (key) =>
     new RegExp(`^${RegExp.escape(key)} = "([^"]+)"$`, "m"),
   );
 
-function frontendPackage(name) {
+function frontendPackages() {
   const pkg = JSON.parse(read("frontend/package.json"));
-  const version = pkg.dependencies?.[name] ?? pkg.devDependencies?.[name];
+  return { ...pkg.dependencies, ...pkg.devDependencies };
+}
+
+function frontendPackage(name) {
+  const version = frontendPackages()[name];
   assert.ok(version, `frontend/package.json no longer pins ${name}`);
   return version;
 }
@@ -65,24 +70,22 @@ const PINS = {
     ),
 };
 
-/** `{ component: version }` from the README's table: first cell, then the backticked second. */
-function readmeVersions(text) {
+/** `[component, version]` per row of the README's table: the first cell, the backticked second. */
+function readmeRows(text) {
   const start = text.indexOf(`\n${README_SECTION}\n`);
   assert.notEqual(start, -1, `no "${README_SECTION}" section`);
   const section = text
     .slice(start + README_SECTION.length + 2)
     .split(/\n## /)[0];
-  const rows = section
+  return section
     .split("\n")
     .filter((line) => line.startsWith("|"))
     .slice(2)
-    .map((line) => line.split("|").map((cell) => cell.trim()));
-  return Object.fromEntries(
-    rows.map(([, component, version]) => [
+    .map((line) => line.split("|").map((cell) => cell.trim()))
+    .map(([, component, version]) => [
       component,
       version.replace(/^`|`$/g, ""),
-    ]),
-  );
+    ]);
 }
 
 for (const readme of ["README.md", "README.project.md"]) {
@@ -91,9 +94,13 @@ for (const readme of ["README.md", "README.project.md"]) {
       t.skip(`${readme} is not in this tree`);
       return;
     }
-    const table = readmeVersions(read(readme));
-    assert.deepEqual(Object.keys(table).sort(), Object.keys(PINS).sort());
-    for (const [component, version] of Object.entries(table)) {
+    const rows = readmeRows(read(readme));
+    assert.deepEqual(
+      rows.map(([component]) => component).sort(),
+      Object.keys(PINS).sort(),
+      `${readme}: one row per pinned component`,
+    );
+    for (const [component, version] of rows) {
       assert.equal(version, PINS[component](), `${readme}: ${component}`);
     }
   });
@@ -105,5 +112,50 @@ test("the Testcontainers ITs run the Postgres image compose.yaml runs", () => {
   assert.equal(
     pinned(config, /new PostgreSQLContainer\("postgres:([^"]+)"\)/),
     PINS.Postgres(),
+  );
+});
+
+/** Where else the JDK is named: CI wrappers, prerequisites, agent docs. Absent files are skipped. */
+const JDK_MENTIONS = [
+  [".github/workflows/*.yml", /java-version: '(\d+)'/g],
+  [".gitlab-ci.yml", /eclipse-temurin:(\d+)-jdk/g],
+  ["Jenkinsfile", /\bjdk(\d+)\b|\bJDK (\d+)\b/g],
+  ["README.md", /\bJDK (\d+)\b/g],
+  ["README.project.md", /\bJDK (\d+)\b/g],
+  ["AGENTS.md", /\bJDK (\d+)\b/g],
+  [".claude/skills/local-dev/SKILL.md", /\b(?:JDK|Java) (\d+)\b/g],
+  [".claude/skills/java-conventions/SKILL.md", /\bJava (\d+)\b/g],
+];
+
+test("every JDK the CI wrappers and docs name is the toolchain's", () => {
+  const toolchain = PINS["Java toolchain"]();
+  const found = JDK_MENTIONS.flatMap(([pattern, regex]) =>
+    globSync(pattern, { cwd: root }).flatMap((file) =>
+      [...read(file).matchAll(regex)].map((match) => [
+        file,
+        match.slice(1).find(Boolean),
+      ]),
+    ),
+  );
+  assert.ok(found.length > 0, "no JDK mention found");
+  assert.deepEqual(
+    found.filter(([, version]) => version !== toolchain),
+    [],
+  );
+});
+
+test("the Angular packages move together", () => {
+  const packages = Object.entries(frontendPackages()).filter(([name]) =>
+    name.startsWith("@angular/"),
+  );
+  const group = (name) =>
+    ["@angular/material", "@angular/cdk"].includes(name)
+      ? "Angular Material"
+      : ["@angular/cli", "@angular/build"].includes(name)
+        ? "Angular CLI"
+        : "Angular";
+  assert.deepEqual(
+    packages.filter(([name, version]) => version !== PINS[group(name)]()),
+    [],
   );
 });
