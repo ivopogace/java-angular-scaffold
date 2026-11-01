@@ -61,7 +61,7 @@ REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (l
 - Skills: `.claude/skills/<name>/SKILL.md`, read by both tools.
 - Tool config, the only duplication — change both sides together: `.mcp.json` +
   `.claude/settings.json` (Claude Code) and `opencode.json` (opencode) declare the same MCP servers
-  (`angular-cli`, `playwright`) and equivalent permissions.
+  (`angular-cli`, `playwright`) and the same allow-list; `check-agent-docs.mjs` compares them.
 - `compose.yaml` — local Postgres for `bootRun`. Glossary: `GLOSSARY.md` (`domain-modeling` creates
   it lazily when absent).
 

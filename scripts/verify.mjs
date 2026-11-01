@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { quoteForCmd } from "./lib/shell.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -121,13 +122,6 @@ export async function preflight({ quick, dockerAvailable }) {
   return (await dockerAvailable()) ? null : NO_DOCKER_MESSAGE;
 }
 
-/** Quotes one argument for a Windows command line: backslashes before a quote (or the closing quote) are doubled. */
-function quote(arg) {
-  if (/^[\w@%+=:,./\\-]+$/.test(arg)) return arg;
-  const escaped = arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, "$1$1");
-  return `"${escaped}"`;
-}
-
 /**
  * Runs a command with inherited stdio. On Windows everything except `node` goes through the shell, since
  * `npm`, `npx` and `gradlew.bat` are batch shims that cannot be spawned directly.
@@ -146,7 +140,7 @@ export function runCommand(
     const program =
       shell && existsSync(join(dir, command)) ? `.\\${command}` : command;
     const child = shell
-      ? spawn([program, ...args].map(quote).join(" "), options)
+      ? spawn([program, ...args].map(quoteForCmd).join(" "), options)
       : spawn(command, args, options);
     child.on("error", () => done(1));
     child.on("close", (code) => done(code ?? 1));

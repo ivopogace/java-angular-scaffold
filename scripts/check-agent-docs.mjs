@@ -50,6 +50,7 @@ export function checkAgentDocs(root) {
       .filter((file) => file.endsWith("AGENTS.md"))
       .flatMap((file) => checkPaths(root, file)),
     ...checkMcpServers(root),
+    ...checkPermissions(root),
     ...checkLockEntries(root, lock.skills),
   ];
 }
@@ -275,32 +276,105 @@ function checkPaths(root, file) {
   return problems;
 }
 
+const SETTINGS = ".claude/settings.json";
+const OPENCODE = "opencode.json";
+/** The keys opencode's current schema allows beside `mcp.servers`; any other means the deprecated per-name shape. */
+const MCP_BLOCK_KEYS = new Set(["servers", "timeout"]);
+
+/** `{ names }` from `pick(json)`, or `{ problem }` when the file is missing, unreadable or mis-shaped. */
 function mcpServerNames(root, file, pick) {
   if (!existsSync(join(root, file))) return { problem: `${file}: missing` };
   const { json, problem } = readJson(root, file);
   if (problem) return { problem };
-  const servers = pick(json);
-  return { names: Object.keys(servers ?? {}).sort() };
+  return pick(json);
 }
 
 function checkMcpServers(root) {
-  const hasEither = [".mcp.json", "opencode.json"].some((f) =>
+  const hasEither = [".mcp.json", OPENCODE].some((f) =>
     existsSync(join(root, f)),
   );
   if (!hasEither) return [];
-  const claude = mcpServerNames(root, ".mcp.json", (json) => json?.mcpServers);
-  const opencode = mcpServerNames(
-    root,
-    "opencode.json",
-    (json) => json?.mcp?.servers ?? json?.mcp,
-  );
+  const claude = mcpServerNames(root, ".mcp.json", (json) => ({
+    names: Object.keys(json?.mcpServers ?? {}).sort(),
+  }));
+  const opencode = mcpServerNames(root, OPENCODE, (json) => {
+    const mcp = json?.mcp ?? {};
+    if (Object.keys(mcp).some((key) => !MCP_BLOCK_KEYS.has(key))) {
+      return {
+        problem: `${OPENCODE}: MCP servers belong under "mcp.servers" (per-name "mcp" entries are the deprecated shape)`,
+      };
+    }
+    return { names: Object.keys(mcp.servers ?? {}).sort() };
+  });
   const problems = [claude.problem, opencode.problem].filter(Boolean);
   if (problems.length > 0) return problems;
   if (claude.names.join() === opencode.names.join()) return [];
   const list = (names) => `[${names.join(", ")}]`;
   return [
-    `opencode.json: MCP servers ${list(opencode.names)} differ from .mcp.json's ${list(claude.names)}`,
+    `${OPENCODE}: MCP servers ${list(opencode.names)} differ from .mcp.json's ${list(claude.names)}`,
   ];
+}
+
+/**
+ * Claude Code and opencode must grant the same allows. A Claude Code entry `Tool` or `Tool(spec)`
+ * (`permissions.allow` in `.claude/settings.json`) and an opencode rule `{ action, resource,
+ * effect: "allow" }` (`permissions` in `opencode.json`) are both read as `<tool> <spec>`
+ * (`read *`, `bash git status*`) and the two sets compared. A rule with another effect has no
+ * Claude Code counterpart (Claude Code asks unless allowed) and is not compared.
+ */
+function checkPermissions(root) {
+  if (![SETTINGS, OPENCODE].every((f) => existsSync(join(root, f)))) return [];
+  const settings = readJson(root, SETTINGS);
+  const opencode = readJson(root, OPENCODE);
+  if (settings.problem) return [settings.problem];
+  // An unreadable opencode.json is checkMcpServers' report.
+  if (opencode.problem) return [];
+  const problems = [];
+  if ("permission" in (opencode.json ?? {})) {
+    problems.push(
+      `${OPENCODE}: "permission" is the deprecated shape; use the "permissions" rule list`,
+    );
+  }
+  const allow = settings.json?.permissions?.allow;
+  if (!Array.isArray(allow)) {
+    return [...problems, `${SETTINGS}: no permissions.allow array`];
+  }
+  const rules = opencode.json?.permissions;
+  if (!Array.isArray(rules)) {
+    return [
+      ...problems,
+      `${OPENCODE}: no "permissions" array of { action, resource, effect } rules`,
+    ];
+  }
+  const claude = new Set(allow.map(claudeGrant));
+  const open = new Set(
+    rules
+      .filter((rule) => rule?.effect === "allow")
+      .map((rule) => `${rule.action} ${rule.resource}`),
+  );
+  for (const grant of claude) {
+    if (!open.has(grant)) {
+      problems.push(
+        `${OPENCODE}: no allow rule for "${grant}", which ${SETTINGS} allows`,
+      );
+    }
+  }
+  for (const grant of open) {
+    if (!claude.has(grant)) {
+      problems.push(
+        `${SETTINGS}: no allow entry for "${grant}", which ${OPENCODE} allows`,
+      );
+    }
+  }
+  return problems;
+}
+
+/** `Bash(git status*)` → `bash git status*`; a bare `Read` → `read *`. */
+function claudeGrant(entry) {
+  const match = /^([A-Za-z_]+)(?:\((.*)\))?$/s.exec(entry);
+  if (!match) return entry;
+  const [, tool, spec] = match;
+  return `${tool.toLowerCase()} ${spec ?? "*"}`;
 }
 
 function checkLockEntries(root, skills) {
