@@ -67,6 +67,11 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   both. Unused Java pattern and catch bindings are `_`; `init` escapes with `RegExp.escape` and
   refuses, changing nothing, on a Node major older than `.nvmrc`. A local Postgres container
   created by 17 does not start on 18: `docker compose down -v` (drops the local database).
+- `README.md` and `README.project.md` have a *What's inside* table: each framework and toolchain
+  version the repository pins, the file that pins it and how to bump it.
+  `scripts/readme-versions.test.mjs` (run by `verify`) fails when a row no longer matches its
+  file, when a pinned component has no row, or when the Testcontainers image differs from
+  `compose.yaml`'s. Copy the table and the test into your project's README and `scripts/`.
 
 ## 0.1.0 — 2026-11-01
 
