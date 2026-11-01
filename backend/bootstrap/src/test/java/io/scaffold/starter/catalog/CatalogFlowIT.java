@@ -3,6 +3,7 @@ package io.scaffold.starter.catalog;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -46,6 +47,7 @@ class CatalogFlowIT {
                         .content("""
                                 {"name": "Linen shirt", "priceMinor": 4999, "currency": "EUR"}"""))
                 .andExpect(status().isCreated())
+                .andExpect(header().exists(HttpHeaders.LOCATION))
                 .andExpect(jsonPath("$.state").value("DRAFT"))
                 .andReturn().getResponse();
         String id = JsonPath.read(created.getContentAsString(), "$.id");
