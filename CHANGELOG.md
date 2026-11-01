@@ -30,6 +30,12 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   `formatMoney` shows a plain amount plus the code for a currency `Intl` rejects instead of
   throwing; table rows are typed through `shared/typed-cell-def/` (`*matCellDef="let product;
   typedBy: …"`). Port the directive and the in-flight pattern to any list page you copied.
+- Frontend: Stylelint now rejects colour literals (hex, named, `rgb()` and the other banned
+  colour functions) passed to a Material `*-overrides` mixin, through the repo's own rule
+  `local/overrides-no-color-literal` (`frontend/stylelint/overrides-no-color-literal.mjs`), so
+  invariant #8 holds in `@include` arguments as well as declarations; RC-FE-7 is retired as a
+  review item. Copy the rule file and the `plugins` / `rules` entries of
+  `frontend/.stylelintrc.json`.
 - Backend: `/api` and `/actuator` themselves (and with a trailing slash) are no longer answered
   with the SPA shell but with a 404 problem like any unknown API path. The shell (`index.html`,
   the fallback, unhashed files) is served with `Cache-Control: no-cache`; scripts, styles and
