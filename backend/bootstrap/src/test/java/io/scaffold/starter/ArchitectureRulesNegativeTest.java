@@ -42,6 +42,8 @@ class ArchitectureRulesNegativeTest {
                         "archfixture.orders.adapter.in.web.ServiceCaller"),
                 violation("adaptersArePackagePrivate", ArchitectureRules::adaptersArePackagePrivate,
                         "archfixture.orders.adapter.out.persistence.PublicOrderRepository"),
+                violation("adaptersArePackagePrivate", ArchitectureRules::adaptersArePackagePrivate,
+                        "archfixture.web.PublicAdvice"),
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
                         "archfixture.orders.application.port.in.LeakyOrderView"),
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,

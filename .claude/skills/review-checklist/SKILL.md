@@ -17,7 +17,7 @@ RC-DOC. Invariant numbers cite the root `AGENTS.md`. Full worked example of conf
 
 **Not review items** — the build fails on them, so don't spend attention there: package shape,
 crossing rules between areas, an aggregate in a `port.in` or `domain.event` type,
-package-private `@UseCase` services and adapters, Spring or JPA in `core`, JPA anywhere,
+package-private `@UseCase` services, package-private adapters, Spring or JPA in `core`, JPA anywhere,
 cross-feature imports, inline templates, `::ng-deep` / MDC selectors / colour literals in
 declarations and in `*-overrides` mixin arguments, formatting under `frontend/` and `scripts/`
 (Prettier). Review what no test can see; a change that *loosens* one of those checks is an item

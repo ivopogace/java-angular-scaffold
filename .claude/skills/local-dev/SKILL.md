@@ -59,8 +59,8 @@ Docker Compose support; Flyway migrates on start. The real-backend specs skip un
   more.
 - `npm run format` (from `frontend/`) fixes what `format:check` reports; its scope is all of
   `frontend/` minus `.prettierignore`.
-- `scripts/` uses Prettier's defaults, checked by `verify`: from the repo root run
-  `frontend/node_modules/.bin/prettier --write scripts` to fix it.
+- `scripts/` uses Prettier's defaults, checked by `verify`: from `frontend/` run
+  `npx prettier --write ../scripts` to fix it.
 
 ## Removing the sample
 
@@ -81,5 +81,5 @@ database has applied the sample migration, remove by hand and add a forward drop
 | toolchain error naming Java 25 | install JDK 25 and point `JAVA_HOME` at it |
 | Playwright: browser executable doesn't exist | `npx playwright install chromium` from `frontend/` (the full verify does this) |
 | `bootRun` fails to bind 5432 | another Postgres holds the port; stop it |
-| Prettier check fails | `npm run format` from `frontend/`, then review the diff |
+| Prettier check fails | `npm run format` (`frontend format`) or `npx prettier --write ../scripts` (`scripts format`), both from `frontend/`; then review the diff |
 | files show as fully changed with no visible edit | line endings: `.gitattributes` pins LF; `git ls-files --eol` shows which files differ |

@@ -98,8 +98,8 @@ class PublicationRecorder implements RecordProductPublication {
 3. `application.port.in` (`@NamedInterface("port-in")` + `@PrimaryPort` on the package),
    `application.port.out` (`@SecondaryPort`), `application.service` (package-private `@UseCase`).
 4. Adapters: `adapter.in.*` packages carry `@PrimaryAdapter`, `adapter.out.*` `@SecondaryAdapter`;
-   jMolecules' hexagonal rule checks only annotated packages. Adapter classes are package-private
-   (`adaptersArePackagePrivate`).
+   jMolecules' hexagonal rule checks only annotated packages. Adapter classes, like `web`'s,
+   are package-private (`adaptersArePackagePrivate`).
 5. One forward migration in `backend/adapters/src/main/resources/db/migration/` (invariant #2).
 6. Tests: `core` unit tests sit in the service's package with in-memory `port.out` fakes; web
    slices and ITs go in `bootstrap`'s test sources in the package of the class under test.

@@ -137,10 +137,11 @@ final class ArchitectureRules {
     }
 
     ArchRule adaptersArePackagePrivate() {
+        DescribedPredicate<JavaClass> adapterSide = isAreaClass().and(inLayer("adapter")).or(isWebEdge());
         return classes()
-                .that(isAreaClass().and(inLayer("adapter")).and(topLevel()).and(not(isPackageInfo())))
+                .that(adapterSide.and(topLevel()).and(not(isPackageInfo())))
                 .should().notBePublic()
-                .as("adapter classes are package-private")
+                .as("adapter classes and the web edge are package-private")
                 .allowEmptyShould(true);
     }
 
@@ -201,6 +202,13 @@ final class ArchitectureRules {
             return areaRelativePackage(item)
                     .map(relative -> startsWithLayer(relative, "domain") || startsWithLayer(relative, "application"))
                     .orElse(false);
+        });
+    }
+
+    private DescribedPredicate<JavaClass> isWebEdge() {
+        return DescribedPredicate.describe("web edge classes", item -> {
+            String pkg = item.getPackageName();
+            return pkg.equals(basePackage + ".web") || pkg.startsWith(basePackage + ".web.");
         });
     }
 
