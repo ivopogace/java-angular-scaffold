@@ -38,7 +38,8 @@ Full worked example: the `catalog` sample, while it exists.
 | wiring that names no area (`ClockConfiguration`, `UseCaseConfiguration`) | `<base>` next to `Application` | `bootstrap` |
 
 The listed packages are exhaustive: `adapter.in.web.dto` or `domain.model.pricing` fails
-`areaPackageShape` — flatten into the listed package. `shared`, `web` and `config` are not areas.
+`areaPackageShape` — flatten into the listed package. `shared`, `web` and `config` are not areas
+(wiring sits in the root package, next to `Application`).
 
 ## Crossing between areas
 
@@ -118,7 +119,7 @@ breaks proves nothing.
 | Mistake | Fix |
 |---|---|
 | Public service, or `@Component` in `core` | package-private `@UseCase` |
-| Aggregate in a `port.in` record or REST response | map to a view record in the service, to a DTO in the controller |
+| Aggregate in a `port.in` record or event (`publishedSurfaceIsAggregateFree` fails), or in a REST response | map to a view record in the service, to a DTO in the controller |
 | Adapter imports `application.service` | inject the `port.in` interface |
 | Sub-package such as `adapter.in.web.dto` | flatten into the listed package |
 | Raising `allowedDependencies` to make `verify()` pass | publish the needed type through `port.in`, `domain.id` or `domain.event` |

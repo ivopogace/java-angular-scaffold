@@ -13,8 +13,9 @@ Run commands from here; the general list is in the root `AGENTS.md`. Decisions b
 - `adapters/` — driving (`adapter/in/web`, `adapter/in/event`) and driven (`adapter/out/persistence`,
   `adapter/out/<gateway>`) adapters; depends on `core` and Spring. Flyway migrations live in
   `adapters/src/main/resources/db/migration/`.
-- `bootstrap/` — `Application` (`@SpringBootApplication @Modulithic`), wiring that names no area,
-  `application.properties`, and every architecture test (the only place all classes are visible).
+- `bootstrap/` — `Application` (`@SpringBootApplication @Modulithic`), wiring that names no area
+  (in the root package, next to `Application`), `application.properties`, and every architecture
+  test (the only place all classes are visible).
 
 ## Business area packages
 
@@ -87,8 +88,12 @@ dependencies or annotations:
   --tests "*ArchitectureTest*" --tests "*ArchitectureRulesNegativeTest*"
 ```
 
-`ModularityTests` runs Modulith's `verify()`; `ArchitectureTest` applies the template rules
-(package shape, crossing rules, package-private `@UseCase` services, no JPA, no Spring in `core`
-beyond `org.springframework.modulith`) plus jMolecules' DDD and hexagonal rules;
+`ModularityTests` runs Modulith's `verify()` (what one area may see of another);
+`ArchitectureTest` applies the project's structural rules (`ArchitectureRules`): the area package
+shape; `domain` depends only on the JDK, jMolecules, `shared`, its own `domain` and other areas'
+`domain/id`; `port/in` and `domain/event` never depend on `domain/model`; services are
+package-private and `@UseCase` when they implement a `port/in` interface; adapters never use
+`application/service`; no JPA anywhere; no Spring beyond `org.springframework.modulith`, and no
+`java.sql`, in `core` — plus jMolecules' DDD and hexagonal rules;
 `ArchitectureRulesNegativeTest` proves each rule fails on a violating fixture. A new rule gets a
 negative fixture in the same change.

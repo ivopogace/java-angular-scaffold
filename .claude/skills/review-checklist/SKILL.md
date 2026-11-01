@@ -16,10 +16,11 @@ RC-DOC. Invariant numbers cite the root `AGENTS.md`. Full worked example of conf
 `catalog` sample, while it exists.
 
 **Not review items** — the build fails on them, so don't spend attention there: package shape,
-crossing rules between areas, package-private `@UseCase` services, Spring or JPA in `core`, JPA
-anywhere, cross-feature imports, inline templates, `::ng-deep` / MDC selectors / hex and named
-colours, formatting under `frontend/` (Prettier). Review what no test can see; a change that *loosens* one of those
-checks is an item (RC-FE-6, RC-TEST-7).
+crossing rules between areas, an aggregate in a `port.in` or `domain.event` type,
+package-private `@UseCase` services, Spring or JPA in `core`, JPA anywhere, cross-feature
+imports, inline templates, `::ng-deep` / MDC selectors / hex and named colours,
+formatting under `frontend/` (Prettier). Review what no test can see; a change that *loosens* one
+of those checks is an item (RC-FE-6, RC-TEST-7).
 
 ## Backend
 
@@ -28,15 +29,15 @@ checks is an item (RC-FE-6, RC-TEST-7).
 - **RC-BE-2 Port or event** — Major. A synchronous `port.in` call only when the caller needs the
   answer now; announcing a state change is a `domain.event`. A new grant in `allowedDependencies`
   must be used by the diff.
-- **RC-BE-3 Event shape and delivery** — Major. Payload is typed ids and immutable facts, no
-  aggregate; the listener is idempotent (delivery is at-least-once: an incomplete publication is
+- **RC-BE-3 Event shape and delivery** — Major. Payload is typed ids and immutable facts; the
+  listener is idempotent (delivery is at-least-once: an incomplete publication is
   republished at the next startup); a renamed or moved event class
   or listener ships a forward migration or a fixed listener `id`.
 - **RC-BE-4 Rule placement** — Major. A choice, calculation or lifecycle rule lives on the
   aggregate (`Product.checkPublish()`), not in a service or controller; a rule needing the time
   takes an `Instant` the service read from the `Clock`.
-- **RC-BE-5 Domain types at the edge** — Major. No aggregate in a `port.in` record, REST response
-  or listener payload; the controller maps a view record to a DTO.
+- **RC-BE-5 Domain types at the edge** — Major. No aggregate in a REST response; the controller
+  maps a view record to a DTO.
 - **RC-BE-6 Money and time** (#3, #4) — Major. `long` minor units + currency, no `double`; no
   `LocalDateTime.now()`, `ZoneId.systemDefault()` or JVM-zone arithmetic; instants stored as UTC.
 - **RC-BE-7 Error contract** — Major if the wire shape changes. Problem bodies only; no

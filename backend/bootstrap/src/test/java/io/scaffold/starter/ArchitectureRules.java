@@ -20,7 +20,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * The template's structural rules for one base package. An <em>area</em> is a direct sub-package of
+ * The project's structural rules for one base package. An <em>area</em> is a direct sub-package of
  * the base package other than the shared kernel, the web edge and {@code config}; its layout is
  * {@code <area>.domain|application|adapter...}. Every rule tolerates a class set that has no
  * areas yet.
@@ -51,7 +51,8 @@ final class ArchitectureRules {
                 areaPackageShape(),
                 servicesArePackagePrivateUseCases(),
                 noJpa(),
-                adaptersDoNotUseServices());
+                adaptersDoNotUseServices(),
+                publishedSurfaceIsAggregateFree());
     }
 
     /** Domain, application and the shared kernel use no Spring (bar Modulith's annotations) and no SQL. */
@@ -126,7 +127,7 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    /** JPA and Hibernate are not part of this template's persistence story (JDBC only). */
+    /** JPA and Hibernate are not part of the persistence story (JDBC only). */
     ArchRule noJpa() {
         return noClasses()
                 .should().dependOnClassesThat().resideInAnyPackage(
@@ -141,6 +142,19 @@ final class ArchitectureRules {
                 .that().resideInAPackage("..adapter..")
                 .should().dependOnClassesThat().resideInAPackage("..application.service..")
                 .as("adapters do not depend on application.service")
+                .allowEmptyShould(true);
+    }
+
+    /**
+     * The published surface ({@code application.port.in} and {@code domain.event}) never exposes an
+     * aggregate: it is built from ids, the shared kernel and JDK types, so no class there depends on
+     * any area's {@code domain.model}.
+     */
+    ArchRule publishedSurfaceIsAggregateFree() {
+        return noClasses()
+                .that(isAreaClass().and(inLayer("application.port.in").or(inLayer("domain.event"))))
+                .should().dependOnClassesThat(inDomainModel())
+                .as("port.in and domain.event classes do not depend on domain.model")
                 .allowEmptyShould(true);
     }
 
@@ -199,6 +213,12 @@ final class ArchitectureRules {
     private DescribedPredicate<JavaClass> inLayer(String layer) {
         return DescribedPredicate.describe("in " + layer, item -> areaRelativePackage(item)
                 .map(relative -> startsWithLayer(relative, layer))
+                .orElse(false));
+    }
+
+    private DescribedPredicate<JavaClass> inDomainModel() {
+        return DescribedPredicate.describe("domain.model classes", item -> areaRelativePackage(item.getBaseComponentType())
+                .map(relative -> startsWithLayer(relative, "domain.model"))
                 .orElse(false));
     }
 

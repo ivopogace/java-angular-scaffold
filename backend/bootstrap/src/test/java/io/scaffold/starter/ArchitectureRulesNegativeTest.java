@@ -38,7 +38,11 @@ class ArchitectureRulesNegativeTest {
                         "archfixture.orders.application.service.UnmarkedService"),
                 violation("areaPackageShape", ArchitectureRules::areaPackageShape, "archfixture.orders.misc.Stray"),
                 violation("adaptersDoNotUseServices", ArchitectureRules::adaptersDoNotUseServices,
-                        "archfixture.orders.adapter.in.web.ServiceCaller"));
+                        "archfixture.orders.adapter.in.web.ServiceCaller"),
+                violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
+                        "archfixture.orders.application.port.in.LeakyOrderView"),
+                violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
+                        "archfixture.orders.domain.event.OrdersPlaced"));
     }
 
     private static Arguments violation(String name, Function<ArchitectureRules, ArchRule> rule, String offender) {
@@ -58,7 +62,7 @@ class ArchitectureRulesNegativeTest {
     void noRuleReportsTheCleanArea() {
         List<ArchRule> rules = RULES.all();
 
-        assertThat(rules).hasSize(6);
+        assertThat(rules).hasSize(7);
         for (ArchRule rule : rules) {
             EvaluationResult result = rule.evaluate(FIXTURES);
             assertThat(String.join("\n", result.getFailureReport().getDetails()))

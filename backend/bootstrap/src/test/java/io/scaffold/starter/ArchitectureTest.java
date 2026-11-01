@@ -12,7 +12,7 @@ import org.jmolecules.archunit.JMoleculesDddRules;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.TestFactory;
 
-/** The structural net over the production classes: the template's own rules plus jMolecules' DDD and hexagonal rules. */
+/** The structural net over the production classes: the project's structural rules plus jMolecules' DDD and hexagonal rules. */
 class ArchitectureTest {
 
     private static final String BASE_PACKAGE = Application.class.getPackageName();
