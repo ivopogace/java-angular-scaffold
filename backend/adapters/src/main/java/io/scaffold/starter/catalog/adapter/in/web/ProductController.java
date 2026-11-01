@@ -79,7 +79,7 @@ class ProductController {
     ResponseEntity<?> publish(@PathVariable UUID id) {
         return switch (publishProduct.publish(new ProductId(id))) {
             case PublishOutcome.Published published -> ResponseEntity.ok(ProductResponse.from(published.product()));
-            case PublishOutcome.NotFound ignored -> notFound(id);
+            case PublishOutcome.NotFound _ -> notFound(id);
             case PublishOutcome.Rejected rejected -> conflict(
                     "Product " + id + " cannot be published: " + rejected.reason(), rejected.reason().name());
         };
@@ -89,8 +89,8 @@ class ProductController {
     ResponseEntity<?> retire(@PathVariable UUID id) {
         return switch (retireProduct.retire(new ProductId(id))) {
             case RetireOutcome.Retired retired -> ResponseEntity.ok(ProductResponse.from(retired.product()));
-            case RetireOutcome.NotFound ignored -> notFound(id);
-            case RetireOutcome.NotPublished ignored -> conflict("Product " + id + " is not published", NOT_PUBLISHED);
+            case RetireOutcome.NotFound _ -> notFound(id);
+            case RetireOutcome.NotPublished _ -> conflict("Product " + id + " is not published", NOT_PUBLISHED);
         };
     }
 
@@ -100,7 +100,7 @@ class ProductController {
         }
         try {
             return Money.of(request.priceMinor(), request.currency());
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException _) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown currency: " + request.currency());
         }
     }

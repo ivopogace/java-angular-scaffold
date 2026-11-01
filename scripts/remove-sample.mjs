@@ -42,7 +42,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/in/web/ProductController.java",
-    sha256: "3e0f05448b8a49df6a5162255d05bf3900d3b35457fffe54bb54a835c1e07488",
+    sha256: "8456a3d5652317463e597aee9b1f228ab6fb9df3149adb5d61211aa52468763e",
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/in/web/ProductResponse.java",

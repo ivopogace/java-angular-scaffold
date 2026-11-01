@@ -45,10 +45,12 @@ public sealed interface RetireOutcome {
 
 return switch (retireProduct.retire(new ProductId(id))) {
     case RetireOutcome.Retired retired -> ResponseEntity.ok(ProductResponse.from(retired.product()));
-    case RetireOutcome.NotFound ignored -> notFound(id);
-    case RetireOutcome.NotPublished ignored -> conflict("Product " + id + " is not published", NOT_PUBLISHED);
+    case RetireOutcome.NotFound _ -> notFound(id);
+    case RetireOutcome.NotPublished _ -> conflict("Product " + id + " is not published", NOT_PUBLISHED);
 };
 ```
+
+A pattern, catch parameter or lambda parameter the code never reads is `_`.
 
 ## Error contract
 
