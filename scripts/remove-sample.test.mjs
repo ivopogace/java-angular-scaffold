@@ -138,15 +138,17 @@ sampleTest("a second run reports alreadyRemoved and changes nothing", (t) => {
 });
 
 sampleTest(
-  "an edited sample file is reported as drifted and nothing is deleted",
+  "an edited sample file is reported as drifted and every other file is untouched",
   (t) => {
     const root = withCopy(t);
     const edited = SAMPLE_FILES[0].path;
     writeFileSync(join(root, edited), "// local change\n", { flag: "a" });
     assert.deepEqual(removeSample(root), { drifted: [edited] });
-    for (const { path } of SAMPLE_FILES) {
+    for (const { path, sha256 } of SAMPLE_FILES.slice(1)) {
       assert.ok(existsSync(join(root, path)), `${path} was deleted`);
+      assert.equal(sha256Normalized(join(root, path)), sha256);
     }
+    assert.ok(existsSync(join(root, edited)));
     for (const marked of MARKED_FILES) {
       assert.ok(readFileSync(join(root, marked), "utf8").includes(MARKER));
     }
@@ -154,13 +156,87 @@ sampleTest(
 );
 
 sampleTest(
-  "a sample file that is gone while others remain counts as drift",
+  "a run interrupted after deleting some files is finished by the next run",
   (t) => {
     const root = withCopy(t);
-    const gone = SAMPLE_FILES[1].path;
-    rmSync(join(root, gone));
-    assert.deepEqual(removeSample(root), { drifted: [gone] });
-    assert.ok(existsSync(join(root, SAMPLE_FILES[0].path)));
+    const half = SAMPLE_FILES.filter((_, i) => i % 2 === 0);
+    for (const { path } of half) rmSync(join(root, path));
+    const result = removeSample(root);
+    assert.deepEqual(
+      [...result.removed].sort(),
+      SAMPLE_FILES.filter((_, i) => i % 2 === 1)
+        .map((f) => f.path)
+        .sort(),
+    );
+    assert.deepEqual(
+      walk(root).filter((p) => /catalog/i.test(p.slice(root.length))),
+      [],
+    );
+    for (const marked of MARKED_FILES) {
+      assert.ok(!readFileSync(join(root, marked), "utf8").includes(MARKER));
+    }
+    assert.deepEqual(removeSample(root), { alreadyRemoved: true });
+  },
+);
+
+sampleTest(
+  "a deletion error reports what is gone and what remains, and a re-run finishes",
+  (t) => {
+    const root = withCopy(t);
+    let calls = 0;
+    const rm = (path) => {
+      if (++calls === 3) throw new Error("EPERM: operation not permitted");
+      rmSync(path);
+    };
+    const result = removeSample(root, { rm });
+    assert.match(result.failed.error.message, /EPERM/);
+    assert.deepEqual(
+      result.failed.removed,
+      SAMPLE_FILES.slice(0, 2).map((f) => f.path),
+    );
+    assert.deepEqual(
+      result.failed.remaining,
+      SAMPLE_FILES.slice(2).map((f) => f.path),
+    );
+    for (const marked of MARKED_FILES) {
+      assert.ok(readFileSync(join(root, marked), "utf8").includes(MARKER));
+    }
+    assert.equal(removeSample(root).removed?.length, SAMPLE_FILES.length - 2);
+    assert.deepEqual(
+      walk(root).filter((p) => /catalog/i.test(p.slice(root.length))),
+      [],
+    );
+  },
+);
+
+sampleTest(
+  "a reflowed marked route fails before anything is deleted or rewritten",
+  (t) => {
+    const root = withCopy(t);
+    const routes = join(root, "frontend/src/app/app.routes.ts");
+    const reflowed = readFileSync(routes, "utf8").replace(
+      /^(.*)\/\/ sample:catalog\r?\n/m,
+      (_, route) => `${route.trimEnd()}\n  // sample:catalog\n`,
+    );
+    assert.notEqual(reflowed, readFileSync(routes, "utf8"));
+    writeFileSync(routes, reflowed);
+    const before = Object.fromEntries(
+      MARKED_FILES.map((f) => [f, readFileSync(join(root, f), "utf8")]),
+    );
+
+    const result = removeSample(root);
+    assert.equal(result.markerProblems?.length, 1);
+    assert.equal(
+      result.markerProblems[0].file,
+      "frontend/src/app/app.routes.ts",
+    );
+    assert.match(result.markerProblems[0].text, /\/catalog/);
+    for (const { path } of SAMPLE_FILES) {
+      assert.ok(existsSync(join(root, path)), `${path} was deleted`);
+    }
+    for (const f of MARKED_FILES) {
+      assert.equal(readFileSync(join(root, f), "utf8"), before[f]);
+    }
   },
 );
 

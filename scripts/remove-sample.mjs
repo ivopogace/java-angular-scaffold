@@ -267,51 +267,79 @@ forward migration that drops the catalog tables.
   --refresh-hashes   re-record the hashes of SAMPLE_FILES (template maintainers only)
 `;
 
-const DRIFT_INSTRUCTIONS = `Sample files changed or missing; nothing was removed.
+const DRIFT_INSTRUCTIONS = `Sample files were edited; nothing was removed.
 Removing them would no longer restore the shipped skeleton. If a shared
 database has already applied V0_9__catalog_sample.sql, do not delete that
 migration: remove the catalog code by hand and add a forward migration that
 drops catalog_publication_log and catalog_product.`;
 
 /**
- * Removes the sample under `root`.
+ * Removes the sample under `root`. Safe to re-run after an interruption: a
+ * listed file that is already gone is skipped; only a hash mismatch is drift.
  *
- * @returns `{ removed }` the deleted files (root-relative, forward slashes);
- *   `{ drifted }` the listed files that were edited or are missing, with
- *   nothing deleted; `{ alreadyRemoved: true }` when no sample file or marker
- *   line is left.
+ * @param rm deletes one file; injectable so tests can simulate a failure
+ * @returns `{ removed }` the files deleted by this call (root-relative,
+ *   forward slashes); `{ drifted }` listed files whose content was edited;
+ *   `{ markerProblems }` lines still referencing the catalog after the marker
+ *   lines would be stripped (`{ file, line, text }`); `{ failed }` a deletion
+ *   error with the files `removed` before it and those `remaining`;
+ *   `{ alreadyRemoved: true }` when no sample file or marker line is left.
+ *   Nothing is deleted or rewritten for `drifted` and `markerProblems`.
  */
-export function removeSample(root) {
+export function removeSample(root, { rm = rmSync } = {}) {
   const present = SAMPLE_FILES.filter((f) => existsSync(join(root, f.path)));
-  const hasMarkers = MARKED_FILES.some(
-    (f) => existsSync(join(root, f)) && markerLines(join(root, f)) > 0,
-  );
+  const marked = MARKED_FILES.filter((f) => existsSync(join(root, f)));
+  const hasMarkers = marked.some((f) => markerLines(join(root, f)) > 0);
   if (present.length === 0 && !hasMarkers) return { alreadyRemoved: true };
 
-  if (present.length > 0) {
-    const drifted = SAMPLE_FILES.filter(
-      (f) =>
-        !existsSync(join(root, f.path)) ||
-        sha256Normalized(join(root, f.path)) !== f.sha256,
-    ).map((f) => f.path);
-    if (drifted.length > 0) return { drifted };
-  }
+  const drifted = present
+    .filter((f) => sha256Normalized(join(root, f.path)) !== f.sha256)
+    .map((f) => f.path);
+  if (drifted.length > 0) return { drifted };
 
-  for (const { path } of present) {
-    rmSync(join(root, path));
-    pruneEmptyParents(root, dirname(join(root, path)));
+  const markerProblems = marked.flatMap((file) =>
+    leftoverReferences(
+      file,
+      stripMarkerLines(normalizeEol(readFileSync(join(root, file), "utf8"))),
+    ),
+  );
+  if (markerProblems.length > 0) return { markerProblems };
+
+  const removed = [];
+  try {
+    for (const { path } of present) {
+      rm(join(root, path));
+      removed.push(path);
+    }
+    for (const { path } of SAMPLE_FILES) {
+      pruneEmptyParents(root, dirname(join(root, path)));
+    }
+    for (const file of marked) {
+      rewritePreservingEol(join(root, file), stripMarkerLines);
+    }
+  } catch (error) {
+    const remaining = present
+      .map((f) => f.path)
+      .filter((p) => !removed.includes(p));
+    return { failed: { error, removed, remaining } };
   }
-  for (const marked of MARKED_FILES) {
-    const file = join(root, marked);
-    if (!existsSync(file)) continue;
-    rewritePreservingEol(file, (text) =>
-      text
-        .split("\n")
-        .filter((line) => !line.includes(MARKER))
-        .join("\n"),
+  return { removed };
+}
+
+const stripMarkerLines = (text) =>
+  text
+    .split("\n")
+    .filter((line) => !line.includes(MARKER))
+    .join("\n");
+
+function leftoverReferences(file, strippedText) {
+  return strippedText
+    .split("\n")
+    .flatMap((text, index) =>
+      text.includes("./catalog/") || text.includes("/catalog")
+        ? [{ file, line: index + 1, text: text.trim() }]
+        : [],
     );
-  }
-  return { removed: present.map((f) => f.path) };
 }
 
 function markerLines(file) {
@@ -320,14 +348,16 @@ function markerLines(file) {
     .filter((line) => line.includes(MARKER)).length;
 }
 
+/** Removes `dir` and its ancestors below `root` while they are empty or already gone. */
 function pruneEmptyParents(root, dir) {
   const stop = resolve(root);
-  for (
-    let current = resolve(dir);
-    current !== stop && current.startsWith(stop) && isEmpty(current);
-    current = dirname(current)
-  ) {
-    rmdirSync(current);
+  let current = resolve(dir);
+  while (current !== stop && current.startsWith(stop)) {
+    if (existsSync(current)) {
+      if (!isEmpty(current)) return;
+      rmdirSync(current);
+    }
+    current = dirname(current);
   }
 }
 
@@ -375,8 +405,25 @@ function main(argv, root, scriptPath) {
     return 0;
   }
   if (result.drifted) {
-    console.error(`${DRIFT_INSTRUCTIONS}\n\nChanged or missing:`);
+    console.error(`${DRIFT_INSTRUCTIONS}\n\nChanged:`);
     for (const path of result.drifted) console.error(`  ${path}`);
+    return 1;
+  }
+  if (result.markerProblems) {
+    console.error(
+      "A marked file no longer matches the shipped layout; nothing was removed.\nEach line below still references the catalog once the marker lines are stripped:",
+    );
+    for (const { file, line, text } of result.markerProblems) {
+      console.error(`  ${file}:${line}: ${text}`);
+    }
+    return 1;
+  }
+  if (result.failed) {
+    const { error, removed, remaining } = result.failed;
+    console.error(
+      `Removal stopped: ${error.message}\nAlready removed (${removed.length}); fix the cause and re-run to finish. Still to remove (${remaining.length}):`,
+    );
+    for (const path of remaining) console.error(`  ${path}`);
     return 1;
   }
   console.log(
