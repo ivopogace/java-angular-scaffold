@@ -96,6 +96,6 @@ Token names are the component's override keys (`toolbar-overrides`, `button-over
 | the same literals in the arguments of an `*-overrides` mixin (`local/overrides-no-color-literal`, `frontend/stylelint/overrides-no-color-literal.mjs`) | a `--mat-sys-*` token; `transparent`, `currentcolor`, Sass variables and `color.adjust()` pass |
 
 The theme files are exempt from every colour rule, so `mat.theme-overrides(...)` in
-`src/styles.scss` may take a literal. `npm run test:eslint-rules` covers the Stylelint config and
-the repo's own rules; a new rule gets a violating and a conforming case in
+`src/styles.scss` may take a literal. `npm run test:eslint-rules` covers the ESLint and Stylelint
+configs and the repo's own rules; a new rule gets a violating and a conforming case in
 `frontend/stylelint/` (RC-TEST-7).

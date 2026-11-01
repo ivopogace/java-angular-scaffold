@@ -18,9 +18,10 @@ RC-DOC. Invariant numbers cite the root `AGENTS.md`. Full worked example of conf
 **Not review items** — the build fails on them, so don't spend attention there: package shape,
 crossing rules between areas, an aggregate in a `port.in` or `domain.event` type,
 package-private `@UseCase` services, package-private adapters, Spring or JPA in `core`, JPA anywhere,
-cross-feature imports, inline templates, `::ng-deep` / MDC selectors / colour literals in
-declarations and in `*-overrides` mixin arguments, formatting under `frontend/` and `scripts/`
-(Prettier). Review what no test can see; a change that *loosens* one of those checks is an item
+cross-feature imports, inline templates, decorator inputs and outputs, `@HostBinding` /
+`@HostListener`, a root `@Injectable`, constructor injection, `*ngIf` / `*ngFor`, `ngClass` /
+`ngStyle`, `::ng-deep` / MDC selectors / colour literals in declarations and in `*-overrides`
+mixin arguments, formatting under `frontend/` and `scripts/` (Prettier). Review what no test can see; a change that *loosens* one of those checks is an item
 (RC-FE-6, RC-TEST-7).
 
 ## Backend
@@ -55,9 +56,10 @@ declarations and in `*-overrides` mixin arguments, formatting under `frontend/` 
 
 ## Frontend
 
-- **RC-FE-1 Angular idioms** — Minor (Major if the pattern spreads). `input()`/`output()`,
-  signals, `inject()`, `@if`/`@for`, Signal Forms; nothing from
-  `grep -rn "standalone: true\|ChangeDetectionStrategy.OnPush\|@Input(\|@Output(\|ngClass\|ngStyle" frontend/src`.
+- **RC-FE-1 Angular idioms** — Minor (Major if the pattern spreads). State in signals with
+  `computed()` / `linkedSignal()`, reads through `httpResource`, Signal Forms for a new form;
+  nothing from `grep -rn "standalone: true\|ChangeDetectionStrategy.OnPush" frontend/src`. The
+  decorator, injection and template idioms are lint's.
 - **RC-FE-2 The server decides** — Major. Client validation is UX only; prices, states and
   permissions come from the API.
 - **RC-FE-3 Money and dates from the wire** (#3) — Major. Minor units formatted at the view edge,

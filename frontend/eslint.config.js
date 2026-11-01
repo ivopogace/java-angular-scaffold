@@ -19,6 +19,9 @@ module.exports = defineConfig([
     plugins: { local: { rules: { 'folder-boundary': folderBoundary } } },
     rules: {
       'local/folder-boundary': 'error',
+      '@angular-eslint/prefer-signals': 'error',
+      '@angular-eslint/prefer-host-metadata-property': 'error',
+      '@angular-eslint/prefer-service-decorator': 'error',
       '@angular-eslint/component-max-inline-declarations': [
         'error',
         { template: 0, styles: 0, animations: 0 },
@@ -49,6 +52,9 @@ module.exports = defineConfig([
   {
     files: ['**/*.html'],
     extends: [angular.configs.templateRecommended, angular.configs.templateAccessibility],
-    rules: {},
+    rules: {
+      '@angular-eslint/template/prefer-class-binding': 'error',
+      '@angular-eslint/template/prefer-style-binding': 'error',
+    },
   },
 ]);
