@@ -7,6 +7,7 @@ dependencies {
     implementation(platform(libs.spring.boot.bom))
     implementation(platform(libs.spring.modulith.bom))
     implementation(project(":adapters"))
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     developmentOnly(platform(libs.spring.boot.bom))
     developmentOnly("org.springframework.boot:spring-boot-docker-compose")
