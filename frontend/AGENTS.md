@@ -54,7 +54,8 @@ memory.
   never `vi.useRealTimers()`.
 - User-facing pages get an axe spec via `expectNoAxeViolations` (`src/testing/axe.ts`); contrast is
   checked in Playwright, since jsdom has no layout.
-- Playwright: `e2e/` stubs the API per spec and runs in CI; `e2e/real-backend/` needs the backend
-  on `:8080` and runs locally only.
+- Playwright: `e2e/` stubs the API per spec and runs in CI; `e2e/real-backend/` runs locally only,
+  against the running stack (backend on `:8080`, `npm start`):
+  `REAL_BACKEND=1 npm run test:e2e:real` — without the variable every spec skips.
 - The repo's own ESLint rules and Stylelint config have their own suite
   (`npm run test:eslint-rules`).

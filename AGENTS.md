@@ -46,7 +46,7 @@ npm run test:eslint-rules    # the repo's own ESLint rules and Stylelint config
 npm run build
 npm run typecheck:e2e        # tsc over e2e/ (Playwright transpiles without checking)
 npm run test:e2e             # Playwright, mocked API (CI-safe)
-npm run test:e2e:real        # Playwright against a running backend (local only)
+REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (local only)
 ```
 
 ## Repo map

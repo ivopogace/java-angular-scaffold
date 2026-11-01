@@ -8,8 +8,8 @@ keeps it framework-free (ADR-0002).
 
 ## Considered Options
 
-- Rules as functions over table state, with lifecycles as guarded SQL: far less mapping, but the
-  invariants spread across SQL and services, and the domain cannot be tested without a database.
+- Transaction Script (state in tables, transitions as conditional UPDATEs): far less mapping, but
+  the invariants spread across SQL and services, and the domain cannot be tested without a database.
 
 ## Consequences
 

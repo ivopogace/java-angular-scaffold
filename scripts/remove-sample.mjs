@@ -19,8 +19,9 @@ const MARKER = "sample:catalog";
 /**
  * Every file that is wholly part of the `catalog` sample, with the SHA-256 of
  * its LF-normalised text as shipped. Any edit to one of these files needs
- * `node scripts/remove-sample.mjs --refresh-hashes` in the same commit; the
- * template CI `skeleton` job fails otherwise.
+ * `node scripts/remove-sample.mjs --refresh-hashes` in the same commit;
+ * otherwise the hash test in `remove-sample.test.mjs` fails and removal would
+ * refuse the edited sample as drifted.
  */
 export const SAMPLE_FILES = [
   {
@@ -269,7 +270,7 @@ edited. Removal is a setup-time action: once a shared database has run the
 sample migration (V0_9__catalog_sample.sql), remove the code by hand and add a
 forward migration that drops the catalog tables.
 
-  --refresh-hashes   re-record the hashes of SAMPLE_FILES (template maintainers only)
+  --refresh-hashes   re-record the hashes of SAMPLE_FILES after editing a sample file
 `;
 
 const DRIFT_INSTRUCTIONS = `Sample files were edited; nothing was removed.
