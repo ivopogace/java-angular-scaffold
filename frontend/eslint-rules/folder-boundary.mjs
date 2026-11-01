@@ -37,7 +37,7 @@ function mayImport(from, to) {
 }
 
 /**
- * Enforces the `src/app/` import direction (spec §6.1): `shared` imports nothing app-internal, `core`
+ * Enforces the `src/app/` import direction: `shared` imports nothing app-internal, `core`
  * only `shared`, `pages` only `core` and `shared`, and a feature folder only `core` and `shared`,
  * never another feature. Covers `import`, `export … from` and `import()` with a relative literal
  * specifier, resolved against the importing file; package imports are not app-internal and are ignored.

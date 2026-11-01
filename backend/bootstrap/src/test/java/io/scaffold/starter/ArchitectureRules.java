@@ -21,10 +21,8 @@ import java.util.regex.Pattern;
 
 /**
  * The project's structural rules for one base package. An <em>area</em> is a direct sub-package of
- * the base package other than the shared kernel and the web edge (wiring sits in the base package
- * itself); its layout is
- * {@code <area>.domain|application|adapter...}. Every rule tolerates a class set that has no
- * areas yet.
+ * the base package other than the shared kernel and the web edge, laid out as
+ * {@code <area>.domain|application|adapter...}.
  */
 final class ArchitectureRules {
 
@@ -53,10 +51,10 @@ final class ArchitectureRules {
                 servicesArePackagePrivateUseCases(),
                 noJpa(),
                 adaptersDoNotUseServices(),
+                adaptersArePackagePrivate(),
                 publishedSurfaceIsAggregateFree());
     }
 
-    /** Domain, application and the shared kernel use no Spring (bar Modulith's annotations) and no SQL. */
     ArchRule coreIsSpringFree() {
         DescribedPredicate<JavaClass> forbidden = resideInAnyPackage("org.springframework..")
                 .and(not(resideInAnyPackage("org.springframework.modulith..")))
@@ -69,10 +67,6 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    /**
-     * Domain types depend only on the JDK, jMolecules, the shared kernel, their own area's domain and
-     * other areas' published ids. A {@code package-info} may carry Modulith annotations.
-     */
     ArchRule domainIsPure() {
         return classes()
                 .that(isAreaClass().and(inLayer("domain")).and(not(isPackageInfo())))
@@ -81,7 +75,6 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    /** Area classes live in the listed packages; only the area's {@code package-info} sits at its root. */
     ArchRule areaPackageShape() {
         return classes()
                 .that(isAreaClass())
@@ -104,7 +97,6 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    /** Services are package-private; those implementing a {@code port.in} interface carry {@link UseCase}. */
     ArchRule servicesArePackagePrivateUseCases() {
         return classes()
                 .that(isAreaClass().and(inLayer("application.service")).and(topLevel()))
@@ -128,7 +120,6 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    /** JPA and Hibernate are not part of the persistence story (JDBC only). */
     ArchRule noJpa() {
         return noClasses()
                 .should().dependOnClassesThat().resideInAnyPackage(
@@ -137,7 +128,6 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    /** Adapters reach use cases through {@code port.in}, never the service implementations. */
     ArchRule adaptersDoNotUseServices() {
         return noClasses()
                 .that().resideInAPackage("..adapter..")
@@ -146,11 +136,14 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    /**
-     * The published surface ({@code application.port.in} and {@code domain.event}) never exposes an
-     * aggregate: it is built from ids, the shared kernel and JDK types, so no class there depends on
-     * any area's {@code domain.model}.
-     */
+    ArchRule adaptersArePackagePrivate() {
+        return classes()
+                .that(isAreaClass().and(inLayer("adapter")).and(topLevel()).and(not(isPackageInfo())))
+                .should().notBePublic()
+                .as("adapter classes are package-private")
+                .allowEmptyShould(true);
+    }
+
     ArchRule publishedSurfaceIsAggregateFree() {
         return noClasses()
                 .that(isAreaClass().and(inLayer("application.port.in").or(inLayer("domain.event"))))

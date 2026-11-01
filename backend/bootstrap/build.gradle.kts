@@ -25,7 +25,6 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-// The built Angular app is served from the same origin as the API.
 tasks.processResources {
     val frontendDist = layout.projectDirectory.dir("../../frontend/dist/scaffold-starter/browser")
     if (frontendDist.asFile.isDirectory) {

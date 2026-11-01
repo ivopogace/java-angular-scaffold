@@ -11,6 +11,9 @@ export const NO_DOCKER_MESSAGE =
 
 export const USAGE = "Usage: node scripts/verify.mjs [--quick]";
 
+/** The frontend's own Prettier; `scripts/` has no config of its own, so Prettier's defaults apply. */
+const PRETTIER = "frontend/node_modules/prettier/bin/prettier.cjs";
+
 /**
  * @param {string[]} argv the arguments after the script name
  * @returns {{ quick: boolean } | { error: string }} the options, or why the arguments are rejected.
@@ -70,6 +73,12 @@ export function planSteps({
     },
     npm("frontend lint", "run", "lint"),
     npm("frontend format", "run", "format:check"),
+    {
+      name: "scripts format",
+      cwd: ".",
+      command: "node",
+      args: [PRETTIER, "--check", "scripts"],
+    },
     npm("frontend eslint rules", "run", "test:eslint-rules"),
     npm("frontend unit tests", "test", "--", "--watch=false"),
     npm("frontend build", "run", "build"),

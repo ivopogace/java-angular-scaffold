@@ -56,6 +56,7 @@ test("frontend steps run in order", () => {
     "backend build",
     "frontend lint",
     "frontend format",
+    "scripts format",
     "frontend eslint rules",
     "frontend unit tests",
     "frontend build",
@@ -65,6 +66,18 @@ test("frontend steps run in order", () => {
   ]);
   const unit = planSteps(base).find((s) => s.name === "frontend unit tests");
   assert.deepEqual(unit.args, ["test", "--", "--watch=false"]);
+});
+
+test("scripts are checked with the frontend's Prettier from the repository root", () => {
+  const format = planSteps(base).find((s) => s.name === "scripts format");
+  assert.deepEqual(
+    [format.command, format.args, format.cwd],
+    [
+      "node",
+      ["frontend/node_modules/prettier/bin/prettier.cjs", "--check", "scripts"],
+      ".",
+    ],
+  );
 });
 
 test("playwright browsers are installed in full runs only, with system deps only on CI", () => {

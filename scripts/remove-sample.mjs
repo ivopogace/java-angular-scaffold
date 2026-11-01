@@ -86,11 +86,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProduct.java",
-    sha256: "0877288adf71dad356ac99c0f02b2e0bb09157e3eb89de4c7bd8088411c984c4",
+    sha256: "4269c8bcaba7d5f0e2838d3414b1db0c2dd4ca3f40970683d97c01eb6f0d05c3",
   },
   {
     path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProductCommand.java",
-    sha256: "04a232ee24faaf5552c57ed6cd4b3fe343ef6d886a4163742de56a134dc67720",
+    sha256: "ab490841c3af12136e9701e988cadca4b46fb8f54a682dbd8c4f887a82e77b1e",
   },
   {
     path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/FindProduct.java",
@@ -170,7 +170,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/core/src/main/java/io/scaffold/starter/catalog/domain/model/Product.java",
-    sha256: "c77ba1614dc98bebc11cc8a7a005386146326386426a467d64b5dec2a2a1b2e5",
+    sha256: "a9d49bed2215cab2a24c5a73446ddff64aea965ca830b30f1bb197b648ac9563",
   },
   {
     path: "backend/core/src/main/java/io/scaffold/starter/catalog/domain/model/ProductStatus.java",

@@ -1,12 +1,9 @@
 /**
  * Shared by the MCP launchers: how to run `npx`, and how to tie a launcher to the server it starts.
  *
- * Spawning the name `npx` needs a shell on Windows (it is a `.cmd` shim), and a shell spawn with an
- * args array is deprecated (Node DEP0190: the arguments are concatenated, not escaped). npm ships
- * beside the running node, so its `npx-cli.js` is started with that node directly: no shell on any
- * platform, no shim, and the npm that belongs to this node. A node without npm beside it falls back
- * to the name `npx`; on Windows that needs cmd.exe, so the command is one quoted string and `args`
- * stays empty.
+ * npm's `npx-cli.js` is started with the running node, never the `npx` shim through a shell (a shell
+ * spawn with an args array concatenates them unescaped, Node DEP0190). A node without npm beside it
+ * falls back to the name `npx`; on Windows through cmd.exe, as one quoted command with empty `args`.
  */
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
