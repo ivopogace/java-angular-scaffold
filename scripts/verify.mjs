@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, globSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { quoteForCmd } from "./lib/shell.mjs";
@@ -28,10 +28,10 @@ export function parseArgs(argv) {
  * `cwd` is relative to the repository root.
  */
 
+const SCRIPT_TESTS = "scripts/**/*.test.mjs";
+
 function hasScriptTests() {
-  return readdirSync(join(root, "scripts"), { recursive: true }).some((f) =>
-    String(f).endsWith(".test.mjs"),
-  );
+  return globSync(SCRIPT_TESTS, { cwd: root }).length > 0;
 }
 
 function hasAgentDocsCheck() {
@@ -102,7 +102,7 @@ export function planSteps({
             name: "script tests",
             cwd: ".",
             command: "node",
-            args: ["--test", "scripts/**/*.test.mjs"],
+            args: ["--test", SCRIPT_TESTS],
           },
         ]
       : []),

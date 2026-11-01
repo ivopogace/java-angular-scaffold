@@ -400,7 +400,7 @@ export function replaceTokens(text, replacements) {
   const pattern = new RegExp(
     [...byToken.keys()]
       .sort((a, b) => b.length - a.length)
-      .map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .map((token) => RegExp.escape(token))
       .join("|"),
     "g",
   );
