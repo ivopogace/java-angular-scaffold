@@ -89,10 +89,10 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   (`ArchitectureRules.testRules()`, checked over the test classes) rejects `@SpringBootTest` in an
   area. A test of the generic error body needs `extraIncludes = "web"` for `ApiErrorHandler`.
   Switch your area ITs and copy the rule with its fixtures.
-- `init`: the new `.git` must hold no ref before the initial commit; if a git process still
-  running in the clone writes the old refs back, init recreates `.git` (three tries) and otherwise
-  stops with the commands to finish by hand, so a project never starts on top of the template's
-  history. `init.test.mjs` disables gc and maintenance in its throwaway copies and tolerates a
+- `init`: after the initial commit the new repository must hold that one commit alone; if a git
+  process still running in the clone wrote the old history back, init rebuilds `.git` after a
+  pause (three tries) and otherwise stops, telling you to delete `.git` and finish by hand, so a
+  project never starts on top of the template's history. `init.test.mjs` disables gc and maintenance in its throwaway copies and tolerates a
   refusal that exits before reading stdin (EPIPE); both made the template CI fail intermittently.
 
 ## 0.1.0 — 2026-11-01
