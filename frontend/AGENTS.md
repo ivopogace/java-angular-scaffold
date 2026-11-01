@@ -32,14 +32,12 @@ memory.
 
 ## Angular idioms
 
-- `input()`, `output()`, `model()` — not the decorators.
 - State in signals with `computed()` and `linkedSignal()`.
 - Signal Forms (`@angular/forms/signals`) for new forms.
-- Native control flow (`@if`, `@for`, `@switch`).
-- `inject()`, not constructor parameters.
 - No `standalone: true` and no `ChangeDetectionStrategy.OnPush` boilerplate.
-- Lint fails on decorator inputs and outputs, `@HostBinding` / `@HostListener`, a root
-  `@Injectable` (use `@Service()`), constructor injection, `*ngIf` / `*ngFor` and `ngClass` /
+- Lint fails on decorator inputs and outputs (use `input()`, `output()`, `model()`),
+  `@HostBinding` / `@HostListener` (use `host`), a root `@Injectable` (use `@Service()`),
+  constructor injection (use `inject()`), `*ngIf` / `*ngFor` (use `@if` / `@for`) and `ngClass` /
   `ngStyle`; `eslint-rules/eslint-config.test.mjs` proves each rule fires.
 
 ## Styling (invariant #8)

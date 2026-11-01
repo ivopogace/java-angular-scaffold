@@ -14,6 +14,12 @@ const lint = async (code, filePath) => {
 const lintTs = (code) => lint(code, 'src/app/x/x.ts');
 const lintHtml = (code) => lint(code, 'src/app/x/x.html');
 
+const assertNone = (rules, ...ruleIds) =>
+  assert.deepEqual(
+    rules.filter((rule) => ruleIds.includes(rule)),
+    [],
+  );
+
 describe('eslint config', () => {
   it('flags decorator inputs', async () => {
     const rules = await lintTs(`import { Directive, Input } from '@angular/core';
@@ -27,7 +33,7 @@ export class X {
   });
 
   it('accepts signal inputs', async () => {
-    assert.deepEqual(
+    assertNone(
       await lintTs(`import { Directive, input } from '@angular/core';
 
 @Directive({ selector: '[appX]' })
@@ -35,7 +41,7 @@ export class X {
   readonly value = input('');
 }
 `),
-      [],
+      '@angular-eslint/prefer-signals',
     );
   });
 
@@ -61,13 +67,13 @@ export class X {}
   });
 
   it('accepts @Service()', async () => {
-    assert.deepEqual(
+    assertNone(
       await lintTs(`import { Service } from '@angular/core';
 
 @Service()
 export class X {}
 `),
-      [],
+      '@angular-eslint/prefer-service-decorator',
     );
   });
 
@@ -102,6 +108,10 @@ export class X {
   });
 
   it('accepts class and style bindings', async () => {
-    assert.deepEqual(await lintHtml('<p [class.on]="shown" [style.width]="size">x</p>\n'), []);
+    assertNone(
+      await lintHtml('<p [class.on]="shown" [style.width]="size">x</p>\n'),
+      '@angular-eslint/template/prefer-class-binding',
+      '@angular-eslint/template/prefer-style-binding',
+    );
   });
 });

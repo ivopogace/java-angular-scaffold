@@ -469,9 +469,25 @@ const git = (root, args) =>
 const gitSucceeds = (root, args) =>
   spawnSync("git", args, { cwd: root, stdio: "ignore" }).status === 0;
 
+/** @returns {string | null} why Node `running` is older than the major `required` names, or null. */
+export function nodeVersionProblem(running, required) {
+  const major = (version) => Number(version.replace(/^v/, "").split(".")[0]);
+  return major(running) < major(required)
+    ? `init needs Node ${required} (.nvmrc); this is Node ${running}. Nothing was changed.`
+    : null;
+}
+
 /** @returns {string | null} why init cannot run under `root`, or null. */
 function refusal(root) {
   if (!existsSync(join(root, MARKER_FILE))) return "Already initialized.";
+  const nvmrc = join(root, ".nvmrc");
+  const tooOld =
+    existsSync(nvmrc) &&
+    nodeVersionProblem(
+      process.versions.node,
+      readFileSync(nvmrc, "utf8").trim(),
+    );
+  if (tooOld) return tooOld;
   let status;
   try {
     status = git(root, ["status", "--porcelain"]);
