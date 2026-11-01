@@ -17,7 +17,9 @@ dependencies {
     testImplementation("org.testcontainers:testcontainers-postgresql")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter")
     testImplementation("org.springframework.modulith:spring-modulith-starter-test")
+    testImplementation(platform(libs.jmolecules.bom))
     testImplementation("org.jmolecules.integrations:jmolecules-archunit")
+    testImplementation("jakarta.persistence:jakarta.persistence-api") // negative architecture fixtures only
     testImplementation(libs.archunit.junit5)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

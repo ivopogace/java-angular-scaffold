@@ -1,0 +1,231 @@
+package io.scaffold.starter;
+
+import static com.tngtech.archunit.base.DescribedPredicate.not;
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
+import static com.tngtech.archunit.lang.SimpleConditionEvent.violated;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.Dependency;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaModifier;
+import com.tngtech.archunit.lang.ArchCondition;
+import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import io.scaffold.starter.shared.UseCase;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+/**
+ * The template's structural rules for one base package. An <em>area</em> is a direct sub-package of
+ * the base package other than the shared kernel, the web edge and {@code config}; its layout is
+ * {@code <area>.domain|application|adapter...}. Every rule tolerates a class set that has no
+ * areas yet.
+ */
+final class ArchitectureRules {
+
+    private static final Set<String> NON_AREA_PACKAGES = Set.of("shared", "web", "config");
+    private static final Pattern AREA_PACKAGE_SHAPE = Pattern.compile(
+            "domain\\.(model|id|event)"
+                    + "|application\\.(port\\.in|port\\.out|service)"
+                    + "|adapter\\.in\\.(web|event)"
+                    + "|adapter\\.out\\.[^.]+");
+
+    private final String basePackage;
+
+    private ArchitectureRules(String basePackage) {
+        this.basePackage = basePackage;
+    }
+
+    static ArchitectureRules forBasePackage(String basePackage) {
+        return new ArchitectureRules(basePackage);
+    }
+
+    List<ArchRule> all() {
+        return List.of(
+                coreIsSpringFree(),
+                domainIsPure(),
+                areaPackageShape(),
+                servicesArePackagePrivateUseCases(),
+                noJpa(),
+                adaptersDoNotUseServices());
+    }
+
+    /** Domain, application and the shared kernel use no Spring (bar Modulith's annotations) and no SQL. */
+    ArchRule coreIsSpringFree() {
+        DescribedPredicate<JavaClass> forbidden = resideInAnyPackage("org.springframework..")
+                .and(not(resideInAnyPackage("org.springframework.modulith..")))
+                .or(resideInAnyPackage("java.sql..", "javax.sql.."))
+                .as("Spring (other than Spring Modulith) or SQL types");
+        return noClasses()
+                .that(isCore())
+                .should().dependOnClassesThat(forbidden)
+                .as("core (domain, application, shared) is free of Spring and SQL")
+                .allowEmptyShould(true);
+    }
+
+    /**
+     * Domain types depend only on the JDK, jMolecules, the shared kernel, their own area's domain and
+     * other areas' published ids. A {@code package-info} may carry Modulith annotations.
+     */
+    ArchRule domainIsPure() {
+        return classes()
+                .that(isAreaClass().and(inLayer("domain")).and(not(isPackageInfo())))
+                .should(onlyDependOnPermittedTypes())
+                .as("domain classes depend only on the JDK, jMolecules, shared, their own domain and other areas' domain.id")
+                .allowEmptyShould(true);
+    }
+
+    /** Area classes live in the listed packages; only the area's {@code package-info} sits at its root. */
+    ArchRule areaPackageShape() {
+        return classes()
+                .that(isAreaClass())
+                .should(new ArchCondition<JavaClass>("live in the permitted area packages") {
+                    @Override
+                    public void check(JavaClass item, ConditionEvents events) {
+                        String relative = areaRelativePackage(item).orElseThrow();
+                        boolean allowed = relative.isEmpty()
+                                ? item.getSimpleName().equals("package-info")
+                                : AREA_PACKAGE_SHAPE.matcher(relative).matches();
+                        if (!allowed) {
+                            events.add(violated(item, item.getName() + " is in area package '"
+                                    + (relative.isEmpty() ? "<area root>" : relative)
+                                    + "', which is not one of domain.{model,id,event}, application.{port.in,port.out,service}, "
+                                    + "adapter.in.{web,event} or adapter.out.<name>"));
+                        }
+                    }
+                })
+                .as("area classes live only in the permitted packages")
+                .allowEmptyShould(true);
+    }
+
+    /** Services are package-private; those implementing a {@code port.in} interface carry {@link UseCase}. */
+    ArchRule servicesArePackagePrivateUseCases() {
+        return classes()
+                .that(isAreaClass().and(inLayer("application.service")).and(topLevel()))
+                .should(new ArchCondition<JavaClass>("be package-private, and annotated @UseCase when implementing a port.in interface") {
+                    @Override
+                    public void check(JavaClass item, ConditionEvents events) {
+                        if (item.getModifiers().contains(JavaModifier.PUBLIC)) {
+                            events.add(violated(item, item.getName() + " is public; services must be package-private"));
+                        }
+                        boolean implementsPortIn = item.getAllRawInterfaces().stream()
+                                .anyMatch(iface -> areaRelativePackage(iface)
+                                        .map(pkg -> pkg.equals("application.port.in"))
+                                        .orElse(false));
+                        if (implementsPortIn && !item.isAnnotatedWith(UseCase.class)) {
+                            events.add(violated(item, item.getName()
+                                    + " implements a port.in interface but is not annotated @UseCase"));
+                        }
+                    }
+                })
+                .as("services are package-private and, when implementing a port.in interface, annotated @UseCase")
+                .allowEmptyShould(true);
+    }
+
+    /** JPA and Hibernate are not part of this template's persistence story (JDBC only). */
+    ArchRule noJpa() {
+        return noClasses()
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        "jakarta.persistence..", "org.hibernate..", "org.springframework.data.jpa..")
+                .as("nothing depends on JPA, Hibernate or Spring Data JPA")
+                .allowEmptyShould(true);
+    }
+
+    /** Adapters reach use cases through {@code port.in}, never the service implementations. */
+    ArchRule adaptersDoNotUseServices() {
+        return noClasses()
+                .that().resideInAPackage("..adapter..")
+                .should().dependOnClassesThat().resideInAPackage("..application.service..")
+                .as("adapters do not depend on application.service")
+                .allowEmptyShould(true);
+    }
+
+    private ArchCondition<JavaClass> onlyDependOnPermittedTypes() {
+        return new ArchCondition<JavaClass>("depend only on permitted types") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                String ownArea = areaOf(item).orElseThrow();
+                for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                    if (!isPermittedFromDomain(ownArea, dependency.getTargetClass())) {
+                        events.add(violated(dependency, dependency.getDescription()));
+                    }
+                }
+            }
+        };
+    }
+
+    private boolean isPermittedFromDomain(String ownArea, JavaClass target) {
+        if (target.getName().startsWith("java.") || target.getName().startsWith("org.jmolecules.")) {
+            return true;
+        }
+        if (target.getPackageName().equals(basePackage + ".shared")
+                || target.getPackageName().startsWith(basePackage + ".shared.")) {
+            return true;
+        }
+        Optional<String> targetArea = areaOf(target);
+        if (targetArea.isEmpty()) {
+            return false;
+        }
+        String relative = areaRelativePackage(target).orElseThrow();
+        boolean inOtherAreaDomainId = relative.equals("domain.id");
+        boolean inOwnDomain = targetArea.get().equals(ownArea) && startsWithLayer(relative, "domain");
+        return inOwnDomain || inOtherAreaDomainId;
+    }
+
+    private DescribedPredicate<JavaClass> isAreaClass() {
+        return DescribedPredicate.describe("area classes", item -> areaOf(item).isPresent());
+    }
+
+    private DescribedPredicate<JavaClass> isCore() {
+        return DescribedPredicate.describe("core classes", item -> {
+            String pkg = item.getPackageName();
+            if (pkg.equals(basePackage + ".shared") || pkg.startsWith(basePackage + ".shared.")) {
+                return true;
+            }
+            return areaRelativePackage(item)
+                    .map(relative -> startsWithLayer(relative, "domain") || startsWithLayer(relative, "application"))
+                    .orElse(false);
+        });
+    }
+
+    private DescribedPredicate<JavaClass> inLayer(String layer) {
+        return DescribedPredicate.describe("in " + layer, item -> areaRelativePackage(item)
+                .map(relative -> startsWithLayer(relative, layer))
+                .orElse(false));
+    }
+
+    private static DescribedPredicate<JavaClass> isPackageInfo() {
+        return DescribedPredicate.describe("package-info", item -> item.getSimpleName().equals("package-info"));
+    }
+
+    private static DescribedPredicate<JavaClass> topLevel() {
+        return DescribedPredicate.describe("top-level", JavaClass::isTopLevelClass);
+    }
+
+    private static boolean startsWithLayer(String relative, String layer) {
+        return relative.equals(layer) || relative.startsWith(layer + ".");
+    }
+
+    private Optional<String> areaOf(JavaClass type) {
+        String pkg = type.getPackageName();
+        if (!pkg.startsWith(basePackage + ".")) {
+            return Optional.empty();
+        }
+        String first = pkg.substring(basePackage.length() + 1).split("\\.", 2)[0];
+        return NON_AREA_PACKAGES.contains(first) ? Optional.empty() : Optional.of(first);
+    }
+
+    /** The package below {@code <base>.<area>}: empty at the area root, empty Optional outside any area. */
+    private Optional<String> areaRelativePackage(JavaClass type) {
+        return areaOf(type).map(area -> {
+            String prefix = basePackage + "." + area;
+            return type.getPackageName().length() == prefix.length()
+                    ? ""
+                    : type.getPackageName().substring(prefix.length() + 1);
+        });
+    }
+}
