@@ -7,6 +7,12 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
 
 ## 0.1.1 — 2026-11-01
 
+- `skills-lock.json`: a vendored skill's `computedHash` covers its whole folder (every file under
+  `.claude/skills/<name>/`, sorted by path, text normalised to LF, binaries as-is, dotfiles such as
+  `.DS_Store` skipped), so an edit to a `references/*.md`, script or licence file fails
+  `check-agent-docs` like an edit to `SKILL.md`.
+  After replacing a vendored skill from a new upstream ref, re-pin it with
+  `node scripts/check-agent-docs.mjs --refresh-hashes` in the same commit.
 - Sample backend: `GET /api/catalog/products/{id}` exists, so the `Location` header of a create
   resolves; it is the worked example of a read-one use case (`FindProduct`, `Optional` view, 404
   problem). Port it if your area copied the create endpoint.
@@ -30,6 +36,13 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   invariant #8 holds in `@include` arguments as well as declarations; RC-FE-7 is retired as a
   review item. Copy the rule file and the `plugins` / `rules` entries of
   `frontend/.stylelintrc.json`.
+- Backend: `/api` and `/actuator` themselves (and with a trailing slash) are no longer answered
+  with the SPA shell but with a 404 problem like any unknown API path. The shell (`index.html`,
+  the fallback, unhashed files) is served with `Cache-Control: no-cache`; scripts, styles and
+  media whose name carries a content hash (`main-ABC123.js`, Angular's production
+  `outputHashing`) are cached for a year as immutable. `Money` is a jMolecules
+  `@ValueObject` and its overflow behaviour is tested. The structural rules no longer reserve a
+  `config` package: wiring lives in the base package, so a `config` package is judged as an area.
 
 ## 0.1.0 — 2026-11-01
 

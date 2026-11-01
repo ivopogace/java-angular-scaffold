@@ -1,10 +1,22 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  cpSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
-import { checkAgentDocs } from "./check-agent-docs.mjs";
+import { fileURLToPath } from "node:url";
+import { checkAgentDocs, refreshSkillsLock } from "./check-agent-docs.mjs";
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const OWN_SKILL = `---
 name: alpha
@@ -23,7 +35,28 @@ description: Beta from upstream, kept verbatim.
 # Beta
 `;
 
+const VENDORED_NOTES = "# Notes\n\nMore beta, also from upstream.\n";
+
 const sha256 = (text) => createHash("sha256").update(text).digest("hex");
+
+/**
+ * The lock hash of a skill folder, as `skills-lock.json` records it: the
+ * SHA-256 of the `sha256sum`-style manifest of every file (one line
+ * `<sha256 of the LF text>  <relative path>\n`, sorted by path), so a change
+ * to any file in the folder changes it.
+ */
+const folderHash = (files) =>
+  sha256(
+    Object.keys(files)
+      .sort()
+      .map((path) => `${sha256(files[path])}  ${path}\n`)
+      .join(""),
+  );
+
+const BETA_FILES = {
+  "SKILL.md": VENDORED_SKILL,
+  "references/notes.md": VENDORED_NOTES,
+};
 
 const ROOT_AGENTS = `# Project
 
@@ -65,10 +98,11 @@ function passingFiles() {
     }),
     ".claude/skills/alpha/SKILL.md": OWN_SKILL,
     ".claude/skills/beta/SKILL.md": VENDORED_SKILL,
+    ".claude/skills/beta/references/notes.md": VENDORED_NOTES,
     "skills-lock.json": JSON.stringify({
       version: 1,
       skills: {
-        beta: { source: "owner/repo", computedHash: sha256(VENDORED_SKILL) },
+        beta: { source: "owner/repo", computedHash: folderHash(BETA_FILES) },
       },
     }),
   };
@@ -119,6 +153,7 @@ test("zero skills, an empty Skills table and no skills-lock.json pass", (t) => {
       "AGENTS.md": withTableRows([]),
       ".claude/skills/alpha/SKILL.md": null,
       ".claude/skills/beta/SKILL.md": null,
+      ".claude/skills/beta/references/notes.md": null,
       "skills-lock.json": null,
     }),
     [],
@@ -224,7 +259,11 @@ test("a description over 1024 characters fails, vendored or not", (t) => {
       ".claude/skills/beta/SKILL.md": long,
       "skills-lock.json": JSON.stringify({
         version: 1,
-        skills: { beta: { computedHash: sha256(long) } },
+        skills: {
+          beta: {
+            computedHash: folderHash({ ...BETA_FILES, "SKILL.md": long }),
+          },
+        },
       }),
     }),
     ".claude/skills/beta/SKILL.md",
@@ -341,7 +380,7 @@ test("an unreadable MCP config fails, naming the file", (t) => {
 
 test("a skills-lock.json entry without its folder fails", (t) => {
   const lock = JSON.parse(passingFiles()["skills-lock.json"]);
-  lock.skills.delta = { computedHash: sha256("x") };
+  lock.skills.delta = { computedHash: folderHash({ "SKILL.md": "x" }) };
   assertOneProblem(
     check(t, { "skills-lock.json": JSON.stringify(lock) }),
     "skills-lock.json",
@@ -358,6 +397,188 @@ test("a skills-lock.json hash that does not match SKILL.md fails", (t) => {
       ),
     }),
     "skills-lock.json",
-    /"beta" computedHash does not match \.claude\/skills\/beta\/SKILL\.md/,
+    /"beta" computedHash does not match the files under \.claude\/skills\/beta\//,
+  );
+});
+
+test("an edited file beside a vendored SKILL.md fails, naming the skill", (t) => {
+  assertOneProblem(
+    check(t, {
+      ".claude/skills/beta/references/notes.md": VENDORED_NOTES + "edited\n",
+    }),
+    "skills-lock.json",
+    /"beta" computedHash does not match the files under \.claude\/skills\/beta\//,
+  );
+});
+
+test("a dotfile dropped into a vendored skill folder is not skill content", (t) => {
+  assert.deepEqual(
+    check(t, {
+      ".claude/skills/beta/.DS_Store": "finder junk",
+      ".claude/skills/beta/references/.notes.md.swp": "editor junk",
+    }),
+    [],
+  );
+});
+
+test("a file added to a vendored skill folder fails, naming the skill", (t) => {
+  assertOneProblem(
+    check(t, { ".claude/skills/beta/references/extra.md": "# Extra\n" }),
+    "skills-lock.json",
+    /"beta" computedHash does not match/,
+  );
+});
+
+test("a binary file in a vendored skill is hashed as-is, CRLF included", (t) => {
+  const image = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0,
+  ]);
+  const lock = JSON.parse(passingFiles()["skills-lock.json"]);
+  lock.skills.beta.computedHash = folderHash({
+    ...BETA_FILES,
+    "assets/pixel.png": image,
+  });
+  for (const crlf of [false, true]) {
+    const root = tree(
+      t,
+      { ...passingFiles(), "skills-lock.json": JSON.stringify(lock) },
+      { crlf },
+    );
+    mkdirSync(join(root, ".claude/skills/beta/assets"));
+    writeFileSync(join(root, ".claude/skills/beta/assets/pixel.png"), image);
+    assert.deepEqual(checkAgentDocs(root), [], `crlf=${crlf}`);
+  }
+});
+
+/** The repository's vendored skills with files beside SKILL.md, and their lock entries. */
+function vendoredSkillsWithReferences() {
+  const lock = JSON.parse(
+    readFileSync(join(repoRoot, "skills-lock.json"), "utf8"),
+  ).skills;
+  return Object.entries(lock).filter(([name]) =>
+    readdirSync(join(repoRoot, ".claude/skills", name), {
+      recursive: true,
+      withFileTypes: true,
+    }).some((entry) => entry.isFile() && entry.name !== "SKILL.md"),
+  );
+}
+
+/** A tree with one vendored skill folder copied from the repository and its lock entry. */
+function treeWithRealSkill(t, name, entry, options) {
+  const root = tree(
+    t,
+    {
+      ...passingFiles(),
+      "AGENTS.md": withTableRows([`\`${name}\` (vendored)`]),
+      ".claude/skills/alpha/SKILL.md": null,
+      ".claude/skills/beta/SKILL.md": null,
+      ".claude/skills/beta/references/notes.md": null,
+      "skills-lock.json": JSON.stringify({
+        version: 1,
+        skills: { [name]: entry },
+      }),
+    },
+    options,
+  );
+  cpSync(
+    join(repoRoot, ".claude/skills", name),
+    join(root, ".claude/skills", name),
+    { recursive: true },
+  );
+  return root;
+}
+
+const textFiles = (folder) =>
+  readdirSync(folder, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && /\.(md|yaml)$/.test(entry.name))
+    .map((entry) => join(entry.parentPath, entry.name));
+
+const WITH_REFERENCES = vendoredSkillsWithReferences();
+const needsReferences = {
+  skip:
+    WITH_REFERENCES.length === 0 &&
+    "no vendored skill has files beside SKILL.md",
+};
+
+test(
+  "the committed lock hashes match the vendored folders, LF or CRLF",
+  needsReferences,
+  (t) => {
+    for (const [name, entry] of WITH_REFERENCES) {
+      const root = treeWithRealSkill(t, name, entry);
+      assert.deepEqual(checkAgentDocs(root), [], name);
+      for (const path of textFiles(join(root, ".claude/skills", name))) {
+        writeFileSync(
+          path,
+          readFileSync(path, "utf8")
+            .replaceAll("\r\n", "\n")
+            .replaceAll("\n", "\r\n"),
+        );
+      }
+      assert.deepEqual(checkAgentDocs(root), [], `${name} with CRLF`);
+    }
+  },
+);
+
+test(
+  "editing a real vendored skill's references file names the skill",
+  needsReferences,
+  (t) => {
+    const [name, entry] = WITH_REFERENCES[0];
+    const root = treeWithRealSkill(t, name, entry);
+    const folder = join(root, ".claude/skills", name);
+    const reference = textFiles(folder).find(
+      (path) => !path.endsWith("SKILL.md"),
+    );
+    appendFileSync(reference, "\nedited locally\n");
+    assertOneProblem(
+      checkAgentDocs(root),
+      "skills-lock.json",
+      new RegExp(
+        `"${name}" computedHash does not match the files under \\.claude/skills/${name}/ \\(`,
+      ),
+    );
+  },
+);
+
+test("refreshSkillsLock re-records every hash, keeping keys and format", (t) => {
+  const updatedNotes = VENDORED_NOTES + "updated upstream\n";
+  const root = tree(t, {
+    ...passingFiles(),
+    ".claude/skills/beta/references/notes.md": updatedNotes,
+  });
+  assert.equal(checkAgentDocs(root).length, 1);
+  assert.deepEqual(refreshSkillsLock(root), {
+    refreshed: ["beta"],
+    unchanged: [],
+  });
+  const text = readFileSync(join(root, "skills-lock.json"), "utf8");
+  const lock = JSON.parse(text);
+  assert.deepEqual(Object.keys(lock.skills.beta), ["source", "computedHash"]);
+  assert.equal(lock.skills.beta.source, "owner/repo");
+  assert.equal(
+    lock.skills.beta.computedHash,
+    folderHash({ ...BETA_FILES, "references/notes.md": updatedNotes }),
+  );
+  assert.match(text, /^\{\n  "version": 1,\n[\s\S]*\n\}\n$/);
+  assert.deepEqual(checkAgentDocs(root), []);
+  assert.deepEqual(refreshSkillsLock(root), {
+    refreshed: [],
+    unchanged: ["beta"],
+  });
+});
+
+test("refreshSkillsLock refuses an entry without a folder, writing nothing", (t) => {
+  const lock = JSON.parse(passingFiles()["skills-lock.json"]);
+  lock.skills.delta = { source: "owner/repo", computedHash: "0" };
+  const files = { ...passingFiles(), "skills-lock.json": JSON.stringify(lock) };
+  const root = tree(t, files);
+  assert.throws(
+    () => refreshSkillsLock(root),
+    /"delta" has no folder \.claude\/skills\/delta\//,
+  );
+  assert.equal(
+    readFileSync(join(root, "skills-lock.json"), "utf8"),
+    files["skills-lock.json"],
   );
 });
