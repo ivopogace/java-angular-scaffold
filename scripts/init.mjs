@@ -556,44 +556,48 @@ const FINISH_HISTORY = [
   `git commit --no-verify -m "${COMMIT_MESSAGE}"`,
 ];
 
-const GIT_DIR_ATTEMPTS = 3;
+const HISTORY_ATTEMPTS = 3;
+const HISTORY_RETRY_PAUSE_MS = 2000;
+
+const pause = (ms) =>
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
 /**
- * Deletes `.git` and creates an empty one. A git process still running in the clone (a background
- * gc) can write the old refs back meanwhile, so the new `.git` must hold no ref before init commits.
+ * Replaces `.git` with a fresh repository holding one commit on `main`. A git process still running
+ * in the clone (maintenance detached after the clone) can write the old history back while `.git`
+ * is replaced, so the result is checked after the commit and rebuilt, after a pause, until the
+ * repository holds that one commit alone.
  *
- * @throws {Error} when old refs keep reappearing
+ * @param {{ pauseMs?: number, afterInit?: () => void }} [options] `afterInit` runs after each
+ *   `git init`; tests use it to bring the old history back
+ * @returns {boolean} false when git has no identity
+ * @throws {Error} when a git command fails, or the old history is still there after the last attempt
  */
-function replaceGitDir(root) {
-  for (let attempt = 1; attempt <= GIT_DIR_ATTEMPTS; attempt++) {
+export function freshHistory(
+  root,
+  { pauseMs = HISTORY_RETRY_PAUSE_MS, afterInit = () => {} } = {},
+) {
+  for (let attempt = 1; attempt <= HISTORY_ATTEMPTS; attempt++) {
+    if (attempt > 1) pause(pauseMs);
     rmSync(join(root, ".git"), { recursive: true, force: true });
     git(root, ["init", "-q"]);
-    if (!git(root, ["for-each-ref", "--count=1"]).trim()) return;
+    afterInit();
+    git(root, ["symbolic-ref", "HEAD", "refs/heads/main"]);
+    git(root, ["config", "core.hooksPath", ".githooks"]);
+    git(root, ["add", "-A"]);
+    if (
+      !gitSucceeds(root, ["var", "GIT_AUTHOR_IDENT"]) ||
+      !gitSucceeds(root, ["var", "GIT_COMMITTER_IDENT"])
+    ) {
+      return false;
+    }
+    // The hook needs the frontend toolchain, which a fresh clone has not installed; verify runs next.
+    git(root, ["commit", "-q", "--no-verify", "-m", COMMIT_MESSAGE]);
+    if (git(root, ["rev-list", "--count", "--all"]).trim() === "1") return true;
   }
   throw new Error(
-    "Another git process keeps writing the old history into .git (a background gc?); wait for it to finish and delete .git.",
+    "Another git process kept writing the old history into .git (maintenance detached after the clone?). Wait for it to finish and delete .git first.",
   );
-}
-
-/**
- * Replaces `.git` with a fresh repository holding one commit on `main`.
- *
- * @returns {boolean} false when git has no identity; throws when a git command fails.
- */
-function freshHistory(root) {
-  replaceGitDir(root);
-  git(root, ["symbolic-ref", "HEAD", "refs/heads/main"]);
-  git(root, ["config", "core.hooksPath", ".githooks"]);
-  git(root, ["add", "-A"]);
-  if (
-    !gitSucceeds(root, ["var", "GIT_AUTHOR_IDENT"]) ||
-    !gitSucceeds(root, ["var", "GIT_COMMITTER_IDENT"])
-  ) {
-    return false;
-  }
-  // The hook needs the frontend toolchain, which a fresh clone has not installed; verify runs next.
-  git(root, ["commit", "-q", "--no-verify", "-m", COMMIT_MESSAGE]);
-  return true;
 }
 
 async function main(argv, root) {
@@ -663,7 +667,7 @@ async function main(argv, root) {
     console.error(
       [
         error.stderr?.trim() || error.message,
-        "The files are initialized, but the fresh history is unfinished: .git was replaced and has no commit yet.",
+        "The files are initialized, but the fresh history in .git is unfinished.",
         "Fix the git problem above (for a signing failure, set up your signing key or run git config commit.gpgsign false), then run:",
         ...FINISH_HISTORY.map((command) => `  ${command}`),
       ].join("\n"),

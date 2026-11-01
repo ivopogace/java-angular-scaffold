@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -11,12 +12,13 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, sep } from "node:path";
+import { basename, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, test } from "node:test";
 import { checkAgentDocs } from "./check-agent-docs.mjs";
 import {
   TEMPLATE_VERSION,
+  freshHistory,
   nodeVersionProblem,
   parseArgs,
   replaceTokens,
@@ -226,6 +228,55 @@ async function initWithPackage(t, pkg) {
 test("TEMPLATE_VERSION equals the top CHANGELOG.md entry", () => {
   const changelog = readFileSync(join(repoRoot, "CHANGELOG.md"), "utf8");
   assert.equal(/^## (\S+)/m.exec(changelog)?.[1], TEMPLATE_VERSION);
+});
+
+/**
+ * A copy whose `.git` is saved aside, plus an `afterInit` that writes it back over the fresh one,
+ * as a git process still running in the clone would: `times` attempts get the old history back.
+ */
+async function copyWithReturningHistory(t, times) {
+  const root = await copyRepo(t);
+  const saved = mkdtempSync(join(tmpdir(), "init-git-"));
+  t.after(() => rmSync(saved, { recursive: true, force: true }));
+  cpSync(join(root, ".git"), saved, { recursive: true });
+  // init has rewritten the tree by now, so a commit on top of the old history is not empty.
+  writeFileSync(join(root, "PROJECT.md"), "# Project\n");
+  let left = times;
+  const afterInit = () => {
+    if (left-- > 0)
+      cpSync(saved, join(root, ".git"), {
+        recursive: true,
+        force: true,
+        // Refs and objects come back; the index is the new repository's own.
+        filter: (path) => basename(path) !== "index",
+      });
+  };
+  for (const [name, value] of Object.entries(TEST_IDENTITY)) {
+    const before = process.env[name];
+    process.env[name] = value;
+    t.after(() => {
+      if (before === undefined) delete process.env[name];
+      else process.env[name] = before;
+    });
+  }
+  return { root, afterInit };
+}
+
+describe("freshHistory", () => {
+  test("rebuilds .git when the old history comes back, ending with one commit", async (t) => {
+    const { root, afterInit } = await copyWithReturningHistory(t, 1);
+    assert.equal(freshHistory(root, { pauseMs: 0, afterInit }), true);
+    assert.equal(git(root, ["rev-list", "--count", "--all"]), "1\n");
+    assert.equal(git(root, ["log", "--format=%s"]), `${COMMIT_SUBJECT}\n`);
+  });
+
+  test("gives up when the old history keeps coming back", async (t) => {
+    const { root, afterInit } = await copyWithReturningHistory(t, Infinity);
+    assert.throws(
+      () => freshHistory(root, { pauseMs: 0, afterInit }),
+      /Another git process kept writing the old history into \.git/,
+    );
+  });
 });
 
 test("nodeVersionProblem refuses an older major and accepts the same or a newer one", () => {
@@ -798,7 +849,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
     assert.equal(result.status, 1);
     assert.doesNotMatch(result.stderr, /\n\s+at /, "no stack trace");
     for (const line of [
-      "The files are initialized, but the fresh history is unfinished: .git was replaced and has no commit yet.",
+      "The files are initialized, but the fresh history in .git is unfinished.",
       "  git init",
       "  git symbolic-ref HEAD refs/heads/main",
       "  git config core.hooksPath .githooks",
