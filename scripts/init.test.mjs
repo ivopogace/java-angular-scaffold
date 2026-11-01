@@ -15,7 +15,12 @@ import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, test } from "node:test";
 import { checkAgentDocs } from "./check-agent-docs.mjs";
-import { TEMPLATE_VERSION, parseArgs, validate } from "./init.mjs";
+import {
+  TEMPLATE_VERSION,
+  parseArgs,
+  replaceTokens,
+  validate,
+} from "./init.mjs";
 import { normalizeEol, sha256Normalized } from "./lib/text.mjs";
 import { SAMPLE_FILES } from "./remove-sample.mjs";
 
@@ -181,6 +186,35 @@ function placeholderHits(root) {
     );
 }
 
+const TOKENS = /io[./]scaffold[./]starter|scaffold[-_]starter|Scaffold Starter/;
+
+/** Files outside the vendored skills whose path or text still matches `pattern`. */
+function tokenHits(root, pattern) {
+  return files(root)
+    .filter(outsideVendored)
+    .filter(
+      (file) =>
+        pattern.test(file) ||
+        pattern.test(readFileSync(join(root, file), "latin1")),
+    );
+}
+
+/** Runs init on a fresh copy with `pkg` as the base package, keeping the sample. */
+async function initWithPackage(t, pkg) {
+  const root = await copyRepo(t);
+  const args = [...VALID];
+  args[args.indexOf("--package") + 1] = pkg;
+  const result = await runInit(root, [
+    ...args,
+    "--sample",
+    "keep",
+    "--ci",
+    "github",
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  return root;
+}
+
 test("TEMPLATE_VERSION equals the top CHANGELOG.md entry", () => {
   const changelog = readFileSync(join(repoRoot, "CHANGELOG.md"), "utf8");
   assert.equal(/^## (\S+)/m.exec(changelog)?.[1], TEMPLATE_VERSION);
@@ -246,6 +280,63 @@ test("validate accepts good answers and names each bad one", () => {
   assert.match(errors({ name: undefined }).join(), /--name is required/);
 });
 
+test("validate rejects an answer that contains a placeholder token", () => {
+  const good = {
+    name: "acme-orders",
+    package: "com.acme.orders",
+    display: "Acme Orders",
+  };
+  const errors = (patch) => validate({ ...good, ...patch });
+  for (const [patch, token] of [
+    [{ name: "scaffold-starter-api" }, "scaffold-starter"],
+    [{ name: "my-scaffold-starter" }, "scaffold-starter"],
+    [{ package: "com.scaffold_starter.app" }, "scaffold_starter"],
+    [{ package: "com.io.scaffold.starter" }, "io.scaffold.starter"],
+    [{ package: "io.scaffold.starter.orders" }, "io.scaffold.starter"],
+    [{ package: "io.scaffold.starterx" }, "io.scaffold.starter"],
+    [{ display: "Scaffold Starter 2" }, "Scaffold Starter"],
+    [{ display: "Built on scaffold-starter" }, "scaffold-starter"],
+    [{ display: "io/scaffold/starter" }, "io/scaffold/starter"],
+  ]) {
+    const [flag, value] = Object.entries(patch)[0];
+    const found = errors(patch);
+    assert.equal(found.length, 1, `${flag}=${value}: ${found}`);
+    assert.match(found[0], new RegExp(`^--${flag} `));
+    assert.ok(found[0].includes(`"${token}"`), found[0]);
+  }
+  assert.deepEqual(errors({ package: "io.scaffold" }), []);
+  assert.deepEqual(errors({ package: "io.scaffold.start" }), []);
+  assert.deepEqual(errors({ display: "Scaffold starter" }), []);
+});
+
+test("replaceTokens substitutes every token in one pass and never rescans its output", () => {
+  assert.equal(
+    replaceTokens("io.scaffold.starter / scaffold_starter", [
+      ["io.scaffold.starter", "x.scaffold_starter"],
+      ["scaffold_starter", "y"],
+    ]),
+    "x.scaffold_starter / y",
+  );
+  assert.equal(
+    replaceTokens("scaffold_starter / io.scaffold.starter", [
+      ["scaffold_starter", "io.scaffold.starter"],
+      ["io.scaffold.starter", "z"],
+    ]),
+    "io.scaffold.starter / z",
+  );
+  assert.equal(
+    replaceTokens("a.b (a) [a.b.c]", [
+      ["a", "1"],
+      ["a.b", "2"],
+      ["a.b.c", "3"],
+    ]),
+    "2 (1) [3]",
+    "the longest token wins where tokens overlap",
+  );
+  assert.equal(replaceTokens("untouched", [["x", "y"]]), "untouched");
+  assert.equal(replaceTokens("untouched", []), "untouched");
+});
+
 // Each test works on its own copy, so they run in parallel.
 describe("init on a throwaway copy", { concurrency: true }, () => {
   test("invalid answers are rejected before any file is touched", async (t) => {
@@ -256,6 +347,8 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       ["--package", "com.acme.2orders", /"2orders"/],
       ["--package", "com.new.app", /"new" is a Java keyword/],
       ["--name", "Acme-Orders", /--name/],
+      ["--name", "scaffold-starter-api", /placeholder "scaffold-starter"/],
+      ["--package", "io.scaffold.starter.orders", /placeholder/],
       ["--display", 'Say "hi"', /--display/],
     ]) {
       const args = [...VALID];
@@ -271,6 +364,24 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       );
     }
     assert.equal(git(root, ["rev-parse", "HEAD"]), head);
+  });
+
+  test("a failure while planning is reported with nothing changed", async (t) => {
+    const root = await copyRepo(t);
+    writeFileSync(join(root, "skills-lock.json"), "{ not json\n");
+    git(root, ["commit", "-q", "--no-verify", "-am", "break the lock file"]);
+    const before = snapshot(root);
+    const result = await runInit(root, [
+      ...VALID,
+      "--sample",
+      "keep",
+      "--ci",
+      "github",
+    ]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Nothing was changed/);
+    assert.doesNotMatch(result.stderr, /partly initialized/);
+    assert.deepEqual(snapshot(root), before);
   });
 
   test("a dirty working tree is refused with nothing changed", async (t) => {
@@ -447,6 +558,32 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       );
     }
     assert.match(result.stdout, /git remote add origin/);
+  });
+
+  test("a package that is a prefix of the placeholder moves the tree up", async (t) => {
+    const root = await initWithPackage(t, "io.scaffold");
+    const useCase =
+      "backend/core/src/main/java/io/scaffold/shared/UseCase.java";
+    assert.ok(existsSync(join(root, useCase)));
+    assert.match(
+      readFileSync(join(root, useCase), "utf8"),
+      /^package io\.scaffold\.shared;/m,
+    );
+    assert.equal(
+      existsSync(
+        join(
+          root,
+          "backend/core/src/main/java/io/scaffold/catalog/domain/model/Product.java",
+        ),
+      ),
+      sampleShipped,
+    );
+    assert.deepEqual(
+      dirs(root).filter((d) => d.includes("io/scaffold/starter")),
+      [],
+    );
+    assert.deepEqual(tokenHits(root, TOKENS), []);
+    assert.deepEqual(checkAgentDocs(root), []);
   });
 
   test("init removing the sample leaves no catalog path and no remove-sample script", async (t) => {
