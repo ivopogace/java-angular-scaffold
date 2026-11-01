@@ -1,5 +1,5 @@
 import { HttpClient, HttpResourceRef, httpResource } from '@angular/common/http';
-import { inject, Service } from '@angular/core';
+import { assertInInjectionContext, inject, Service } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { CreateProductRequest, Product } from './catalog.model';
@@ -16,6 +16,7 @@ export class CatalogService {
    * request starts with that component and ends with it; reload it after a change.
    */
   loadProducts(): HttpResourceRef<Product[] | undefined> {
+    assertInInjectionContext(this.loadProducts);
     return httpResource<Product[]>(() => PRODUCTS_URL);
   }
 
