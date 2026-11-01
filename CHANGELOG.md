@@ -74,6 +74,14 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   `compose.yaml`'s, when a CI wrapper or doc names another JDK than the toolchain, or when the
   `@angular/*` packages of one release train disagree. Copy the table and the test into your
   project's README and `scripts/`.
+- Backend: the Gradle build is written in the Groovy DSL instead of the Kotlin DSL, at the
+  maintainer's request: `settings.gradle`, a `build.gradle` per module, and the convention plugin
+  `build-logic/src/main/groovy/java-conventions.gradle`, built by `groovy-gradle-plugin` instead of
+  `kotlin-dsl`. Tasks, resolved dependencies, test selection (`-PexcludeTags=container`),
+  `checkCoreClasspath`, the frontend copy into `bootstrap` and `gradle/libs.versions.toml` are
+  unchanged. Port it only if your project wants Groovy: rename the scripts, move the convention
+  plugin to `src/main/groovy/`, swap the plugin and translate the syntax, then point the *What's
+  inside* Java row and `scripts/readme-versions.test.mjs` at the new path.
 
 ## 0.1.0 — 2026-11-01
 

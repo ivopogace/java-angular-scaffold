@@ -1,6 +1,6 @@
 # Backend
 
-Gradle build (Kotlin DSL; versions in `gradle/libs.versions.toml`, conventions in `build-logic/`).
+Gradle build (Groovy DSL; versions in `gradle/libs.versions.toml`, conventions in `build-logic/`).
 Run commands from here; the general list is in the root `AGENTS.md`. Decisions behind this layout:
 `../docs/adr/`.
 
