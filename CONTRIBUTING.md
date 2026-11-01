@@ -23,6 +23,12 @@ Check every change with `node scripts/verify.mjs` (`--quick` while iterating). T
   folders excepted; `scripts/init.test.mjs` fails otherwise. Files `init` deletes (this one,
   `README.md`, `CHANGELOG.md`, `docs/superpowers/`, `scripts/init*.mjs`, `template-ci.yml`) are free
   to use it.
+- **Placeholder lines must survive the longest names.** `init` rewrites without reformatting, and
+  a display name may be 60 characters. In the frontend, reference `APP_NAME`
+  (`frontend/src/app/shared/app-name/app-name.ts`) instead of writing the display name again; a
+  literal that remains (`index.html`) must stay well under the 100-column print width with 60
+  characters substituted. `init.test.mjs` runs Prettier over a project initialized with the longest
+  valid names.
 - **Docs `init` keeps must not cite files it deletes.** `README.project.md` becomes the project's
   `README.md`; an `AGENTS.md` that backticks a deleted path fails `check-agent-docs` in the
   `initialized` job.

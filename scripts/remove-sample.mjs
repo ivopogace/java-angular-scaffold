@@ -201,7 +201,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/e2e/catalog.e2e.ts",
-    sha256: "7816b141968199f5b59c5beb44b2ffc3800bb4670798ffa5caab5bc663b92189",
+    sha256: "b98b609ae106d78c7ef677d6d585a12b9a32ea695a6696af55de515db9cfd8a7",
   },
   {
     path: "frontend/e2e/real-backend/catalog.real.e2e.ts",

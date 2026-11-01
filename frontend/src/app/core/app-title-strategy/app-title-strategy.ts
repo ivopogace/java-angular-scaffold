@@ -2,9 +2,9 @@ import { inject, Service } from '@angular/core';
 import { Title } from '@angular/platform-browser';
 import { RouterStateSnapshot, TitleStrategy } from '@angular/router';
 
-const APP_NAME = 'Scaffold Starter';
+import { APP_NAME } from '../../shared/app-name/app-name';
 
-/** Document title: `"<route title> · Scaffold Starter"`, or the application name alone. */
+/** Document title: `"<route title> · <APP_NAME>"`, or the application name alone. */
 @Service()
 export class AppTitleStrategy extends TitleStrategy {
   private readonly title = inject(Title);

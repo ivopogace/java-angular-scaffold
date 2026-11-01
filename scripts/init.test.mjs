@@ -17,6 +17,7 @@ import { describe, test } from "node:test";
 import { checkAgentDocs } from "./check-agent-docs.mjs";
 import { TEMPLATE_VERSION, parseArgs, validate } from "./init.mjs";
 import { normalizeEol, sha256Normalized } from "./lib/text.mjs";
+import { SAMPLE_FILES } from "./remove-sample.mjs";
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const COMMIT_SUBJECT = `Initial commit from scaffold v${TEMPLATE_VERSION}`;
@@ -36,6 +37,11 @@ const VALID = [
   "--display",
   "Acme Orders",
 ];
+// The frontend's own Prettier; run from a copy's frontend/ it applies that copy's config and ignore file.
+const PRETTIER = join(
+  repoRoot,
+  "frontend/node_modules/prettier/bin/prettier.cjs",
+);
 const TEMPLATE_ONLY = [
   ".github/workflows/template-ci.yml",
   "CHANGELOG.md",
@@ -49,6 +55,12 @@ const TEMPLATE_ONLY = [
 const vendoredSkillDirs = Object.keys(
   JSON.parse(readFileSync(join(repoRoot, "skills-lock.json"), "utf8")).skills,
 ).map((name) => `.claude/skills/${name}/`);
+
+// After remove-sample (the template CI skeleton job) the sample-specific
+// assertions have nothing to work on; the rest still run.
+const sampleShipped = SAMPLE_FILES.some((f) =>
+  existsSync(join(repoRoot, f.path)),
+);
 
 const git = (root, args, env = {}) =>
   execFileSync("git", args, {
@@ -277,29 +289,33 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
     assert.deepEqual(snapshot(root), before);
   });
 
-  test("an edited sample file stops --sample remove with nothing changed", async (t) => {
-    const root = await copyRepo(t);
-    const product =
-      "backend/core/src/main/java/io/scaffold/starter/catalog/domain/model/Product.java";
-    writeFileSync(
-      join(root, product),
-      `${readFileSync(join(root, product), "utf8")}\n`,
-    );
-    git(root, ["commit", "-q", "--no-verify", "-am", "edit the sample"]);
-    const before = snapshot(root);
-    const result = await runInit(root, [
-      ...VALID,
-      "--sample",
-      "remove",
-      "--ci",
-      "",
-    ]);
-    assert.equal(result.status, 1);
-    assert.match(result.stderr, /Sample files were edited/);
-    assert.ok(result.stderr.includes(product));
-    assert.match(result.stderr, /Nothing was changed/);
-    assert.deepEqual(snapshot(root), before);
-  });
+  test(
+    "an edited sample file stops --sample remove with nothing changed",
+    { skip: !sampleShipped && "sample already removed" },
+    async (t) => {
+      const root = await copyRepo(t);
+      const product =
+        "backend/core/src/main/java/io/scaffold/starter/catalog/domain/model/Product.java";
+      writeFileSync(
+        join(root, product),
+        `${readFileSync(join(root, product), "utf8")}\n`,
+      );
+      git(root, ["commit", "-q", "--no-verify", "-am", "edit the sample"]);
+      const before = snapshot(root);
+      const result = await runInit(root, [
+        ...VALID,
+        "--sample",
+        "remove",
+        "--ci",
+        "",
+      ]);
+      assert.equal(result.status, 1);
+      assert.match(result.stderr, /Sample files were edited/);
+      assert.ok(result.stderr.includes(product));
+      assert.match(result.stderr, /Nothing was changed/);
+      assert.deepEqual(snapshot(root), before);
+    },
+  );
 
   test("missing answers are asked on stdin, and a declined confirmation changes nothing", async (t) => {
     const root = await copyRepo(t);
@@ -352,13 +368,14 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
         ),
       ),
     );
-    assert.ok(
+    assert.equal(
       existsSync(
         join(
           root,
           "backend/core/src/main/java/com/acme/orders/catalog/domain/model/Product.java",
         ),
       ),
+      sampleShipped,
     );
     assert.deepEqual(
       dirs(root).filter((d) => d.includes("io/scaffold")),
@@ -402,13 +419,10 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
     );
     assert.match(
       readFileSync(
-        join(
-          root,
-          "frontend/src/app/core/app-title-strategy/app-title-strategy.ts",
-        ),
+        join(root, "frontend/src/app/shared/app-name/app-name.ts"),
         "utf8",
       ),
-      /'Acme Orders'/,
+      /export const APP_NAME = 'Acme Orders';/,
     );
 
     assert.equal(git(root, ["log", "--format=%s"]), `${COMMIT_SUBJECT}\n`);
@@ -501,6 +515,42 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
     assert.deepEqual(snapshot(root), before);
   });
 
+  test(
+    "the longest valid names leave the frontend formatted",
+    { skip: !existsSync(PRETTIER) && "frontend dependencies not installed" },
+    async (t) => {
+      const name = "northwind-customer-self-service-portal-x";
+      const display =
+        "Northwind Customer Self-Service Portal for Regional Partners";
+      assert.equal(name.length, 40);
+      assert.equal(display.length, 60);
+      assert.deepEqual(
+        validate({ name, package: "com.northwind.portal", display }),
+        [],
+      );
+      const root = await copyRepo(t);
+      const result = await runInit(root, [
+        "--yes",
+        "--skip-verify",
+        "--name",
+        name,
+        "--package",
+        "com.northwind.portal",
+        "--display",
+        display,
+        "--sample",
+        "keep",
+        "--ci",
+        "github",
+      ]);
+      assert.equal(result.status, 0, result.stderr);
+      const check = await run(process.execPath, [PRETTIER, "--check", "."], {
+        cwd: join(root, "frontend"),
+      });
+      assert.equal(check.status, 0, check.stdout + check.stderr);
+    },
+  );
+
   test("a CRLF working copy keeps CRLF endings in every rewritten file", async (t) => {
     const root = await copyRepo(t, { crlf: true });
     const result = await runInit(root, [
@@ -519,16 +569,19 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
           readFileSync(join(root, file), "latin1"),
         ),
     );
-    assert.ok(
-      rewritten.length > 50,
-      `only ${rewritten.length} rewritten files`,
-    );
     for (const file of rewritten) {
       const text = readFileSync(join(root, file), "utf8");
       assert.ok(!/(^|[^\r])\n/.test(text), `${file} lost its CRLF endings`);
     }
-    assert.ok(rewritten.includes("AGENTS.md"));
-    assert.ok(rewritten.includes("scripts/remove-sample.mjs"));
+    for (const file of [
+      "AGENTS.md",
+      "compose.yaml",
+      "backend/core/src/main/java/com/acme/orders/shared/UseCase.java",
+      "frontend/src/app/shared/app-name/app-name.ts",
+      "scripts/remove-sample.mjs",
+    ]) {
+      assert.ok(rewritten.includes(file), `${file} was not rewritten`);
+    }
     assert.deepEqual(placeholderHits(root), []);
   });
 

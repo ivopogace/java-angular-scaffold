@@ -1,6 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, Page, Route, test } from '@playwright/test';
 
+import { APP_NAME } from '../src/app/shared/app-name/app-name';
+
 interface StubProduct {
   id: string;
   name: string;
@@ -72,7 +74,7 @@ test('the list shows the stubbed products with price and state', async ({ page }
   await stubCatalog(page, [MUG, POSTER]);
   await page.goto('/catalog');
 
-  await expect(page).toHaveTitle('Catalog · Scaffold Starter');
+  await expect(page).toHaveTitle(`Catalog · ${APP_NAME}`);
   const rows = page.getByRole('row');
   await expect(rows).toHaveCount(3);
   await expect(rows.nth(1)).toContainText('Mug');
@@ -103,7 +105,7 @@ test('creating a product lands on the list with the new product', async ({ page 
   await page.goto('/catalog');
   await page.getByRole('link', { name: 'New product' }).click();
 
-  await expect(page).toHaveTitle('New product · Scaffold Starter');
+  await expect(page).toHaveTitle(`New product · ${APP_NAME}`);
   await page.getByLabel('Name').fill('Sticker');
   await page.getByLabel('Price').fill('2.5');
   await page.getByRole('button', { name: 'Create product' }).click();

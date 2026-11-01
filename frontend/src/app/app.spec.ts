@@ -3,6 +3,7 @@ import { provideRouter } from '@angular/router';
 
 import { expectNoAxeViolations } from '../testing/axe';
 import { App } from './app';
+import { APP_NAME } from './shared/app-name/app-name';
 
 describe('App', () => {
   function render(): HTMLElement {
@@ -12,9 +13,9 @@ describe('App', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('renders a toolbar titled Scaffold Starter', () => {
+  it('renders a toolbar titled with the application name', () => {
     const toolbar = render().querySelector('mat-toolbar');
-    expect(toolbar?.textContent).toContain('Scaffold Starter');
+    expect(toolbar?.textContent).toContain(APP_NAME);
   });
 
   it('hosts a router outlet', () => {

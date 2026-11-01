@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 
 import { expectNoAxeViolations } from '../../../testing/axe';
+import { APP_NAME } from '../../shared/app-name/app-name';
 import { Home } from './home';
 
 describe('Home', () => {
@@ -13,7 +14,7 @@ describe('Home', () => {
   }
 
   it('shows the application name as its heading', () => {
-    expect(render().querySelector('h1')?.textContent).toContain('Scaffold Starter');
+    expect(render().querySelector('h1')?.textContent).toContain(APP_NAME);
   });
 
   it('has no accessibility violations', async () => {
