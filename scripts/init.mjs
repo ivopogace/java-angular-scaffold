@@ -26,6 +26,22 @@ const MARKER_FILE = ".github/workflows/template-ci.yml";
 const PLACEHOLDER_PACKAGE = "io.scaffold.starter";
 const PLACEHOLDER_NAME = "scaffold-starter";
 const PLACEHOLDER_DISPLAY = "Scaffold Starter";
+/** Every spelling the template uses for its own name, paired with the answer that replaces it. */
+const replacementsFor = (answers) => [
+  [PLACEHOLDER_PACKAGE, answers.package],
+  [
+    PLACEHOLDER_PACKAGE.replaceAll(".", "/"),
+    answers.package.replaceAll(".", "/"),
+  ],
+  [PLACEHOLDER_NAME, answers.name],
+  [PLACEHOLDER_NAME.replaceAll("-", "_"), answers.name.replaceAll("-", "_")],
+  [PLACEHOLDER_DISPLAY, answers.display],
+];
+const PLACEHOLDERS = replacementsFor({
+  package: "",
+  name: "",
+  display: "",
+}).map(([token]) => token);
 const CI_WRAPPERS = {
   github: ".github/workflows/ci.yml",
   gitlab: ".gitlab-ci.yml",
@@ -153,9 +169,14 @@ export function validate(answers) {
     errors.push(
       `--name "${name}" is invalid: use lowercase letters and digits in hyphen-separated words, starting with a letter (e.g. acme-orders)`,
     );
-  }
+  } else errors.push(...placeholderErrors("--name", name));
   if (!pkg) errors.push("--package is required");
-  else errors.push(...packageErrors(pkg));
+  else {
+    const invalid = packageErrors(pkg);
+    errors.push(
+      ...(invalid.length > 0 ? invalid : placeholderErrors("--package", pkg)),
+    );
+  }
   if (display === undefined || display === "") {
     errors.push(
       display === undefined
@@ -172,7 +193,7 @@ export function validate(answers) {
     );
   } else if (display !== display.trim()) {
     errors.push("--display may not start or end with a space");
-  }
+  } else errors.push(...placeholderErrors("--display", display));
   if (sample !== "keep" && sample !== "remove") {
     errors.push(`--sample must be keep or remove (is "${sample}")`);
   }
@@ -184,6 +205,16 @@ export function validate(answers) {
     }
   }
   return errors;
+}
+
+/** An answer holding a placeholder would survive the rewrite as the template's name. */
+function placeholderErrors(flag, value) {
+  const token = PLACEHOLDERS.find((candidate) => value.includes(candidate));
+  return token
+    ? [
+        `${flag} "${value}" may not contain the template's placeholder "${token}"`,
+      ]
+    : [];
 }
 
 function packageErrors(pkg) {
@@ -249,16 +280,7 @@ export function planChanges(root, answers) {
         (path) => file === path || file.startsWith(`${path}/`),
       ),
   );
-  const replacements = [
-    [PLACEHOLDER_PACKAGE, answers.package],
-    [
-      PLACEHOLDER_PACKAGE.replaceAll(".", "/"),
-      answers.package.replaceAll(".", "/"),
-    ],
-    [PLACEHOLDER_NAME, answers.name],
-    [PLACEHOLDER_NAME.replaceAll("-", "_"), answers.name.replaceAll("-", "_")],
-    [PLACEHOLDER_DISPLAY, answers.display],
-  ];
+  const replacements = replacementsFor(answers);
   const rewrites = survivors
     .filter((file) => !vendored.some((dir) => file.startsWith(dir)))
     .filter((file) => {
@@ -325,10 +347,7 @@ export async function applyChanges(root, changes) {
         break;
       case "rewrite":
         rewritePreservingEol(at(change.path), (text) =>
-          change.replacements.reduce(
-            (result, [from, to]) => result.replaceAll(from, to),
-            text,
-          ),
+          replaceTokens(text, change.replacements),
         );
         break;
       case "move":
@@ -367,6 +386,25 @@ export async function applyChanges(root, changes) {
         throw new Error(`Unknown change ${change.type}`);
     }
   }
+}
+
+/**
+ * Replaces every token in one pass, so a replacement's output is never rescanned for another
+ * token; where tokens overlap, the longest match wins.
+ *
+ * @param {[string, string][]} replacements token → replacement
+ */
+export function replaceTokens(text, replacements) {
+  const byToken = new Map(replacements);
+  if (byToken.size === 0) return text;
+  const pattern = new RegExp(
+    [...byToken.keys()]
+      .sort((a, b) => b.length - a.length)
+      .map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+      .join("|"),
+    "g",
+  );
+  return text.replace(pattern, (token) => byToken.get(token));
 }
 
 /** An error raised before anything under the root was changed. */
@@ -567,8 +605,15 @@ async function main(argv, root) {
     prompt?.close();
   }
 
+  let changes;
   try {
-    await applyChanges(root, planChanges(root, answers));
+    changes = planChanges(root, answers);
+  } catch (error) {
+    console.error(`${error.message}\nNothing was changed.`);
+    return 1;
+  }
+  try {
+    await applyChanges(root, changes);
   } catch (error) {
     console.error(
       error instanceof Untouched
