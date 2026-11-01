@@ -38,11 +38,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/in/web/CreateProductRequest.java",
-    sha256: "a4df6e4e36481b37cca9ad969e0cb546d9aba17c139f8a0706dcba9ccd31dbcf",
+    sha256: "ea4339e8612f76c1b7fed5a6010dccc602dec79f297bc2491e7f34e7885e931a",
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/in/web/ProductController.java",
-    sha256: "7dfc887e8767ad602d492040459e5c2e25262631b2666c9d4c5448504b6b8add",
+    sha256: "3e0f05448b8a49df6a5162255d05bf3900d3b35457fffe54bb54a835c1e07488",
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/in/web/ProductResponse.java",
@@ -70,7 +70,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/CatalogFlowIT.java",
-    sha256: "b660e7ab88055a4e8b3203e5a0290d64b7c4a4ad507967d1ba0afc10a3e5866e",
+    sha256: "c7b0bdb12dc5b89e90fbc69d0b827c2e716e9b76523b851cb4ec8748dca28a88",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/PublishRollbackIT.java",
@@ -78,7 +78,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/in/web/ProductControllerTest.java",
-    sha256: "2c589a3d9d4260d4a98e211bbf4f589226cf7dbfbfffd180378fb4a1d5fcfb4f",
+    sha256: "85c593058708054ba9a93c81f049d7829a7d5b15adf3d214c1a2adfc962f3177",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepositoryIT.java",
@@ -91,6 +91,10 @@ export const SAMPLE_FILES = [
   {
     path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProductCommand.java",
     sha256: "04a232ee24faaf5552c57ed6cd4b3fe343ef6d886a4163742de56a134dc67720",
+  },
+  {
+    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/FindProduct.java",
+    sha256: "5d3fffb950dd639f39740d911294c21b3aadfe7a3bbdb7da3aa8ded10e89c419",
   },
   {
     path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/ListProducts.java",
@@ -142,7 +146,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/service/CatalogService.java",
-    sha256: "9cf1760d2f8f2e7da632af55a826c4b5e6302e64214cee46cd634f257a9c70a4",
+    sha256: "e92adfa8fd36bba03cd206d754a7a1587b33ad427cc318254fd1dddfc36585f7",
   },
   {
     path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/service/PublicationRecorder.java",
@@ -186,7 +190,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/core/src/test/java/io/scaffold/starter/catalog/application/service/CatalogServiceTest.java",
-    sha256: "024785ec61c758dc324bd76029bb694e3b2c32d69f25a1be3ff8cdf64535b64c",
+    sha256: "43db1b076bc027b04f0128db0c4c1b3e18a1b08ed30e51ef8df98ad7bf577373",
   },
   {
     path: "backend/core/src/test/java/io/scaffold/starter/catalog/application/service/InMemoryProductRepository.java",
@@ -198,7 +202,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/core/src/test/java/io/scaffold/starter/catalog/domain/model/ProductTest.java",
-    sha256: "d0311c0212395159a905da10b29c422c314125b152dbc890769e2a2bd70152fe",
+    sha256: "357f994d1ad0e0a8cdbbd632002b9f85e91729e932b3d6ab2fc37ea3bdc3b4e5",
   },
   {
     path: "frontend/e2e/catalog.e2e.ts",

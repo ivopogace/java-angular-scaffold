@@ -2,6 +2,7 @@ package io.scaffold.starter.catalog.application.service;
 
 import io.scaffold.starter.catalog.application.port.in.CreateProduct;
 import io.scaffold.starter.catalog.application.port.in.CreateProductCommand;
+import io.scaffold.starter.catalog.application.port.in.FindProduct;
 import io.scaffold.starter.catalog.application.port.in.ListProducts;
 import io.scaffold.starter.catalog.application.port.in.ProductState;
 import io.scaffold.starter.catalog.application.port.in.ProductView;
@@ -23,7 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 @UseCase
-class CatalogService implements CreateProduct, PublishProduct, RetireProduct, ListProducts {
+class CatalogService implements CreateProduct, FindProduct, PublishProduct, RetireProduct, ListProducts {
 
     private final ProductRepository products;
     private final DomainEventPublisher events;
@@ -41,6 +42,12 @@ class CatalogService implements CreateProduct, PublishProduct, RetireProduct, Li
         Product product = Product.draft(ProductId.newId(), command.name(), command.price());
         products.save(product);
         return toView(product);
+    }
+
+    @Override
+    @Transactional
+    public Optional<ProductView> find(ProductId id) {
+        return products.findById(id).map(CatalogService::toView);
     }
 
     @Override

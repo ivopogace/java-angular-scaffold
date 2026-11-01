@@ -19,7 +19,7 @@ const sample = existsSync(new URL("./remove-sample.mjs", import.meta.url))
   : null;
 
 /** The template release this script ships with; equals the top `CHANGELOG.md` entry. */
-export const TEMPLATE_VERSION = "0.1.0";
+export const TEMPLATE_VERSION = "0.1.1";
 
 const COMMIT_MESSAGE = `Initial commit from scaffold v${TEMPLATE_VERSION}`;
 const MARKER_FILE = ".github/workflows/template-ci.yml";

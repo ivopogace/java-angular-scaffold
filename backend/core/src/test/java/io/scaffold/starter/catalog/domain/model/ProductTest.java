@@ -18,6 +18,8 @@ class ProductTest {
     void draftRejectsBlankName() {
         assertThatThrownBy(() -> Product.draft(ProductId.newId(), "   ", PRICE))
                 .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Product.draft(ProductId.newId(), "\u2003\u2003", PRICE))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test

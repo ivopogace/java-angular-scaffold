@@ -8,6 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import io.scaffold.starter.TestcontainersConfiguration;
+import java.net.URI;
 import io.scaffold.starter.catalog.domain.event.ProductPublished;
 import io.scaffold.starter.catalog.domain.id.ProductId;
 import java.util.UUID;
@@ -17,8 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.modulith.test.EnableScenarios;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.test.web.servlet.MockMvc;
@@ -38,15 +41,20 @@ class CatalogFlowIT {
 
     @Test
     void createPublishRetireThroughTheRestApiRecordsThePublication(Scenario scenario) throws Exception {
-        String body = mockMvc.perform(post("/api/catalog/products")
+        MockHttpServletResponse created = mockMvc.perform(post("/api/catalog/products")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name": "Linen shirt", "priceMinor": 4999, "currency": "EUR"}"""))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.state").value("DRAFT"))
-                .andReturn().getResponse().getContentAsString();
-        String id = JsonPath.read(body, "$.id");
+                .andReturn().getResponse();
+        String id = JsonPath.read(created.getContentAsString(), "$.id");
         ProductId productId = new ProductId(UUID.fromString(id));
+
+        mockMvc.perform(get(URI.create(created.getHeader(HttpHeaders.LOCATION))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(id))
+                .andExpect(jsonPath("$.state").value("DRAFT"));
 
         scenario.stimulate(() -> publish(id))
                 .andWaitForStateChange(() -> loggedPublications(id), count -> count == 1)
