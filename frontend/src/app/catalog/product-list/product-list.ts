@@ -1,12 +1,13 @@
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { MatAnchor, MatButton } from '@angular/material/button';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
-import { Observable } from 'rxjs';
+import { finalize, Observable } from 'rxjs';
 
 import { formatMoney } from '../../shared/money/money';
+import { TypedCellDef } from '../../shared/typed-cell-def/typed-cell-def';
 import { Product, ProductState } from '../catalog.model';
 import { CatalogService } from '../catalog.service';
 
@@ -25,7 +26,7 @@ const STATE_LABELS: Record<ProductState, string> = {
 
 @Component({
   selector: 'app-product-list',
-  imports: [MatAnchor, MatButton, MatTableModule, RouterLink],
+  imports: [MatAnchor, MatButton, MatTableModule, RouterLink, TypedCellDef],
   styleUrl: './product-list.scss',
   templateUrl: './product-list.html',
 })
@@ -33,7 +34,10 @@ export class ProductList {
   private readonly catalog = inject(CatalogService);
   private readonly snackBar = inject(MatSnackBar);
 
-  protected readonly products = this.catalog.products;
+  /** Ids whose publish or retire request is in flight. */
+  private readonly inFlight = signal<ReadonlySet<string>>(new Set());
+
+  protected readonly products = this.catalog.loadProducts();
   protected readonly columns = ['name', 'price', 'state', 'actions'];
 
   protected price(product: Product): string {
@@ -46,17 +50,39 @@ export class ProductList {
     return STATE_LABELS[product.state];
   }
 
+  protected busy(product: Product): boolean {
+    return this.inFlight().has(product.id);
+  }
+
   protected publish(product: Product): void {
-    this.change(this.catalog.publish(product.id));
+    this.change(product, this.catalog.publish(product.id));
   }
 
   protected retire(product: Product): void {
-    this.change(this.catalog.retire(product.id));
+    this.change(product, this.catalog.retire(product.id));
   }
 
-  private change(request: Observable<Product>): void {
-    request.subscribe({
+  /** Runs one change per product at a time, so a double click sends one request. */
+  private change(product: Product, request: Observable<Product>): void {
+    if (this.busy(product)) {
+      return;
+    }
+    this.mark(product.id, true);
+    request.pipe(finalize(() => this.mark(product.id, false))).subscribe({
+      next: () => this.products.reload(),
       error: (error: unknown) => this.snackBar.open(messageFor(error), 'Dismiss'),
+    });
+  }
+
+  private mark(id: string, busy: boolean): void {
+    this.inFlight.update((ids) => {
+      const next = new Set(ids);
+      if (busy) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
     });
   }
 }

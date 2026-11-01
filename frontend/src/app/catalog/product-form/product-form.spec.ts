@@ -27,24 +27,12 @@ describe('ProductForm', () => {
     fixture.detectChanges();
   });
 
-  /** The catalog service's own list request is not what these specs are about. */
-  function answerListRequest(): void {
-    TestBed.tick();
-    http
-      .match((request) => request.method === 'GET' && request.url === LIST_URL)
-      .forEach((request) => request.flush([]));
-  }
-
-  /** Answers the list requests in flight, since a pending request keeps the app unstable. */
   async function settle(): Promise<void> {
-    answerListRequest();
     await TestBed.inject(ApplicationRef).whenStable();
+    fixture.detectChanges();
   }
 
-  afterEach(() => {
-    answerListRequest();
-    http.verify();
-  });
+  afterEach(() => http.verify());
 
   function input(label: string): HTMLInputElement {
     const found = Array.from(element.querySelectorAll('mat-form-field')).find((field) =>
@@ -85,6 +73,20 @@ describe('ProductForm', () => {
   function expectNoPost(): void {
     http.expectNone((request) => request.method === 'POST');
   }
+
+  function submitButton(): HTMLButtonElement {
+    const found = element.querySelector<HTMLButtonElement>('button[type="submit"]');
+    if (!found) {
+      throw new Error('no submit button');
+    }
+    return found;
+  }
+
+  it('does not load the product list', () => {
+    TestBed.tick();
+
+    http.expectNone((request) => request.method === 'GET');
+  });
 
   it('rejects a blank name without calling the API', async () => {
     type('Name', '   ');
@@ -142,6 +144,17 @@ describe('ProductForm', () => {
     const post = expectPost();
     expect(post.request.body).toEqual({ name: 'Poster' });
     post.flush({}, { status: 201, statusText: 'Created' });
+  });
+
+  it('disables the submit button while the request is in flight', async () => {
+    type('Name', 'Mug');
+    await submit();
+
+    expect(submitButton().disabled).toBe(true);
+    expectPost().flush({}, { status: 400, statusText: 'Bad Request' });
+    await settle();
+
+    expect(submitButton().disabled).toBe(false);
   });
 
   it('stays on the form and says so when the API rejects the product', async () => {

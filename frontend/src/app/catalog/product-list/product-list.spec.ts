@@ -116,6 +116,39 @@ describe('ProductList', () => {
     expect(rows(element)).toEqual([['Mug', '€12.50', 'Published', 'Retire']]);
   });
 
+  it('sends one request for a double click and disables the action until it settles', async () => {
+    const element = await render([POSTER]);
+
+    const publish = button(element, 'Publish Poster');
+    publish.click();
+    publish.click();
+    fixture.detectChanges();
+
+    expect(publish.disabled).toBe(true);
+    http
+      .expectOne(`${LIST_URL}/p2/publish`)
+      .flush({ reason: 'NO_PRICE' }, { status: 409, statusText: 'Conflict' });
+    fixture.detectChanges();
+
+    expect(button(element, 'Publish Poster').disabled).toBe(false);
+  });
+
+  it('re-enables the action once a successful change has settled', async () => {
+    const element = await render([MUG]);
+
+    const publish = button(element, 'Publish Mug');
+    publish.click();
+    fixture.detectChanges();
+    expect(publish.disabled).toBe(true);
+
+    http.expectOne(`${LIST_URL}/p1/publish`).flush({ ...MUG, state: 'PUBLISHED' });
+    fixture.detectChanges();
+    expect(publish.disabled).toBe(false);
+
+    await flushList([{ ...MUG, state: 'PUBLISHED' }]);
+    expect(button(element, 'Retire Mug').disabled).toBe(false);
+  });
+
   it('retires a published product and refreshes the list', async () => {
     const element = await render([SHIRT]);
 

@@ -16,6 +16,11 @@ describe('formatMoney', () => {
   it('scales by the currency fraction digits', () => {
     expect(formatMoney(500, 'JPY', 'en-US')).toBe('¥500');
   });
+
+  it('falls back to a plain amount with the code when the currency is malformed', () => {
+    expect(formatMoney(1250, 'EURO')).toBe('12.50 EURO');
+    expect(formatMoney(1250, '')).toBe('12.50');
+  });
 });
 
 describe('parseMoneyToMinor', () => {
