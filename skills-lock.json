@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "skills": {
+    "angular-developer": {
+      "source": "angular/skills",
+      "skillPath": "angular-developer/SKILL.md",
+      "ref": "2a2b801eb9bf3304424ddedfa1ace347e1fff6a6",
+      "computedHash": "ec8d1925e160cf524f643880711ea70a706ff9974f66f6718d7651f1be388cc5",
+      "license": "MIT"
+    },
+    "postgres": {
+      "source": "planetscale/database-skills",
+      "skillPath": "skills/postgres/SKILL.md",
+      "ref": "f6ed002d03084cb39c01d1d58904d47a36f5322a",
+      "computedHash": "f64f17253d3b74da106027701fc2f0ea385d4cdaf28ff80115265b9fd307c358",
+      "license": "MIT"
+    },
+    "domain-modeling": {
+      "source": "mattpocock/skills",
+      "skillPath": "skills/engineering/domain-modeling/SKILL.md",
+      "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+      "computedHash": "7b925d7b1e341a2eeae33ad68a8a8c0ab889a38ddd22a7598e4c240e5a7556a3",
+      "license": "MIT"
+    },
+    "codebase-design": {
+      "source": "mattpocock/skills",
+      "skillPath": "skills/engineering/codebase-design/SKILL.md",
+      "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+      "computedHash": "2c20617f87ec8af6a434859f381b2f061a69b530444e74eb39e78bb016a6d1e2",
+      "license": "MIT"
+    },
+    "grilling": {
+      "source": "mattpocock/skills",
+      "skillPath": "skills/productivity/grilling/SKILL.md",
+      "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
+      "computedHash": "a146842ed93ca43d833550fa9adf02e58cb63c83fea9d4b4522995b82242d4e2",
+      "license": "MIT"
+    }
+  }
+}

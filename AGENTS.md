@@ -102,6 +102,11 @@ stay verbatim.
 | `review-checklist` | reviewing any change here, your own included; adds items to a running review |
 | `docs-freshness` | before finishing a change that renames, moves or removes something a doc states |
 | `local-dev` | before the first build, test or verify run of a session, or when one fails for an environmental reason |
+| `angular-developer` (vendored) | before writing or changing Angular code under `frontend/`: components, signals, forms, routing, DI, testing |
+| `postgres` (vendored) | before writing a Flyway migration, table, index or query under `backend/` |
+| `domain-modeling` (vendored) | when discussing domain terminology, editing the glossary, or recording an ADR |
+| `codebase-design` (vendored) | when designing or deepening a module interface or deciding where a seam goes |
+| `grilling` (vendored) | when asked to stress-test a plan, decision or idea ("grill me") |
 
 ## Way of working
 
