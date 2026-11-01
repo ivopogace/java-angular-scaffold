@@ -26,8 +26,9 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   typedBy: …"`). Port the directive and the in-flight pattern to any list page you copied.
 - Backend: `/api` and `/actuator` themselves (and with a trailing slash) are no longer answered
   with the SPA shell but with a 404 problem like any unknown API path. The shell (`index.html`,
-  the fallback, unhashed files) is served with `Cache-Control: no-cache`; hashed scripts, styles
-  and media are cached for a year as immutable, relying on Angular's production `outputHashing`. `Money` is a jMolecules
+  the fallback, unhashed files) is served with `Cache-Control: no-cache`; scripts, styles and
+  media whose name carries a content hash (`main-ABC123.js`, Angular's production
+  `outputHashing`) are cached for a year as immutable. `Money` is a jMolecules
   `@ValueObject` and its overflow behaviour is tested. The structural rules no longer reserve a
   `config` package: wiring lives in the base package, so a `config` package is judged as an area.
 

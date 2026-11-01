@@ -26,9 +26,10 @@ class SpaWebConfigTest {
     @Autowired
     MockMvc mockMvc;
 
-    @Test
-    void clientRouteIsAnsweredWithIndexHtml() throws Exception {
-        mockMvc.perform(get("/catalog/new"))
+    @ParameterizedTest
+    @ValueSource(strings = {"/catalog/new", "/apix", "/actuators"})
+    void clientRouteIsAnsweredWithIndexHtml(String path) throws Exception {
+        mockMvc.perform(get(path))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("spa-fixture")));
     }
@@ -58,8 +59,16 @@ class SpaWebConfigTest {
     }
 
     @Test
-    void hashedAssetsAreCachedForAYear() throws Exception {
-        mockMvc.perform(get("/main-F1XTURE.js"))
+    void anUnhashedFileIsPartOfTheShell() throws Exception {
+        mockMvc.perform(get("/unhashed.js"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "no-cache"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/main-F1XTURE.js", "/media/logo-F1XTURE.svg"})
+    void hashedAssetsAreCachedForAYear(String path) throws Exception {
+        mockMvc.perform(get(path))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "max-age=31536000, immutable"));
     }
