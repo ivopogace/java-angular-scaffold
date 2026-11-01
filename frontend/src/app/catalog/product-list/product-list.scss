@@ -1,0 +1,29 @@
+:host {
+  display: block;
+}
+
+.page-header {
+  align-items: center;
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  margin-block-end: 16px;
+}
+
+h1 {
+  font: var(--mat-sys-headline-medium);
+  margin: 0;
+}
+
+table {
+  width: 100%;
+}
+
+.visually-hidden {
+  block-size: 1px;
+  clip-path: inset(50%);
+  inline-size: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+}
