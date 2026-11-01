@@ -110,7 +110,7 @@ export async function preflight({ quick, dockerAvailable }) {
 /** Quotes one argument for a Windows command line: backslashes before a quote (or the closing quote) are doubled. */
 function quote(arg) {
   if (/^[\w@%+=:,./\\-]+$/.test(arg)) return arg;
-  const escaped = arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, '$1$1');
+  const escaped = arg.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/, "$1$1");
   return `"${escaped}"`;
 }
 

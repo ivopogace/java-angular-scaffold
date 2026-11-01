@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
+import { checkAgentDocs } from "./check-agent-docs.mjs";
 import { MARKED_FILES, SAMPLE_FILES, removeSample } from "./remove-sample.mjs";
 import {
   normalizeEol,
@@ -121,6 +122,14 @@ sampleTest(
     assert.deepEqual(emptyDirs(root), []);
   },
 );
+
+sampleTest("the agent docs stay consistent once the sample is removed", (t) => {
+  const root = withCopy(t);
+  assert.deepEqual(checkAgentDocs(root), []);
+  assert.ok(removeSample(root).removed);
+  assert.deepEqual(checkAgentDocs(root), []);
+  assert.ok(!existsSync(join(root, "GLOSSARY.md")));
+});
 
 sampleTest("a second run reports alreadyRemoved and changes nothing", (t) => {
   const root = withCopy(t);

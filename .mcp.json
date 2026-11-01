@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "angular-cli": {
+      "command": "node",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/scripts/mcp/angular-cli.mjs"]
+    },
+    "playwright": {
+      "command": "node",
+      "args": ["${CLAUDE_PROJECT_DIR:-.}/scripts/mcp/playwright.mjs"]
+    }
+  }
+}

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "angular-cli": {
+      "type": "local",
+      "command": ["node", "scripts/mcp/angular-cli.mjs"],
+      "cwd": ".",
+      "enabled": true,
+      "timeout": 60000
+    },
+    "playwright": {
+      "type": "local",
+      "command": ["node", "scripts/mcp/playwright.mjs"],
+      "cwd": ".",
+      "enabled": true,
+      "timeout": 60000
+    }
+  },
+  "permission": {
+    "read": "allow",
+    "glob": "allow",
+    "grep": "allow",
+    "list": "allow",
+    "edit": "ask",
+    "webfetch": "ask",
+    "bash": {
+      "*": "ask",
+      "node scripts/verify.mjs": "allow",
+      "node scripts/verify.mjs --quick": "allow",
+      "node scripts/check-agent-docs.mjs": "allow",
+      "./gradlew *": "allow",
+      "cd backend && ./gradlew *": "allow",
+      "npm run *": "allow",
+      "npm test": "allow",
+      "npm test *": "allow",
+      "cd frontend && npm run *": "allow",
+      "cd frontend && npm test*": "allow",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git show*": "allow",
+      "git blame *": "allow",
+      "git branch": "allow",
+      "git branch --show-current": "allow",
+      "git rev-parse *": "allow",
+      "git ls-files*": "allow"
+    }
+  }
+}

@@ -24,6 +24,10 @@ const MARKER = "sample:catalog";
  */
 export const SAMPLE_FILES = [
   {
+    path: "GLOSSARY.md",
+    sha256: "2900849e295cf92e0d40934df01aa6f2beb98a9e408a5dad69e7673061f2e970",
+  },
+  {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/in/event/ProductPublishedListener.java",
     sha256: "d8463e15e859416c42428ba20a7886424073ad1363b0ce963cdfd6c9b8051a35",
   },
@@ -251,11 +255,12 @@ export const SAMPLE_FILES = [
 
 /** Files that keep their content but lose every line containing the marker. */
 export const MARKED_FILES = [
+  "AGENTS.md",
   "frontend/src/app/app.routes.ts",
   "frontend/src/app/app.html",
 ];
 
-const HELP = `Removes the catalog sample feature (backend area, frontend feature, migration, e2e specs).
+const HELP = `Removes the catalog sample feature (backend area, frontend feature, migration, e2e specs, glossary).
 
 Usage: node scripts/remove-sample.mjs [--refresh-hashes]
 
