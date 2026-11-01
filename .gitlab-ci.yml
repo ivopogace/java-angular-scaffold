@@ -1,0 +1,16 @@
+# Unverified example: not run against a real GitLab instance. Adjust images and runner tags to your setup.
+verify:
+  image: eclipse-temurin:25-jdk
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ''
+    TESTCONTAINERS_HOST_OVERRIDE: docker
+    TESTCONTAINERS_RYUK_DISABLED: 'true'
+  before_script:
+    - apt-get update && apt-get install -y curl xz-utils docker.io
+    - NODE_VERSION="$(cat .nvmrc)"
+    - curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VERSION}-linux-x64.tar.xz" | tar -xJ -C /usr/local --strip-components=1
+  script:
+    - node scripts/verify.mjs
