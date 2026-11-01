@@ -411,6 +411,16 @@ test("an edited file beside a vendored SKILL.md fails, naming the skill", (t) =>
   );
 });
 
+test("a dotfile dropped into a vendored skill folder is not skill content", (t) => {
+  assert.deepEqual(
+    check(t, {
+      ".claude/skills/beta/.DS_Store": "finder junk",
+      ".claude/skills/beta/references/.notes.md.swp": "editor junk",
+    }),
+    [],
+  );
+});
+
 test("a file added to a vendored skill folder fails, naming the skill", (t) => {
   assertOneProblem(
     check(t, { ".claude/skills/beta/references/extra.md": "# Extra\n" }),
@@ -483,40 +493,53 @@ const textFiles = (folder) =>
     .filter((entry) => entry.isFile() && /\.(md|yaml)$/.test(entry.name))
     .map((entry) => join(entry.parentPath, entry.name));
 
-test("the committed lock hashes match the vendored folders, LF or CRLF", (t) => {
-  const vendored = vendoredSkillsWithReferences();
-  assert.ok(vendored.length > 0, "no vendored skill has files beside SKILL.md");
-  for (const [name, entry] of vendored) {
-    const root = treeWithRealSkill(t, name, entry);
-    assert.deepEqual(checkAgentDocs(root), [], name);
-    for (const path of textFiles(join(root, ".claude/skills", name))) {
-      writeFileSync(
-        path,
-        readFileSync(path, "utf8")
-          .replaceAll("\r\n", "\n")
-          .replaceAll("\n", "\r\n"),
-      );
-    }
-    assert.deepEqual(checkAgentDocs(root), [], `${name} with CRLF`);
-  }
-});
+const WITH_REFERENCES = vendoredSkillsWithReferences();
+const needsReferences = {
+  skip:
+    WITH_REFERENCES.length === 0 &&
+    "no vendored skill has files beside SKILL.md",
+};
 
-test("editing a real vendored skill's references file names the skill", (t) => {
-  const [name, entry] = vendoredSkillsWithReferences()[0];
-  const root = treeWithRealSkill(t, name, entry);
-  const folder = join(root, ".claude/skills", name);
-  const reference = textFiles(folder).find(
-    (path) => !path.endsWith("SKILL.md"),
-  );
-  appendFileSync(reference, "\nedited locally\n");
-  assertOneProblem(
-    checkAgentDocs(root),
-    "skills-lock.json",
-    new RegExp(
-      `"${name}" computedHash does not match the files under \\.claude/skills/${name}/ \\(`,
-    ),
-  );
-});
+test(
+  "the committed lock hashes match the vendored folders, LF or CRLF",
+  needsReferences,
+  (t) => {
+    for (const [name, entry] of WITH_REFERENCES) {
+      const root = treeWithRealSkill(t, name, entry);
+      assert.deepEqual(checkAgentDocs(root), [], name);
+      for (const path of textFiles(join(root, ".claude/skills", name))) {
+        writeFileSync(
+          path,
+          readFileSync(path, "utf8")
+            .replaceAll("\r\n", "\n")
+            .replaceAll("\n", "\r\n"),
+        );
+      }
+      assert.deepEqual(checkAgentDocs(root), [], `${name} with CRLF`);
+    }
+  },
+);
+
+test(
+  "editing a real vendored skill's references file names the skill",
+  needsReferences,
+  (t) => {
+    const [name, entry] = WITH_REFERENCES[0];
+    const root = treeWithRealSkill(t, name, entry);
+    const folder = join(root, ".claude/skills", name);
+    const reference = textFiles(folder).find(
+      (path) => !path.endsWith("SKILL.md"),
+    );
+    appendFileSync(reference, "\nedited locally\n");
+    assertOneProblem(
+      checkAgentDocs(root),
+      "skills-lock.json",
+      new RegExp(
+        `"${name}" computedHash does not match the files under \\.claude/skills/${name}/ \\(`,
+      ),
+    );
+  },
+);
 
 test("refreshSkillsLock re-records every hash, keeping keys and format", (t) => {
   const updatedNotes = VENDORED_NOTES + "updated upstream\n";

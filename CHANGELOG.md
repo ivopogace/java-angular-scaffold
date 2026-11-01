@@ -8,8 +8,9 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
 ## 0.1.1 — 2026-11-01
 
 - `skills-lock.json`: a vendored skill's `computedHash` covers its whole folder (every file under
-  `.claude/skills/<name>/`, sorted by path, text normalised to LF, binaries as-is), so an edit to a
-  `references/*.md`, script or licence file fails `check-agent-docs` like an edit to `SKILL.md`.
+  `.claude/skills/<name>/`, sorted by path, text normalised to LF, binaries as-is, dotfiles such as
+  `.DS_Store` skipped), so an edit to a `references/*.md`, script or licence file fails
+  `check-agent-docs` like an edit to `SKILL.md`.
   After replacing a vendored skill from a new upstream ref, re-pin it with
   `node scripts/check-agent-docs.mjs --refresh-hashes` in the same commit.
 - Sample backend: `GET /api/catalog/products/{id}` exists, so the `Location` header of a create
