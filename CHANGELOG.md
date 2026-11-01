@@ -1,0 +1,29 @@
+# Changelog
+
+Template changes and why. A project records the template version it started from in its initial
+commit message (`Initial commit from scaffold vX.Y.Z`) and never links back; to port an improvement,
+read the entries after that version here and apply them by hand. `TEMPLATE_VERSION` in
+`scripts/init.mjs` equals the top entry.
+
+## 0.1.0 — 2026-11-01
+
+First release.
+
+- Backend: Java 25, Spring Boot 4.1, Spring Modulith 2.1, Gradle 9.8 with convention plugins in
+  `backend/build-logic`; `core` (Spring-free domain and application), `adapters`, `bootstrap`.
+  Business areas are Modulith modules; ArchUnit and jMolecules rules plus a `core` classpath check
+  make the boundaries a build failure rather than a review comment.
+- Persistence through `JdbcClient` and Flyway, no JPA; Testcontainers ITs; a transactional outbox
+  via Modulith's event publication registry, republished on restart.
+- Frontend: Angular 22 (standalone, signals, zoneless) with Angular Material M3; ESLint rules for
+  folder boundaries and separate component files; Stylelint for Material styling rules; Vitest with
+  axe specs; Playwright e2e against a mocked API, plus a local real-backend suite.
+- A removable `catalog` sample area exercising every layer; `scripts/remove-sample.mjs` deletes it
+  and refuses when a sample file was edited.
+- `scripts/verify.mjs` as the single check entry point; GitHub, GitLab and Jenkins wrappers that
+  call it and nothing else; a pre-commit hook in `.githooks/`.
+- Agent setup: `AGENTS.md` at the root, `backend/` and `frontend/` (Claude Code reads them via
+  `CLAUDE.md`), own skills plus pinned vendored skills under `.claude/skills/`, MCP config for
+  Claude Code and opencode, four founding ADRs, `scripts/check-agent-docs.mjs`.
+- `scripts/init.mjs`: one-time setup that renames the placeholders, optionally removes the sample,
+  keeps the chosen CI wrappers, deletes the template-only files and starts a fresh history.

@@ -1,0 +1,53 @@
+# The template's own CI. init deletes this file; its presence is how init knows a clone is uninitialized.
+name: template-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  as-shipped:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/verify.mjs
+
+  skeleton:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/remove-sample.mjs && node scripts/verify.mjs
+
+  initialized:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      # Global, because init replaces .git and with it any repository-local identity.
+      - run: |
+          git config --global user.name "Template CI"
+          git config --global user.email "template-ci@example.invalid"
+      - run: >-
+          node scripts/init.mjs --yes --name acme-orders --package com.acme.orders
+          --display "Acme Orders" --sample keep --ci github

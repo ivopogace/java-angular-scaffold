@@ -1,0 +1,605 @@
+#!/usr/bin/env node
+import { execFileSync, spawnSync } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  renameSync,
+  rmdirSync,
+  rmSync,
+} from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+import { normalizeEol, rewritePreservingEol } from "./lib/text.mjs";
+
+// Loaded only when present, so a stray copy of this script still refuses cleanly in an initialized project.
+const sample = existsSync(new URL("./remove-sample.mjs", import.meta.url))
+  ? await import("./remove-sample.mjs")
+  : null;
+
+/** The template release this script ships with; equals the top `CHANGELOG.md` entry. */
+export const TEMPLATE_VERSION = "0.1.0";
+
+const COMMIT_MESSAGE = `Initial commit from scaffold v${TEMPLATE_VERSION}`;
+const MARKER_FILE = ".github/workflows/template-ci.yml";
+const PLACEHOLDER_PACKAGE = "io.scaffold.starter";
+const PLACEHOLDER_NAME = "scaffold-starter";
+const PLACEHOLDER_DISPLAY = "Scaffold Starter";
+const CI_WRAPPERS = {
+  github: ".github/workflows/ci.yml",
+  gitlab: ".gitlab-ci.yml",
+  jenkins: "Jenkinsfile",
+};
+const DEFAULT_CI = ["github"];
+const TEMPLATE_ONLY = [
+  MARKER_FILE,
+  "CHANGELOG.md",
+  "CONTRIBUTING.md",
+  "README.md",
+  "docs/superpowers",
+  "scripts/init.mjs",
+  "scripts/init.test.mjs",
+];
+const SAMPLE_SCRIPTS = [
+  "scripts/remove-sample.mjs",
+  "scripts/remove-sample.test.mjs",
+];
+const JAVA_ROOT =
+  /^(backend\/(?:core|adapters|bootstrap)\/src\/(?:main|test)\/java\/)io\/scaffold\/starter\//;
+const WHAT_THIS_IS =
+  /(<!-- fill-in:what -->\n)[\s\S]*?(\n<!-- \/fill-in:what -->)/;
+const WHAT_THIS_IS_BODY = "TODO: describe this project.";
+
+const NAME = /^[a-z][a-z0-9]*(-[a-z0-9]+)*$/;
+const PACKAGE_SEGMENT = /^[a-z][a-z0-9_]*$/;
+const DISPLAY_FORBIDDEN = /["'\\<>`${}@]/;
+const DISPLAY_MAX = 60;
+const JAVA_RESERVED = new Set(
+  (
+    "abstract assert boolean break byte case catch char class const continue default do double " +
+    "else enum extends final finally float for goto if implements import instanceof int interface " +
+    "long native new package private protected public return short static strictfp super switch " +
+    "synchronized this throw throws transient try void volatile while true false null"
+  ).split(" "),
+);
+
+const HELP = `Turns this clone of the template into a new, independent project.
+
+Usage: node scripts/init.mjs [options]
+
+  --name <name>        project name, lowercase words joined by hyphens (acme-orders)
+  --package <package>  base Java package, two or more segments (com.acme.orders)
+  --display <text>     display name, 1-${DISPLAY_MAX} characters (Acme Orders)
+  --sample keep|remove keep or delete the catalog sample (default: keep)
+  --ci <list>          CI wrappers to keep: comma-separated github, gitlab, jenkins;
+                       "" keeps none (default: github)
+  --skip-verify        do not run node scripts/verify.mjs at the end
+  --yes                non-interactive: no prompts, no confirmation
+
+Missing answers are asked for interactively unless --yes is given. The script
+rewrites the placeholder names, moves the Java packages, deletes the
+template-only files, replaces .git with a fresh history of one commit and runs
+verify. It refuses on a working tree with uncommitted changes.
+`;
+
+/**
+ * @typedef {{ name?: string, package?: string, display?: string,
+ *   sample?: string, ci?: string[], skipVerify: boolean, yes: boolean,
+ *   help: boolean }} Answers
+ * Absent answers are `undefined`; `ci` is `[]` when given empty.
+ */
+
+/**
+ * @returns {Answers}
+ * @throws {Error} on an unknown option or an option without its value
+ */
+export function parseArgs(argv) {
+  const answers = { skipVerify: false, yes: false, help: false };
+  const valued = {
+    "--name": "name",
+    "--package": "package",
+    "--display": "display",
+    "--sample": "sample",
+    "--ci": "ci",
+  };
+  for (let i = 0; i < argv.length; i++) {
+    const [flag, inline] =
+      argv[i].startsWith("--") && argv[i].includes("=")
+        ? [
+            argv[i].slice(0, argv[i].indexOf("=")),
+            argv[i].slice(argv[i].indexOf("=") + 1),
+          ]
+        : [argv[i], undefined];
+    if (flag === "--skip-verify") answers.skipVerify = true;
+    else if (flag === "--yes") answers.yes = true;
+    else if (flag === "--help" || flag === "-h") answers.help = true;
+    else if (flag in valued) {
+      let value = inline;
+      if (value === undefined) {
+        const next = argv[i + 1];
+        if (next === undefined || next.startsWith("--")) {
+          throw new Error(`${flag} needs a value`);
+        }
+        value = next;
+        i++;
+      }
+      answers[valued[flag]] = flag === "--ci" ? splitList(value) : value;
+    } else {
+      throw new Error(`Unknown option ${flag}`);
+    }
+  }
+  return answers;
+}
+
+const splitList = (value) =>
+  value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+/** @returns {string[]} one message per invalid or missing answer; empty when all are valid. */
+export function validate(answers) {
+  const errors = [];
+  const {
+    name,
+    package: pkg,
+    display,
+    sample = "keep",
+    ci = DEFAULT_CI,
+  } = answers;
+  if (!name) errors.push("--name is required");
+  else if (!NAME.test(name)) {
+    errors.push(
+      `--name "${name}" is invalid: use lowercase letters and digits in hyphen-separated words, starting with a letter (e.g. acme-orders)`,
+    );
+  }
+  if (!pkg) errors.push("--package is required");
+  else errors.push(...packageErrors(pkg));
+  if (display === undefined || display === "") {
+    errors.push(
+      display === undefined
+        ? "--display is required"
+        : `--display must be 1-${DISPLAY_MAX} characters`,
+    );
+  } else if (display.length > DISPLAY_MAX) {
+    errors.push(
+      `--display must be 1-${DISPLAY_MAX} characters (is ${display.length})`,
+    );
+  } else if (DISPLAY_FORBIDDEN.test(display) || /\p{Cc}/u.test(display)) {
+    errors.push(
+      `--display "${display}" is invalid: it may not contain " ' \\ < > \` $ { } @ or control characters`,
+    );
+  } else if (display !== display.trim()) {
+    errors.push("--display may not start or end with a space");
+  }
+  if (sample !== "keep" && sample !== "remove") {
+    errors.push(`--sample must be keep or remove (is "${sample}")`);
+  }
+  for (const wrapper of ci) {
+    if (!Object.hasOwn(CI_WRAPPERS, wrapper)) {
+      errors.push(
+        `--ci "${wrapper}" is unknown; choose from ${Object.keys(CI_WRAPPERS).join(", ")}`,
+      );
+    }
+  }
+  return errors;
+}
+
+function packageErrors(pkg) {
+  const segments = pkg.split(".");
+  if (segments.length < 2) {
+    return [
+      `--package "${pkg}" needs at least two segments (e.g. com.acme.orders)`,
+    ];
+  }
+  return segments.flatMap((segment) => {
+    if (!PACKAGE_SEGMENT.test(segment)) {
+      return [
+        `--package "${pkg}": segment "${segment}" must start with a lowercase letter and hold only lowercase letters, digits and underscores`,
+      ];
+    }
+    return JAVA_RESERVED.has(segment)
+      ? [
+          `--package "${pkg}": segment "${segment}" is a Java keyword or literal`,
+        ]
+      : [];
+  });
+}
+
+/**
+ * @typedef {{ type: "removeSample" }
+ *   | { type: "rewrite", path: string, replacements: [string, string][] }
+ *   | { type: "move", from: string, to: string }
+ *   | { type: "refreshSampleHashes" }
+ *   | { type: "delete", path: string }
+ *   | { type: "rename", from: string, to: string }
+ *   | { type: "fillIn", path: string, body: string }} Change
+ * Paths are root-relative with forward slashes. Order matters: sample removal
+ * comes first, since its drift check hashes the files as shipped, and is the
+ * one step that can refuse; rewrites name files at their original paths,
+ * before the moves.
+ */
+
+/**
+ * The changes that turn the template under `root` into the project `answers`
+ * describe. Reads the tree and writes nothing.
+ *
+ * @param {Answers} answers valid answers (see {@link validate})
+ * @returns {Change[]}
+ */
+export function planChanges(root, answers) {
+  const removing = answers.sample === "remove";
+  const ci = answers.ci ?? DEFAULT_CI;
+  const deleted = new Set([
+    ...TEMPLATE_ONLY,
+    ...(removing ? SAMPLE_SCRIPTS : []),
+    ...Object.entries(CI_WRAPPERS)
+      .filter(([wrapper]) => !ci.includes(wrapper))
+      .map(([, path]) => path),
+  ]);
+  const sampleFiles = new Set(
+    removing ? (sample?.SAMPLE_FILES ?? []).map((f) => f.path) : [],
+  );
+  const vendored = vendoredSkillDirs(root);
+  const survivors = listFiles(root).filter(
+    (file) =>
+      !sampleFiles.has(file) &&
+      ![...deleted].some(
+        (path) => file === path || file.startsWith(`${path}/`),
+      ),
+  );
+  const replacements = [
+    [PLACEHOLDER_PACKAGE, answers.package],
+    [
+      PLACEHOLDER_PACKAGE.replaceAll(".", "/"),
+      answers.package.replaceAll(".", "/"),
+    ],
+    [PLACEHOLDER_NAME, answers.name],
+    [PLACEHOLDER_NAME.replaceAll("-", "_"), answers.name.replaceAll("-", "_")],
+    [PLACEHOLDER_DISPLAY, answers.display],
+  ];
+  const rewrites = survivors
+    .filter((file) => !vendored.some((dir) => file.startsWith(dir)))
+    .filter((file) => {
+      const bytes = readFileSync(join(root, file));
+      return (
+        !bytes.includes(0) &&
+        replacements.some(([from]) => bytes.includes(from))
+      );
+    })
+    .map((path) => ({ type: "rewrite", path, replacements }));
+  const packagePath = `${answers.package.replaceAll(".", "/")}/`;
+  const moves = survivors
+    .filter((file) => JAVA_ROOT.test(file))
+    .map((from) => ({
+      type: "move",
+      from,
+      to: from.replace(JAVA_ROOT, `$1${packagePath}`),
+    }));
+  return [
+    ...(removing ? [{ type: "removeSample" }] : []),
+    ...rewrites,
+    ...moves,
+    ...(removing ? [] : [{ type: "refreshSampleHashes" }]),
+    ...[...deleted]
+      .filter((path) => existsSync(join(root, path)))
+      .map((path) => ({ type: "delete", path })),
+    { type: "rename", from: "README.project.md", to: "README.md" },
+    { type: "fillIn", path: "AGENTS.md", body: WHAT_THIS_IS_BODY },
+  ];
+}
+
+/** Tracked and untracked-not-ignored files under `root` that exist on disk. */
+function listFiles(root) {
+  return git(root, [
+    "ls-files",
+    "--cached",
+    "--others",
+    "--exclude-standard",
+    "-z",
+  ])
+    .split("\0")
+    .filter((file) => file && existsSync(join(root, file)));
+}
+
+function vendoredSkillDirs(root) {
+  const lock = join(root, "skills-lock.json");
+  if (!existsSync(lock)) return [];
+  return Object.keys(JSON.parse(readFileSync(lock, "utf8")).skills ?? {}).map(
+    (name) => `.claude/skills/${name}/`,
+  );
+}
+
+/**
+ * Applies `changes` (from {@link planChanges}) under `root`, in order.
+ *
+ * @throws {Error} when the sample cannot be removed or a fill-in section is missing
+ */
+export async function applyChanges(root, changes) {
+  for (const change of changes) {
+    const at = (path) => join(root, path);
+    switch (change.type) {
+      case "removeSample":
+        runRemoveSample(root);
+        break;
+      case "rewrite":
+        rewritePreservingEol(at(change.path), (text) =>
+          change.replacements.reduce(
+            (result, [from, to]) => result.replaceAll(from, to),
+            text,
+          ),
+        );
+        break;
+      case "move":
+        mkdirSync(dirname(at(change.to)), { recursive: true });
+        renameSync(at(change.from), at(change.to));
+        pruneEmptyParents(root, dirname(at(change.from)));
+        break;
+      case "refreshSampleHashes":
+        await refreshSampleHashes(root);
+        break;
+      case "delete":
+        rmSync(at(change.path), { recursive: true, force: true });
+        pruneEmptyParents(root, dirname(at(change.path)));
+        break;
+      case "rename":
+        renameSync(at(change.from), at(change.to));
+        break;
+      case "fillIn":
+        if (
+          !WHAT_THIS_IS.test(
+            normalizeEol(readFileSync(at(change.path), "utf8")),
+          )
+        ) {
+          throw new Error(
+            `${change.path} has no <!-- fill-in:what --> section`,
+          );
+        }
+        rewritePreservingEol(at(change.path), (text) =>
+          text.replace(
+            WHAT_THIS_IS,
+            (_, open, close) => `${open}${change.body}${close}`,
+          ),
+        );
+        break;
+      default:
+        throw new Error(`Unknown change ${change.type}`);
+    }
+  }
+}
+
+/** An error raised before anything under the root was changed. */
+class Untouched extends Error {}
+
+function runRemoveSample(root) {
+  if (!sample) return;
+  const result = sample.removeSample(root);
+  if (result.drifted) {
+    throw new Untouched(
+      `Sample files were edited, so the sample cannot be removed safely. Run with --sample keep, or remove the sample by hand and commit, then re-run init. Edited:\n  ${result.drifted.join("\n  ")}`,
+    );
+  }
+  if (result.markerProblems) {
+    throw new Untouched(
+      `A marked file no longer matches the shipped layout, so the sample cannot be removed safely:\n  ${result.markerProblems
+        .map(({ file, line, text }) => `${file}:${line}: ${text}`)
+        .join("\n  ")}`,
+    );
+  }
+  if (result.failed) {
+    throw new Error(`Sample removal stopped: ${result.failed.error.message}`);
+  }
+}
+
+/** Re-records remove-sample's hashes, which the package rename changed, from the rewritten script itself. */
+async function refreshSampleHashes(root) {
+  const script = join(root, "scripts", "remove-sample.mjs");
+  if (!existsSync(script)) return;
+  const { refreshHashes } = await import(
+    `${pathToFileURL(script).href}?initialized`
+  );
+  const result = refreshHashes(root, script);
+  if (result.missing) {
+    console.warn(
+      `remove-sample.mjs hashes not refreshed; missing:\n  ${result.missing.join("\n  ")}`,
+    );
+  }
+}
+
+/** Removes `dir` and its ancestors below `root` while they are empty. */
+function pruneEmptyParents(root, dir) {
+  const stop = resolve(root);
+  let current = resolve(dir);
+  while (current !== stop && current.startsWith(stop)) {
+    if (existsSync(current)) {
+      if (readdirSync(current).length > 0) return;
+      rmdirSync(current);
+    }
+    current = dirname(current);
+  }
+}
+
+const git = (root, args) =>
+  execFileSync("git", args, {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    maxBuffer: 64 * 1024 * 1024,
+  });
+
+const gitSucceeds = (root, args) =>
+  spawnSync("git", args, { cwd: root, stdio: "ignore" }).status === 0;
+
+/** @returns {string | null} why init cannot run under `root`, or null. */
+function refusal(root) {
+  if (!existsSync(join(root, MARKER_FILE))) return "Already initialized.";
+  let status;
+  try {
+    status = git(root, ["status", "--porcelain"]);
+  } catch {
+    return "Not a git checkout; clone the template with git, then run init.";
+  }
+  return status.trim()
+    ? `The working tree has uncommitted changes; commit or stash them, then run init:\n${status}`
+    : null;
+}
+
+/**
+ * Line-by-line questions on stdin. The line iterator buffers, so piped input
+ * is not lost between questions; once stdin ends every answer is `fallback`.
+ */
+async function prompter() {
+  const { createInterface } = await import("node:readline");
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+  const lines = rl[Symbol.asyncIterator]();
+  const question = async (text, fallback = "") => {
+    process.stdout.write(fallback ? `${text} [${fallback}]: ` : `${text}: `);
+    const { value, done } = await lines.next();
+    return (done ? "" : value).trim() || fallback;
+  };
+  return { question, close: () => rl.close() };
+}
+
+async function askMissing(answers, question) {
+  const name =
+    answers.name ?? (await question("Project name (e.g. acme-orders)"));
+  return {
+    ...answers,
+    name,
+    package:
+      answers.package ??
+      (await question("Base Java package (e.g. com.acme.orders)")),
+    display:
+      answers.display ?? (await question("Display name", titleCase(name))),
+    sample:
+      answers.sample ??
+      (await question("Keep the catalog sample? keep/remove", "keep")),
+    ci:
+      answers.ci ??
+      splitList(
+        await question(
+          "CI wrappers to keep (github,gitlab,jenkins; - for none)",
+          DEFAULT_CI.join(","),
+        ),
+      ).filter((item) => item !== "-"),
+  };
+}
+
+const titleCase = (name = "") =>
+  name
+    .split("-")
+    .filter(Boolean)
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(" ");
+
+/** Replaces `.git` with a fresh repository holding one commit; returns false when git has no identity. */
+function freshHistory(root) {
+  rmSync(join(root, ".git"), { recursive: true, force: true });
+  git(root, ["init", "-q", "-b", "main"]);
+  git(root, ["config", "core.hooksPath", ".githooks"]);
+  git(root, ["add", "-A"]);
+  if (
+    !gitSucceeds(root, ["var", "GIT_AUTHOR_IDENT"]) ||
+    !gitSucceeds(root, ["var", "GIT_COMMITTER_IDENT"])
+  ) {
+    return false;
+  }
+  // The hook formats staged files with the frontend toolchain, which a fresh clone has not installed; verify runs next.
+  git(root, ["commit", "-q", "--no-verify", "-m", COMMIT_MESSAGE]);
+  return true;
+}
+
+async function main(argv, root) {
+  let answers;
+  try {
+    answers = parseArgs(argv);
+  } catch (error) {
+    console.error(`${error.message}\n\n${HELP}`);
+    return 1;
+  }
+  if (answers.help) {
+    console.log(HELP);
+    return 0;
+  }
+  const refused = refusal(root);
+  if (refused) {
+    console.error(refused);
+    return 1;
+  }
+  const prompt = answers.yes ? null : await prompter();
+  try {
+    if (prompt) answers = await askMissing(answers, prompt.question);
+    answers = {
+      ...answers,
+      sample: answers.sample ?? "keep",
+      ci: answers.ci ?? DEFAULT_CI,
+    };
+    const errors = validate(answers);
+    if (errors.length > 0) {
+      console.error(`${errors.join("\n")}\nNothing was changed.`);
+      return 1;
+    }
+    const confirm = prompt
+      ? await prompt.question(
+          `Initialize ${answers.display} (${answers.name}, ${answers.package}), sample: ${answers.sample}, CI: ${answers.ci.join(", ") || "none"}? This replaces .git with a fresh history. y/N`,
+        )
+      : "yes";
+    if (!/^y(es)?$/i.test(confirm)) {
+      console.error("Cancelled. Nothing was changed.");
+      return 1;
+    }
+  } finally {
+    prompt?.close();
+  }
+
+  try {
+    await applyChanges(root, planChanges(root, answers));
+  } catch (error) {
+    console.error(
+      error instanceof Untouched
+        ? `${error.message}\nNothing was changed.`
+        : `${error.message}\nThe tree is partly initialized; .git is untouched, so git reset --hard && git clean -fd restores it.`,
+    );
+    return 1;
+  }
+  if (!freshHistory(root)) {
+    console.error(
+      `Set git user.name and user.email, then run: git add -A && git commit -m "${COMMIT_MESSAGE}"`,
+    );
+    return 1;
+  }
+  console.log(
+    `Initialized ${answers.display} (${answers.name}, ${answers.package}) with one commit on main.`,
+  );
+  if (!answers.skipVerify) {
+    const verify = spawnSync(
+      process.execPath,
+      [join("scripts", "verify.mjs")],
+      {
+        cwd: root,
+        stdio: "inherit",
+      },
+    );
+    if (verify.status !== 0) {
+      console.error(
+        "verify failed; the project is initialized and committed, fix and re-run node scripts/verify.mjs.",
+      );
+      return verify.status ?? 1;
+    }
+  }
+  console.log(
+    "Next: create an empty repository on your host, then\n  git remote add origin <url>\n  git push -u origin main",
+  );
+  return 0;
+}
+
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  process.exitCode = await main(
+    process.argv.slice(2),
+    resolve(dirname(fileURLToPath(import.meta.url)), ".."),
+  );
+}
