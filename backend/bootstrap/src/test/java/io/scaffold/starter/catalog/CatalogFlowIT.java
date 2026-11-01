@@ -16,20 +16,18 @@ import java.util.UUID;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.mock.web.MockHttpServletResponse;
-import org.springframework.modulith.test.EnableScenarios;
+import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
 import org.springframework.test.web.servlet.MockMvc;
 
-@SpringBootTest
+@ApplicationModuleTest
 @AutoConfigureMockMvc
-@EnableScenarios
 @Import(TestcontainersConfiguration.class)
 @Tag("container")
 class CatalogFlowIT {

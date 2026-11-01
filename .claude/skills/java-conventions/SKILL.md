@@ -115,8 +115,14 @@ every layer it passes.
 |---|---|---|
 | domain rule, use case | plain JUnit + AssertJ; `port.out` faked in memory, `Clock.fixed(...)` | `backend/core/src/test/java`, same package |
 | controller mapping, validation, status codes | `@WebMvcTest(Controller.class)` + `@MockitoBean` per `port.in` | `bootstrap` tests, controller's package |
-| SQL, constraints, round-trips | `@SpringBootTest` + `@Import(TestcontainersConfiguration.class)` + `@Tag("container")` | `bootstrap` tests, adapter's package |
-| event flow, rollback, wiring | `@SpringBootTest` (+ `@EnableScenarios` for `Scenario`), tagged `container` | `bootstrap` tests, area package |
+| SQL, constraints, round-trips | `@ApplicationModuleTest` + `@Import(TestcontainersConfiguration.class)` + `@Tag("container")` | `bootstrap` tests, adapter's package |
+| event flow, rollback | `@ApplicationModuleTest` (a `Scenario` parameter needs nothing more), tagged `container` | `bootstrap` tests, area package |
+| the whole app starts | `@SpringBootTest`, tagged `container` | `bootstrap` tests, base package |
+
+A module test starts the area, `shared` and the wiring in the base package
+(`areaTestsAreModuleTests` rejects `@SpringBootTest` in an area). Mock another area's `port.in`
+with `@MockitoBean` instead of widening `mode`. `web` is a module of its own, so a test of the
+generic error body adds `extraIncludes = "web"` to bring in `ApiErrorHandler`.
 
 A fake must behave like the real adapter: `InMemoryProductRepository` stores and returns copies,
 so an unsaved change is lost as it would be in the database. A test needing Docker carries
