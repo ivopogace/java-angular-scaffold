@@ -5,6 +5,15 @@ commit message (`Initial commit from scaffold vX.Y.Z`) and never links back; to 
 read the entries after that version here and apply them by hand. `TEMPLATE_VERSION` in
 `scripts/init.mjs` equals the top entry.
 
+## 0.1.1 — 2026-11-01
+
+- Sample backend: `GET /api/catalog/products/{id}` exists, so the `Location` header of a create
+  resolves; it is the worked example of a read-one use case (`FindProduct`, `Optional` view, 404
+  problem). Port it if your area copied the create endpoint.
+- Sample backend: the create request strips the name before validation, so a name of Unicode
+  whitespace (which `@NotBlank` alone accepts and the domain rejects) is a 400, not a 500. Apply the
+  same compact-constructor normalisation to any request whose domain rule strips.
+
 ## 0.1.0 — 2026-11-01
 
 First release.

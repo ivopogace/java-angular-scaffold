@@ -36,6 +36,18 @@ class CatalogServiceTest {
     }
 
     @Test
+    void findReturnsTheStoredProduct() {
+        ProductView created = service.create(new CreateProductCommand("Lamp", PRICE));
+
+        assertThat(service.find(created.id())).contains(created);
+    }
+
+    @Test
+    void findOfAnUnknownProductIsEmpty() {
+        assertThat(service.find(ProductId.newId())).isEmpty();
+    }
+
+    @Test
     void publishOfAnUnknownProductIsNotFound() {
         assertThat(service.publish(ProductId.newId())).isInstanceOf(PublishOutcome.NotFound.class);
     }

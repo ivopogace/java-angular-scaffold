@@ -2,6 +2,7 @@ package io.scaffold.starter.catalog.adapter.in.web;
 
 import io.scaffold.starter.catalog.application.port.in.CreateProduct;
 import io.scaffold.starter.catalog.application.port.in.CreateProductCommand;
+import io.scaffold.starter.catalog.application.port.in.FindProduct;
 import io.scaffold.starter.catalog.application.port.in.ListProducts;
 import io.scaffold.starter.catalog.application.port.in.ProductView;
 import io.scaffold.starter.catalog.application.port.in.PublishOutcome;
@@ -13,6 +14,7 @@ import io.scaffold.starter.shared.Money;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -34,16 +36,19 @@ class ProductController {
     private static final String NOT_PUBLISHED = "NOT_PUBLISHED";
 
     private final CreateProduct createProduct;
+    private final FindProduct findProduct;
     private final PublishProduct publishProduct;
     private final RetireProduct retireProduct;
     private final ListProducts listProducts;
 
     ProductController(
             CreateProduct createProduct,
+            FindProduct findProduct,
             PublishProduct publishProduct,
             RetireProduct retireProduct,
             ListProducts listProducts) {
         this.createProduct = createProduct;
+        this.findProduct = findProduct;
         this.publishProduct = publishProduct;
         this.retireProduct = retireProduct;
         this.listProducts = listProducts;
@@ -52,6 +57,12 @@ class ProductController {
     @GetMapping
     List<ProductResponse> list() {
         return listProducts.list().stream().map(ProductResponse::from).toList();
+    }
+
+    @GetMapping("/{id}")
+    ResponseEntity<?> get(@PathVariable UUID id) {
+        Optional<ProductView> found = findProduct.find(new ProductId(id));
+        return found.isPresent() ? ResponseEntity.ok(ProductResponse.from(found.get())) : notFound(id);
     }
 
     @PostMapping

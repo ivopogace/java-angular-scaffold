@@ -14,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import io.scaffold.starter.catalog.application.port.in.CreateProduct;
 import io.scaffold.starter.catalog.application.port.in.CreateProductCommand;
+import io.scaffold.starter.catalog.application.port.in.FindProduct;
 import io.scaffold.starter.catalog.application.port.in.ListProducts;
 import io.scaffold.starter.catalog.application.port.in.ProductState;
 import io.scaffold.starter.catalog.application.port.in.ProductView;
@@ -25,6 +26,7 @@ import io.scaffold.starter.catalog.domain.id.ProductId;
 import io.scaffold.starter.shared.Money;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +56,9 @@ class ProductControllerTest {
     @MockitoBean
     ListProducts listProducts;
 
+    @MockitoBean
+    FindProduct findProduct;
+
     @Test
     void listReturnsEveryProduct() throws Exception {
         when(listProducts.list()).thenReturn(List.of(
@@ -70,6 +75,39 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$[0].publishedAt").value("2026-11-01T10:00:00Z"))
                 .andExpect(jsonPath("$[1].priceMinor").doesNotExist())
                 .andExpect(jsonPath("$[1].state").value("DRAFT"));
+    }
+
+    @Test
+    void getReturnsTheProduct() throws Exception {
+        when(findProduct.find(ID))
+                .thenReturn(Optional.of(view(ProductState.PUBLISHED, Money.of(4999, "EUR"), PUBLISHED_AT)));
+
+        mockMvc.perform(get("/api/catalog/products/{id}", ID.value()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(ID.value().toString()))
+                .andExpect(jsonPath("$.name").value("Linen shirt"))
+                .andExpect(jsonPath("$.priceMinor").value(4999))
+                .andExpect(jsonPath("$.currency").value("EUR"))
+                .andExpect(jsonPath("$.state").value("PUBLISHED"))
+                .andExpect(jsonPath("$.publishedAt").value("2026-11-01T10:00:00Z"));
+    }
+
+    @Test
+    void getOfAnUnknownProductIs404() throws Exception {
+        when(findProduct.find(ID)).thenReturn(Optional.empty());
+
+        mockMvc.perform(get("/api/catalog/products/{id}", ID.value()))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("No product " + ID.value()));
+    }
+
+    @Test
+    void getWithAMalformedIdIs400() throws Exception {
+        mockMvc.perform(get("/api/catalog/products/not-a-uuid"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(findProduct);
     }
 
     @Test
@@ -115,6 +153,34 @@ class ProductControllerTest {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
 
         verifyNoInteractions(createProduct);
+    }
+
+    @Test
+    void createWithANameOfUnicodeWhitespaceIsRejected() throws Exception {
+        mockMvc.perform(post("/api/catalog/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "\u2003\u2003"}"""))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+
+        verifyNoInteractions(createProduct);
+    }
+
+    @Test
+    void createStripsTheNameBeforeJudgingItsLength() throws Exception {
+        when(createProduct.create(any())).thenReturn(view(ProductState.DRAFT, null, null));
+        String longestName = "x".repeat(120);
+
+        mockMvc.perform(post("/api/catalog/products")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"name": "  %s  "}""".formatted(longestName)))
+                .andExpect(status().isCreated());
+
+        ArgumentCaptor<CreateProductCommand> command = ArgumentCaptor.forClass(CreateProductCommand.class);
+        verify(createProduct).create(command.capture());
+        assertThat(command.getValue().name()).isEqualTo(longestName);
     }
 
     @Test
