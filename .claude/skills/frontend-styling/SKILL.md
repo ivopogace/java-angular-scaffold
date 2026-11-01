@@ -5,8 +5,8 @@ description: >-
   --mat-sys-* tokens for colour, type, shape and elevation, Material's *-overrides mixins,
   changing brand colours with the theme-color schematic, light and dark, and what Stylelint
   rejects. Load BEFORE writing or changing any .scss under frontend/src, customising a Material
-  component, or when Stylelint fails (color-no-hex, ::ng-deep, .mat-mdc-*). Which folder a
-  component lives in is `frontend-architecture`'s.
+  component, or when Stylelint fails (color-no-hex, local/overrides-no-color-literal, ::ng-deep,
+  .mat-mdc-*). Which folder a component lives in is `frontend-architecture`'s.
 ---
 
 # Frontend styling
@@ -93,8 +93,9 @@ Token names are the component's override keys (`toolbar-overrides`, `button-over
 | `::ng-deep` | an `*-overrides` mixin on the host |
 | `.mdc-*`, `.mat-mdc-*` selectors | an `*-overrides` mixin; Material's internal classes change between releases |
 | hex, named colours, `rgb()`/`rgba()`/`hsl()`/`hsla()`/`hwb()`/`lab()`/`lch()`/`oklab()`/`oklch()`/`color()` outside the theme files | a `--mat-sys-*` token; `color-mix()` over tokens is allowed |
+| the same literals in the arguments of an `*-overrides` mixin (`local/overrides-no-color-literal`, `frontend/stylelint/overrides-no-color-literal.mjs`) | a `--mat-sys-*` token; `transparent`, `currentcolor`, Sass variables and `color.adjust()` pass |
 
-These rules check declarations only, not the arguments of an `@include`: a literal passed to an
-`*-overrides` mixin is not linted, so its values are system tokens by review (RC-FE-7).
-`npm run test:eslint-rules` covers the Stylelint config; a new rule gets a case in
-`frontend/stylelint/stylelint-config.test.mjs`.
+The theme files are exempt from every colour rule, so `mat.theme-overrides(...)` in
+`src/styles.scss` may take a literal. `npm run test:eslint-rules` covers the Stylelint config and
+the repo's own rules; a new rule gets a violating and a conforming case in
+`frontend/stylelint/` (RC-TEST-7).
