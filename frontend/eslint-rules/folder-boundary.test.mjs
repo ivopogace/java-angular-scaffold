@@ -19,6 +19,8 @@ const forbidden = (from, to) => [{ messageId: 'forbidden', data: { from, to } }]
 
 ruleTester.run('folder-boundary', rule, {
   valid: [
+    { code: "import { Money } from '../shared';", filename: file('catalog/a.ts') },
+    { code: "import { Api } from '../core/';", filename: file('catalog/a.ts') },
     {
       code: "import { Money } from '../../shared/money/money';",
       filename: file('catalog/list/list.ts'),
@@ -48,6 +50,36 @@ ruleTester.run('folder-boundary', rule, {
     },
   ],
   invalid: [
+    {
+      code: "import { Order } from '../orders';",
+      filename: file('catalog/a.ts'),
+      errors: forbidden('catalog', 'orders'),
+    },
+    {
+      code: "import { Order } from '../orders/';",
+      filename: file('catalog/a.ts'),
+      errors: forbidden('catalog', 'orders'),
+    },
+    {
+      code: "import { Order } from '../../orders';",
+      filename: file('catalog/list/a.ts'),
+      errors: forbidden('catalog', 'orders'),
+    },
+    {
+      code: "import { Pg } from '../pages';",
+      filename: file('catalog/a.ts'),
+      errors: forbidden('catalog', 'pages'),
+    },
+    {
+      code: "import { Product } from '../catalog';",
+      filename: file('core/a.ts'),
+      errors: forbidden('core', 'catalog'),
+    },
+    {
+      code: "import { Api } from '../core';",
+      filename: file('shared/a.ts'),
+      errors: forbidden('shared', 'core'),
+    },
     {
       code: "import { Order } from '../orders/order';",
       filename: file('catalog/list.ts'),

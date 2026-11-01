@@ -9,14 +9,19 @@ const ALLOWED_TARGETS = {
 };
 
 /**
- * The top-level folder of `src/app/` that `file` lives in; `APP_ROOT` for a loose file in `src/app/`
- * itself; null outside `src/app/`.
+ * The top-level folder of `src/app/` that `file` lives in or names (`../orders` and `../orders/x`
+ * are both `orders`); `APP_ROOT` for a loose file in `src/app/` itself, told apart from a folder by
+ * its dot (`app.routes`; folder names are kebab-case); null outside `src/app/`.
  */
 function topFolder(file) {
   const segments = path.resolve(file).split(/[\\/]/);
-  for (let i = segments.length - 3; i >= 0; i--) {
+  for (let i = segments.length - 2; i >= 0; i--) {
     if (segments[i] === 'src' && segments[i + 1] === 'app') {
-      return segments.length - i - 2 > 1 ? segments[i + 2] : APP_ROOT;
+      const below = segments.slice(i + 2);
+      if (below.length === 0 || (below.length === 1 && below[0].includes('.'))) {
+        return APP_ROOT;
+      }
+      return below[0];
     }
   }
   return null;
