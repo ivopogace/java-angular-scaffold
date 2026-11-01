@@ -70,7 +70,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/CatalogFlowIT.java",
-    sha256: "c7b0bdb12dc5b89e90fbc69d0b827c2e716e9b76523b851cb4ec8748dca28a88",
+    sha256: "6afa994c35a9197cb4f41f1cd2deb8494ed3c4ce4999031f19281c764b10ed20",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/PublishRollbackIT.java",
@@ -78,7 +78,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/in/web/ProductControllerTest.java",
-    sha256: "85c593058708054ba9a93c81f049d7829a7d5b15adf3d214c1a2adfc962f3177",
+    sha256: "19d1e9ab41a2b86c3a4c4a4df090faefa79501fa855f702e8e5bd3a178cdfc1c",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepositoryIT.java",

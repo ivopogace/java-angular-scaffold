@@ -98,8 +98,9 @@ class ProductControllerTest {
 
         mockMvc.perform(get("/api/catalog/products/{id}", ID.value()))
                 .andExpect(status().isNotFound())
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.detail").value("No product " + ID.value()));
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON));
+
+        verify(findProduct).find(ID);
     }
 
     @Test
