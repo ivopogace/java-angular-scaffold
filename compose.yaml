@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: scaffold_starter
+      POSTGRES_USER: scaffold_starter
+      POSTGRES_PASSWORD: scaffold_starter
+    ports:
+      - "5432:5432"

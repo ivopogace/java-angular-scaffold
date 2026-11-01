@@ -1,0 +1,33 @@
+plugins {
+    id("java-conventions")
+    alias(libs.plugins.spring.boot)
+}
+
+dependencies {
+    implementation(platform(libs.spring.boot.bom))
+    implementation(platform(libs.spring.modulith.bom))
+    implementation(project(":adapters"))
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    developmentOnly(platform(libs.spring.boot.bom))
+    developmentOnly("org.springframework.boot:spring-boot-docker-compose")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-jdbc")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:testcontainers-postgresql")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter")
+    testImplementation("org.springframework.modulith:spring-modulith-starter-test")
+    testImplementation("org.jmolecules.integrations:jmolecules-archunit")
+    testImplementation(libs.archunit.junit5)
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+// The built Angular app is served from the same origin as the API.
+tasks.processResources {
+    val frontendDist = layout.projectDirectory.dir("../../frontend/dist/scaffold-starter/browser")
+    if (frontendDist.asFile.isDirectory) {
+        from(frontendDist) {
+            into("static")
+        }
+    }
+}

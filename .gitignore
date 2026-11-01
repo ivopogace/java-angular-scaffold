@@ -1,0 +1,25 @@
+# Build output
+build/
+.gradle/
+dist/
+.angular/
+node_modules/
+test-results/
+playwright-report/
+*.log
+
+# Agent workspace
+.superpowers/
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.vs/
+.settings/
+.classpath
+.project
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,16 @@
+[versions]
+spring-boot = "4.1.2"
+spring-modulith = "2.1.2"
+jmolecules-bom = "2025.0.2"
+archunit = "1.5.1"
+jakarta-transaction = "2.0.1"
+
+[libraries]
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
+jmolecules-bom = { module = "org.jmolecules:jmolecules-bom", version.ref = "jmolecules-bom" }
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+jakarta-transaction-api = { module = "jakarta.transaction:jakarta.transaction-api", version.ref = "jakarta-transaction" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
