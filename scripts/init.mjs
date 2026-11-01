@@ -556,14 +556,32 @@ const FINISH_HISTORY = [
   `git commit --no-verify -m "${COMMIT_MESSAGE}"`,
 ];
 
+const GIT_DIR_ATTEMPTS = 3;
+
+/**
+ * Deletes `.git` and creates an empty one. A git process still running in the clone (a background
+ * gc) can write the old refs back meanwhile, so the new `.git` must hold no ref before init commits.
+ *
+ * @throws {Error} when old refs keep reappearing
+ */
+function replaceGitDir(root) {
+  for (let attempt = 1; attempt <= GIT_DIR_ATTEMPTS; attempt++) {
+    rmSync(join(root, ".git"), { recursive: true, force: true });
+    git(root, ["init", "-q"]);
+    if (!git(root, ["for-each-ref", "--count=1"]).trim()) return;
+  }
+  throw new Error(
+    "Another git process keeps writing the old history into .git (a background gc?); wait for it to finish and delete .git.",
+  );
+}
+
 /**
  * Replaces `.git` with a fresh repository holding one commit on `main`.
  *
  * @returns {boolean} false when git has no identity; throws when a git command fails.
  */
 function freshHistory(root) {
-  rmSync(join(root, ".git"), { recursive: true, force: true });
-  git(root, ["init", "-q"]);
+  replaceGitDir(root);
   git(root, ["symbolic-ref", "HEAD", "refs/heads/main"]);
   git(root, ["config", "core.hooksPath", ".githooks"]);
   git(root, ["add", "-A"]);
