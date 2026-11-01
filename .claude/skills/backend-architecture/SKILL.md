@@ -38,8 +38,9 @@ Full worked example: the `catalog` sample, while it exists.
 | wiring that names no area (`ClockConfiguration`, `UseCaseConfiguration`) | `<base>` next to `Application` | `bootstrap` |
 
 The listed packages are exhaustive: `adapter.in.web.dto` or `domain.model.pricing` fails
-`areaPackageShape` — flatten into the listed package. `shared`, `web` and `config` are not areas
-(wiring sits in the root package, next to `Application`).
+`areaPackageShape` — flatten into the listed package. `shared` and `web` are not areas; wiring
+sits in the root package, next to `Application`, so a `config` package would be judged as an area
+and fail.
 
 ## Crossing between areas
 

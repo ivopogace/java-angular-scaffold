@@ -30,6 +30,13 @@ class MoneyTest {
     }
 
     @Test
+    void plusOverflowingALongFailsInsteadOfWrapping() {
+        Money nearMax = Money.of(Long.MAX_VALUE, "EUR");
+
+        assertThatThrownBy(() -> nearMax.plus(Money.of(1, "EUR"))).isInstanceOf(ArithmeticException.class);
+    }
+
+    @Test
     void nullCurrencyIsRejected() {
         assertThatThrownBy(() -> new Money(100, null)).isInstanceOf(NullPointerException.class);
     }
