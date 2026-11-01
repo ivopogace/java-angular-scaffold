@@ -95,6 +95,13 @@ stay verbatim.
 
 | skill | load when |
 |---|---|
+| `backend-architecture` | before adding or moving a class, package, port, event, area or Gradle dependency under `backend/`, or when the structural net fails |
+| `java-conventions` | before writing or refactoring any Java: class, record, port, service, adapter, event or test |
+| `frontend-architecture` | before adding a file, component, route, provider, cross-folder import or e2e spec under `frontend/` |
+| `frontend-styling` | before writing or changing `.scss` or customising a Material component, or when Stylelint fails |
+| `review-checklist` | reviewing any change here, your own included; adds items to a running review |
+| `docs-freshness` | before finishing a change that renames, moves or removes something a doc states |
+| `local-dev` | before the first build, test or verify run of a session, or when one fails for an environmental reason |
 
 ## Way of working
 
