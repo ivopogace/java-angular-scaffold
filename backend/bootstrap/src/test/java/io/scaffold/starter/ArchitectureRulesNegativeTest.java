@@ -46,10 +46,18 @@ class ArchitectureRulesNegativeTest {
                         "archfixture.web.PublicAdvice"),
                 violation("areaTestsAreModuleTests", ArchitectureRules::areaTestsAreModuleTests,
                         "archfixture.orders.adapter.out.persistence.FullContextIT"),
+                violation("areaTestsAreModuleTests", ArchitectureRules::areaTestsAreModuleTests,
+                        "archfixture.orders.adapter.out.persistence.ComposedContextIT"),
+                violation("areaTestsAreModuleTests", ArchitectureRules::areaTestsAreModuleTests,
+                        "archfixture.orders.adapter.out.persistence.InheritedContextIT"),
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
                         "archfixture.orders.application.port.in.LeakyOrderView"),
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
                         "archfixture.orders.domain.event.OrdersPlaced"));
+    }
+
+    private static List<ArchRule> everyRule() {
+        return Stream.concat(RULES.all().stream(), RULES.testRules().stream()).toList();
     }
 
     private static Arguments violation(String name, Function<ArchitectureRules, ArchRule> rule, String offender) {
@@ -69,7 +77,7 @@ class ArchitectureRulesNegativeTest {
     void noRuleReportsTheCleanArea() {
         assertThat(RULES.all()).hasSize(8);
         assertThat(RULES.testRules()).hasSize(1);
-        for (ArchRule rule : Stream.concat(RULES.all().stream(), RULES.testRules().stream()).toList()) {
+        for (ArchRule rule : everyRule()) {
             EvaluationResult result = rule.evaluate(FIXTURES);
             assertThat(String.join("\n", result.getFailureReport().getDetails()))
                     .as(rule.getDescription())
@@ -81,7 +89,7 @@ class ArchitectureRulesNegativeTest {
     void everyRuleToleratesAnEmptyClassSet() {
         JavaClasses none = new ClassFileImporter().importPackages("archfixture.doesnotexist");
 
-        for (ArchRule rule : Stream.concat(RULES.all().stream(), RULES.testRules().stream()).toList()) {
+        for (ArchRule rule : everyRule()) {
             assertThat(rule.evaluate(none).hasViolation()).as(rule.getDescription()).isFalse();
         }
     }

@@ -3,6 +3,7 @@ package io.scaffold.starter;
 import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAnyPackage;
 import static com.tngtech.archunit.lang.SimpleConditionEvent.violated;
+import static com.tngtech.archunit.lang.conditions.ArchConditions.be;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
@@ -14,11 +15,14 @@ import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import io.scaffold.starter.shared.UseCase;
+import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.modulith.test.ApplicationModuleTest;
 
 /**
  * The project's structural rules for one base package. An <em>area</em> is a direct sub-package of
@@ -62,9 +66,12 @@ final class ArchitectureRules {
     }
 
     ArchRule areaTestsAreModuleTests() {
+        DescribedPredicate<JavaClass> wholeAppTest = DescribedPredicate.describe(
+                "a @SpringBootTest that is no @ApplicationModuleTest",
+                item -> carries(item, SpringBootTest.class) && !carries(item, ApplicationModuleTest.class));
         return noClasses()
                 .that(isAreaClass())
-                .should().beAnnotatedWith(SpringBootTest.class)
+                .should(be(wholeAppTest))
                 .as("area tests use @ApplicationModuleTest, not @SpringBootTest")
                 .allowEmptyShould(true);
     }
@@ -238,7 +245,13 @@ final class ArchitectureRules {
                 .orElse(false));
     }
 
-    private static DescribedPredicate<JavaClass> isPackageInfo() {
+    /** Annotated with {@code annotation} directly, through a composed annotation, or on a superclass. */
+    private static boolean carries(JavaClass item, Class<? extends Annotation> annotation) {
+        return Stream.concat(Stream.of(item), item.getAllRawSuperclasses().stream())
+                .anyMatch(type -> type.isAnnotatedWith(annotation) || type.isMetaAnnotatedWith(annotation));
+    }
+
+        private static DescribedPredicate<JavaClass> isPackageInfo() {
         return DescribedPredicate.describe("package-info", item -> item.getSimpleName().equals("package-info"));
     }
 
