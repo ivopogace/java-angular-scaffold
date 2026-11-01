@@ -94,6 +94,29 @@ class CatalogServiceTest {
     }
 
     @Test
+    void publishPersistsTheTransition() {
+        ProductView draft = service.create(new CreateProductCommand("Lamp", PRICE));
+
+        service.publish(draft.id());
+
+        assertThat(service.list()).singleElement().satisfies(stored -> {
+            assertThat(stored.state()).isEqualTo(ProductState.PUBLISHED);
+            assertThat(stored.publishedAt()).isEqualTo(NOW);
+        });
+    }
+
+    @Test
+    void retirePersistsTheTransition() {
+        ProductView draft = service.create(new CreateProductCommand("Lamp", PRICE));
+        service.publish(draft.id());
+
+        service.retire(draft.id());
+
+        assertThat(service.list()).singleElement()
+                .satisfies(stored -> assertThat(stored.state()).isEqualTo(ProductState.RETIRED));
+    }
+
+    @Test
     void listOrdersByNameIgnoringCase() {
         service.create(new CreateProductCommand("cherry", null));
         service.create(new CreateProductCommand("Banana", null));
