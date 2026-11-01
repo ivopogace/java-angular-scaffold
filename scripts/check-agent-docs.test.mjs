@@ -380,6 +380,28 @@ test("a permission object, the deprecated opencode shape, fails", (t) => {
   );
 });
 
+test("a catch-all rule placed after narrower rules of its action fails", (t) => {
+  const { permissions } = JSON.parse(passingFiles()["opencode.json"]);
+  const catchAll = permissions.find(
+    (rule) => rule.action === "bash" && rule.resource === "*",
+  );
+  assert.ok(catchAll);
+  const reordered = [
+    ...permissions.filter((rule) => rule !== catchAll),
+    catchAll,
+  ];
+  assertOneProblem(
+    check(t, {
+      "opencode.json": JSON.stringify({
+        ...JSON.parse(passingFiles()["opencode.json"]),
+        permissions: reordered,
+      }),
+    }),
+    "opencode.json",
+    /catch-all "bash \*" rule comes after narrower "bash" rules/,
+  );
+});
+
 test("an opencode.json without a permissions rule list fails", (t) => {
   const { permissions, ...rest } = JSON.parse(passingFiles()["opencode.json"]);
   assert.ok(permissions);

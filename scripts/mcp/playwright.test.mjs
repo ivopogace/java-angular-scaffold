@@ -102,20 +102,58 @@ test("--no-sandbox inside a container, found by its marker file", () => {
 });
 
 test("PLAYWRIGHT_MCP_NO_SANDBOX overrides the detection either way", () => {
+  for (const on of ["1", "true", "TRUE"]) {
+    assert.equal(
+      needsNoSandbox(
+        { PLAYWRIGHT_MCP_NO_SANDBOX: on },
+        { platform: "win32", uid: undefined, exists: present() },
+      ),
+      true,
+      on,
+    );
+  }
+  for (const off of ["0", "false", "False"]) {
+    assert.equal(
+      needsNoSandbox(
+        { PLAYWRIGHT_MCP_NO_SANDBOX: off },
+        { platform: "linux", uid: 0, exists: present() },
+      ),
+      false,
+      off,
+    );
+  }
+});
+
+test("an unrecognised PLAYWRIGHT_MCP_NO_SANDBOX value is reported and ignored", () => {
+  const warnings = [];
   assert.equal(
     needsNoSandbox(
-      { PLAYWRIGHT_MCP_NO_SANDBOX: "1" },
-      { platform: "win32", uid: undefined, exists: present() },
-    ),
-    true,
-  );
-  assert.equal(
-    needsNoSandbox(
-      { PLAYWRIGHT_MCP_NO_SANDBOX: "0" },
-      { platform: "linux", uid: 0, exists: present() },
+      { PLAYWRIGHT_MCP_NO_SANDBOX: "yes" },
+      {
+        platform: "linux",
+        uid: 1000,
+        exists: present(),
+        warn: (m) => warnings.push(m),
+      },
     ),
     false,
   );
+  assert.equal(warnings.length, 1);
+  assert.match(warnings[0], /PLAYWRIGHT_MCP_NO_SANDBOX=yes/);
+  assert.equal(
+    needsNoSandbox(
+      { PLAYWRIGHT_MCP_NO_SANDBOX: "" },
+      {
+        platform: "linux",
+        uid: 0,
+        exists: present(),
+        warn: (m) => warnings.push(m),
+      },
+    ),
+    true,
+    "an empty value means unset",
+  );
+  assert.equal(warnings.length, 1);
 });
 
 test("--no-sandbox follows the fixed flags and precedes --executable-path", () => {

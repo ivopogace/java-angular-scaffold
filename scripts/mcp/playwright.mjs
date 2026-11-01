@@ -14,8 +14,9 @@
  * `--no-sandbox` turns off Chromium's process sandbox, so it is passed only where the sandbox cannot
  * run: as root on Linux (Chromium refuses to start otherwise) or inside a container (`/.dockerenv`,
  * or podman's `/run/.containerenv`), whose default seccomp profile blocks the user namespaces the
- * sandbox needs. `PLAYWRIGHT_MCP_NO_SANDBOX=1` forces the flag on, `=0` keeps it off. On any other
- * machine Chromium runs sandboxed.
+ * sandbox needs. `PLAYWRIGHT_MCP_NO_SANDBOX=1` (or `true`) forces the flag on, `=0` (or `false`)
+ * keeps it off; any other value is reported on stderr and ignored. On any other machine Chromium
+ * runs sandboxed.
  */
 import { existsSync } from "node:fs";
 import { join } from "node:path";
@@ -49,10 +50,17 @@ export function needsNoSandbox(
     platform = process.platform,
     uid = process.getuid?.(),
     exists = existsSync,
+    warn = console.error,
   } = {},
 ) {
-  if (env.PLAYWRIGHT_MCP_NO_SANDBOX === "1") return true;
-  if (env.PLAYWRIGHT_MCP_NO_SANDBOX === "0") return false;
+  const override = env.PLAYWRIGHT_MCP_NO_SANDBOX;
+  if (override !== undefined && override !== "") {
+    if (/^(1|true)$/i.test(override)) return true;
+    if (/^(0|false)$/i.test(override)) return false;
+    warn(
+      `playwright MCP: PLAYWRIGHT_MCP_NO_SANDBOX=${override} is neither 1/true nor 0/false; ignored`,
+    );
+  }
   if (platform !== "linux") return false;
   return uid === 0 || CONTAINER_MARKERS.some((marker) => exists(marker));
 }

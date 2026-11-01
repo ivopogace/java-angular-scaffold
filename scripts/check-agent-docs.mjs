@@ -346,6 +346,7 @@ function checkPermissions(root) {
       `${OPENCODE}: no "permissions" array of { action, resource, effect } rules`,
     ];
   }
+  problems.push(...catchAllOrderProblems(rules));
   const claude = new Set(allow.map(claudeGrant));
   const open = new Set(
     rules
@@ -364,6 +365,28 @@ function checkPermissions(root) {
       problems.push(
         `${SETTINGS}: no allow entry for "${grant}", which ${OPENCODE} allows`,
       );
+    }
+  }
+  return problems;
+}
+
+/**
+ * opencode applies the last matching rule, so an action's catch-all `*` must come before its
+ * narrower rules; placed after them it would silently override every allow it covers.
+ */
+function catchAllOrderProblems(rules) {
+  const narrowerSeen = new Set();
+  const problems = [];
+  for (const rule of rules) {
+    if (!rule?.action) continue;
+    if (rule.resource === "*") {
+      if (narrowerSeen.has(rule.action)) {
+        problems.push(
+          `${OPENCODE}: the catch-all "${rule.action} *" rule comes after narrower "${rule.action}" rules; opencode applies the last matching rule, so put the catch-all first`,
+        );
+      }
+    } else {
+      narrowerSeen.add(rule.action);
     }
   }
   return problems;
