@@ -54,8 +54,17 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
 - Comments, Javadoc, TSDoc and skill lines that narrated history or restated the code are gone;
   what stays is contract. Two rules that only prose stated are now enforced: `verify` checks
   `scripts/` with the frontend's Prettier (`scripts format` step), and the ArchUnit rule
-  `adaptersArePackagePrivate` fails a public top-level class in an area's `adapter` packages or in `web`. Copy
-  the step and the rule (with its fixture) if your project kept the prose.
+  `adaptersArePackagePrivate` fails a public top-level class in an area's `adapter` packages or
+  in `web`. Copy the step and the rule (with its fixtures) if your project kept the prose.
+- Versions: Node 26.13.0 (the first 26.x LTS) with npm 11.20.0, ESLint 10.14.0,
+  typescript-eslint 8.72.1, Postgres 18 for `compose.yaml` and the Testcontainers ITs, and
+  `actions/checkout` v7, `actions/setup-java` v6, `actions/setup-node` v7. Spring Boot 4.1.2,
+  Spring Modulith 2.1.2, jMolecules 2025.0.2, ArchUnit 1.5.1, Gradle 9.8.2 and Angular 22.2 were
+  already the latest stable releases; TypeScript stays on 6.0 because Angular 22 requires
+  `>=6.0 <6.1`. Lint now fails on decorator inputs and outputs, `@HostBinding` / `@HostListener`,
+  a root `@Injectable`, constructor injection, `*ngIf` / `*ngFor` and `ngClass` / `ngStyle`
+  (`frontend/eslint.config.js`, proved by `frontend/eslint-rules/eslint-config.test.mjs`); copy
+  both. Unused Java pattern and catch bindings are `_`; `init` escapes with `RegExp.escape`.
 
 ## 0.1.0 — 2026-11-01
 
