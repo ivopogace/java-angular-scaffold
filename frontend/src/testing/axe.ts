@@ -2,7 +2,7 @@ import axe from 'axe-core';
 import { expect } from 'vitest';
 
 /**
- * Runs axe-core over a rendered element and fails on any critical or serious violation.
+ * Runs axe-core over a rendered element and fails on any violation, whatever its impact.
  *
  * `color-contrast` is disabled because jsdom has no layout, so axe can never decide it; the
  * Playwright suite checks contrast in a real browser. `region` is disabled because a component
@@ -23,10 +23,7 @@ export async function expectNoAxeViolations(element: Element): Promise<void> {
   }
   try {
     const results = await axe.run(element, AUDIT_CONFIG);
-    const blocking = results.violations.filter(
-      (v) => v.impact === 'critical' || v.impact === 'serious',
-    );
-    expect(blocking, formatViolations(blocking)).toEqual([]);
+    expect(results.violations, formatViolations(results.violations)).toEqual([]);
   } finally {
     if (!attached) {
       element.remove();
