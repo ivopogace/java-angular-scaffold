@@ -42,7 +42,7 @@ npm start                    # dev server on :4200, proxies /api and /actuator t
 npm run lint                 # ESLint (incl. folder boundaries) + Stylelint
 npm run format:check         # Prettier (`npm run format` applies)
 npm test -- --watch=false    # Vitest in jsdom, incl. axe specs
-npm run test:eslint-rules    # the repo's own ESLint rules and Stylelint config
+npm run test:eslint-rules    # the repo's own ESLint rules, ESLint and Stylelint configs
 npm run build
 npm run typecheck:e2e        # tsc over e2e/ (Playwright transpiles without checking)
 npm run test:e2e             # Playwright, mocked API (CI-safe)

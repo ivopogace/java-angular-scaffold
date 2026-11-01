@@ -38,6 +38,9 @@ memory.
 - Native control flow (`@if`, `@for`, `@switch`).
 - `inject()`, not constructor parameters.
 - No `standalone: true` and no `ChangeDetectionStrategy.OnPush` boilerplate.
+- Lint fails on decorator inputs and outputs, `@HostBinding` / `@HostListener`, a root
+  `@Injectable` (use `@Service()`), constructor injection, `*ngIf` / `*ngFor` and `ngClass` /
+  `ngStyle`; `eslint-rules/eslint-config.test.mjs` proves each rule fires.
 
 ## Styling (invariant #8)
 
@@ -59,5 +62,5 @@ memory.
 - Playwright: `e2e/` stubs the API per spec and runs in CI; `e2e/real-backend/` runs locally only,
   against the running stack (backend on `:8080`, `npm start`):
   `REAL_BACKEND=1 npm run test:e2e:real` — without the variable every spec skips.
-- The repo's own ESLint rules and Stylelint config have their own suite
+- The repo's own ESLint rules, the ESLint and Stylelint configs have their own suite
   (`npm run test:eslint-rules`).

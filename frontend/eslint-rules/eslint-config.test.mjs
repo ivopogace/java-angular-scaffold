@@ -1,0 +1,107 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import { fileURLToPath } from 'node:url';
+
+import { ESLint } from 'eslint';
+
+const eslint = new ESLint({ cwd: fileURLToPath(new URL('..', import.meta.url)) });
+
+const lint = async (code, filePath) => {
+  const [result] = await eslint.lintText(code, { filePath });
+  return result.messages.map((message) => message.ruleId);
+};
+
+const lintTs = (code) => lint(code, 'src/app/x/x.ts');
+const lintHtml = (code) => lint(code, 'src/app/x/x.html');
+
+describe('eslint config', () => {
+  it('flags decorator inputs', async () => {
+    const rules = await lintTs(`import { Directive, Input } from '@angular/core';
+
+@Directive({ selector: '[appX]' })
+export class X {
+  @Input() value = '';
+}
+`);
+    assert.ok(rules.includes('@angular-eslint/prefer-signals'), rules.join());
+  });
+
+  it('accepts signal inputs', async () => {
+    assert.deepEqual(
+      await lintTs(`import { Directive, input } from '@angular/core';
+
+@Directive({ selector: '[appX]' })
+export class X {
+  readonly value = input('');
+}
+`),
+      [],
+    );
+  });
+
+  it('flags @HostListener', async () => {
+    const rules = await lintTs(`import { Directive, HostListener } from '@angular/core';
+
+@Directive({ selector: '[appX]' })
+export class X {
+  @HostListener('click')
+  onClick(): void {}
+}
+`);
+    assert.ok(rules.includes('@angular-eslint/prefer-host-metadata-property'), rules.join());
+  });
+
+  it('flags a root @Injectable', async () => {
+    const rules = await lintTs(`import { Injectable } from '@angular/core';
+
+@Injectable({ providedIn: 'root' })
+export class X {}
+`);
+    assert.ok(rules.includes('@angular-eslint/prefer-service-decorator'), rules.join());
+  });
+
+  it('accepts @Service()', async () => {
+    assert.deepEqual(
+      await lintTs(`import { Service } from '@angular/core';
+
+@Service()
+export class X {}
+`),
+      [],
+    );
+  });
+
+  it('flags constructor injection', async () => {
+    const rules = await lintTs(`import { HttpClient } from '@angular/common/http';
+import { Service } from '@angular/core';
+
+@Service()
+export class X {
+  constructor(private readonly http: HttpClient) {}
+}
+`);
+    assert.ok(rules.includes('@angular-eslint/prefer-inject'), rules.join());
+  });
+
+  it('flags structural control flow', async () => {
+    const rules = await lintHtml('<p *ngIf="shown">x</p>\n');
+    assert.ok(rules.includes('@angular-eslint/template/prefer-control-flow'), rules.join());
+  });
+
+  it('flags ngClass and ngStyle', async () => {
+    const classRules = await lintHtml('<p [ngClass]="{ on: shown }">x</p>\n');
+    assert.ok(
+      classRules.includes('@angular-eslint/template/prefer-class-binding'),
+      classRules.join(),
+    );
+    const styleRules = await lintHtml('<p [ngStyle]="{ width: size }">x</p>\n');
+    assert.ok(
+      styleRules.includes('@angular-eslint/template/prefer-style-binding'),
+      styleRules.join(),
+    );
+  });
+
+  it('accepts class and style bindings', async () => {
+    assert.deepEqual(await lintHtml('<p [class.on]="shown" [style.width]="size">x</p>\n'), []);
+  });
+});
