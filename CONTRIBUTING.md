@@ -36,9 +36,11 @@ Check every change with `node scripts/verify.mjs` (`--quick` while iterating). T
   needs `node scripts/remove-sample.mjs --refresh-hashes` in the same commit; otherwise the hash test
   fails, and in a project `remove-sample` would refuse the unedited sample as drifted. Lines that
   only exist for the sample in shared files end with the `sample:catalog` marker.
-- **Vendored skills stay verbatim.** They are pinned in `skills-lock.json` (source, ref, hash); an
-  update replaces the folder from the new upstream ref, records the new ref and hash, and refreshes
-  the licence text in `THIRD_PARTY_LICENSES.md`.
+- **Vendored skills stay verbatim.** They are pinned in `skills-lock.json` (source, ref, and a
+  hash of the whole folder, so `check-agent-docs` fails on an edit to any file of one); an update
+  replaces the folder from the new upstream ref, records the ref, re-pins the hash with
+  `node scripts/check-agent-docs.mjs --refresh-hashes` in the same commit, and refreshes the
+  licence text in `THIRD_PARTY_LICENSES.md`.
 
 ## Lessons flow back by hand
 
