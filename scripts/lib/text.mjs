@@ -29,11 +29,15 @@ function sha256File(path) {
   return createHash("sha256").update(hashed).digest("hex");
 }
 
+/** A path with a segment starting with `.`: OS and editor droppings such as `.DS_Store`, never skill content. */
+const isDotPath = (path) =>
+  path.split("/").some((segment) => segment.startsWith("."));
+
 /**
  * SHA-256 (hex) of a folder: the hash of its `sha256sum`-style manifest, one
  * line `<sha256File of the file>  <path relative to the folder, forward
  * slashes>\n` per file, sorted by path. Any added, removed or edited file
- * changes it; line endings do not.
+ * changes it; line endings and dotfiles do not.
  */
 export function sha256Folder(dir) {
   const manifest = readdirSync(dir, { recursive: true, withFileTypes: true })
@@ -42,6 +46,7 @@ export function sha256Folder(dir) {
       const full = join(entry.parentPath, entry.name);
       return [relative(dir, full).split(sep).join("/"), full];
     })
+    .filter(([path]) => !isDotPath(path))
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([path, full]) => `${sha256File(full)}  ${path}\n`)
     .join("");
