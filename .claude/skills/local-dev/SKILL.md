@@ -53,9 +53,11 @@ Docker Compose support; Flyway migrates on start. The real-backend specs skip un
 
 ## Hooks and formatting
 
-- `.githooks/pre-commit` runs Prettier and ESLint on staged `frontend/` files only. It is active
-  once `git config core.hooksPath .githooks` is set; it is a speed-up — `verify` checks the same
-  and more.
+- `.githooks/pre-commit` runs the frontend's own Prettier and ESLint on the staged content of
+  staged `frontend/` files (a partially staged file is judged on what the commit holds). It needs
+  `npm ci` in `frontend/` first and stops with that instruction otherwise. It is active once
+  `git config core.hooksPath .githooks` is set; it is a speed-up — `verify` checks the same and
+  more.
 - `npm run format` (from `frontend/`) fixes what `format:check` reports; its scope is all of
   `frontend/` minus `.prettierignore`.
 - `scripts/*.mjs` use Prettier's defaults: from the repo root run
