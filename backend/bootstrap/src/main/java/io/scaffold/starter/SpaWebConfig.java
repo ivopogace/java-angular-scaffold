@@ -17,14 +17,17 @@ import org.springframework.web.servlet.resource.PathResourceResolver;
  * {@code index.html}, so client-side routes survive a reload; unknown API paths still end in a
  * 404 problem body. The shell ({@code index.html}, the fallback, anything unhashed) is served with
  * {@code Cache-Control: no-cache}, so a deploy is picked up on the next load; scripts, styles and
- * media carry a content hash in their name (Angular's production {@code outputHashing}) and are
- * cached for a year as immutable.
+ * media whose name carries a content hash ({@code main-ABC123.js}, as Angular's production
+ * {@code outputHashing} names them) are cached for a year as immutable. An unhashed file is part
+ * of the shell.
  */
 @Configuration(proxyBeanMethods = false)
 class SpaWebConfig implements WebMvcConfigurer {
 
     private static final String STATIC_LOCATION = "classpath:/static/";
-    private static final String[] HASHED_ASSETS = {"/*.js", "/*.css", "/media/**"};
+    private static final String MEDIA = "media/";
+    private static final String[] HASHED_ASSETS = {"/*-*.js", "/*-*.css"};
+    private static final String HASHED_MEDIA = "/" + MEDIA + "*-*.*";
     private static final CacheControl HASHED = CacheControl.maxAge(Duration.ofDays(365)).immutable();
     private static final CacheControl SHELL = CacheControl.noCache();
     private static final Resource INDEX = new ClassPathResource("static/index.html");
@@ -34,6 +37,10 @@ class SpaWebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         registry.addResourceHandler(HASHED_ASSETS)
                 .addResourceLocations(STATIC_LOCATION)
+                .setCacheControl(HASHED);
+        // A handler resolves the path below its literal prefix, so media needs its own root.
+        registry.addResourceHandler(HASHED_MEDIA)
+                .addResourceLocations(STATIC_LOCATION + MEDIA)
                 .setCacheControl(HASHED);
         registry.addResourceHandler("/**")
                 .addResourceLocations(STATIC_LOCATION)
