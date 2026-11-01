@@ -17,6 +17,7 @@ import { describe, test } from "node:test";
 import { checkAgentDocs } from "./check-agent-docs.mjs";
 import {
   TEMPLATE_VERSION,
+  nodeVersionProblem,
   parseArgs,
   replaceTokens,
   validate,
@@ -218,6 +219,15 @@ async function initWithPackage(t, pkg) {
 test("TEMPLATE_VERSION equals the top CHANGELOG.md entry", () => {
   const changelog = readFileSync(join(repoRoot, "CHANGELOG.md"), "utf8");
   assert.equal(/^## (\S+)/m.exec(changelog)?.[1], TEMPLATE_VERSION);
+});
+
+test("nodeVersionProblem refuses an older major and accepts the same or a newer one", () => {
+  assert.match(
+    nodeVersionProblem("22.18.0", "26.13.0"),
+    /init needs Node 26\.13\.0 \(\.nvmrc\); this is Node 22\.18\.0\. Nothing was changed\./,
+  );
+  assert.equal(nodeVersionProblem("26.0.0", "26.13.0"), null);
+  assert.equal(nodeVersionProblem("27.1.0", "v26.13.0"), null);
 });
 
 test("parseArgs reads every flag, in both spellings", () => {

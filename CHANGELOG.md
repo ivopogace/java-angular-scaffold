@@ -64,7 +64,9 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   `>=6.0 <6.1`. Lint now fails on decorator inputs and outputs, `@HostBinding` / `@HostListener`,
   a root `@Injectable`, constructor injection, `*ngIf` / `*ngFor` and `ngClass` / `ngStyle`
   (`frontend/eslint.config.js`, proved by `frontend/eslint-rules/eslint-config.test.mjs`); copy
-  both. Unused Java pattern and catch bindings are `_`; `init` escapes with `RegExp.escape`.
+  both. Unused Java pattern and catch bindings are `_`; `init` escapes with `RegExp.escape` and
+  refuses, changing nothing, on a Node major older than `.nvmrc`. A local Postgres container
+  created by 17 does not start on 18: `docker compose down -v` (drops the local database).
 
 ## 0.1.0 — 2026-11-01
 
