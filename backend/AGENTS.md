@@ -92,8 +92,8 @@ dependencies or annotations:
 `ArchitectureTest` applies the project's structural rules (`ArchitectureRules`): the area package
 shape; `domain` depends only on the JDK, jMolecules, `shared`, its own `domain` and other areas'
 `domain/id`; `port/in` and `domain/event` never depend on `domain/model`; services are
-package-private and `@UseCase` when they implement a `port/in` interface; adapter classes are
-package-private and never use `application/service`; no JPA anywhere; no Spring beyond `org.springframework.modulith`, and no
+package-private and `@UseCase` when they implement a `port/in` interface; adapter classes and `web` are
+package-private; adapters never use `application/service`; no JPA anywhere; no Spring beyond `org.springframework.modulith`, and no
 `java.sql`, in `core` — plus jMolecules' DDD and hexagonal rules;
 `ArchitectureRulesNegativeTest` proves each rule fails on a violating fixture. A new rule gets a
 negative fixture in the same change.

@@ -68,15 +68,11 @@ test("frontend steps run in order", () => {
   assert.deepEqual(unit.args, ["test", "--", "--watch=false"]);
 });
 
-test("scripts are checked with the frontend's Prettier from the repository root", () => {
+test("scripts are checked with the frontend's Prettier", () => {
   const format = planSteps(base).find((s) => s.name === "scripts format");
   assert.deepEqual(
     [format.command, format.args, format.cwd],
-    [
-      "node",
-      ["frontend/node_modules/prettier/bin/prettier.cjs", "--check", "scripts"],
-      ".",
-    ],
+    ["npx", ["prettier", "--check", "../scripts"], "frontend"],
   );
 });
 

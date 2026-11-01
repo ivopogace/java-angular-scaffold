@@ -54,7 +54,7 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
 - Comments, Javadoc, TSDoc and skill lines that narrated history or restated the code are gone;
   what stays is contract. Two rules that only prose stated are now enforced: `verify` checks
   `scripts/` with the frontend's Prettier (`scripts format` step), and the ArchUnit rule
-  `adaptersArePackagePrivate` fails a public top-level class in an area's `adapter` packages. Copy
+  `adaptersArePackagePrivate` fails a public top-level class in an area's `adapter` packages or in `web`. Copy
   the step and the rule (with its fixture) if your project kept the prose.
 
 ## 0.1.0 — 2026-11-01
