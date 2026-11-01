@@ -1,10 +1,28 @@
 #!/usr/bin/env node
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import {
+  existsSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeEol, sha256Normalized } from "./lib/text.mjs";
+import { normalizeEol, sha256Folder } from "./lib/text.mjs";
 
 const SKILLS_DIR = ".claude/skills";
+const LOCK_FILE = "skills-lock.json";
+const REFRESH_HINT =
+  "after an upstream update, re-pin with node scripts/check-agent-docs.mjs --refresh-hashes";
+const USAGE = `Usage: node scripts/check-agent-docs.mjs [--refresh-hashes]
+
+Checks AGENTS.md / CLAUDE.md, the skills, the Skills table, the MCP config and
+${LOCK_FILE} for consistency; exits 1 and lists the problems otherwise.
+
+  --refresh-hashes   re-record each vendored skill's computedHash from its
+                     folder under ${SKILLS_DIR}/ (after replacing it from a new
+                     upstream ref), then run the check
+`;
 const CLAUDE_MD = "@AGENTS.md\n";
 const SKILL_NAME = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const MAX_NAME_LENGTH = 64;
@@ -67,15 +85,51 @@ function readJson(root, file) {
 }
 
 function readLock(root) {
-  if (!existsSync(join(root, "skills-lock.json"))) {
+  if (!existsSync(join(root, LOCK_FILE))) {
     return { skills: {}, problems: [] };
   }
-  const { json, problem } = readJson(root, "skills-lock.json");
+  const { json, problem } = readJson(root, LOCK_FILE);
   if (problem) return { skills: {}, problems: [problem] };
   const skills = json?.skills;
   return skills && typeof skills === "object"
-    ? { skills, problems: [] }
-    : { skills: {}, problems: ['skills-lock.json: no "skills" object'] };
+    ? { json, skills, problems: [] }
+    : { skills: {}, problems: [`${LOCK_FILE}: no "skills" object`] };
+}
+
+const lockEntryFolder = (name) => `${SKILLS_DIR}/${name}`;
+
+/**
+ * Re-records `computedHash` for every entry of `skills-lock.json` from the
+ * files under its skill folder, leaving the other keys and their order alone.
+ *
+ * @returns {{ refreshed: string[], unchanged: string[] }} the entries whose
+ *   hash changed, and the rest
+ * @throws {Error} when the lock file is unreadable or an entry has no folder;
+ *   nothing is written then
+ */
+export function refreshSkillsLock(root) {
+  const lock = readLock(root);
+  if (lock.problems.length > 0 || !lock.json) {
+    throw new Error(lock.problems[0] ?? `${LOCK_FILE}: missing`);
+  }
+  const missing = Object.keys(lock.skills)
+    .filter((name) => !existsSync(join(root, lockEntryFolder(name))))
+    .map((name) => `"${name}" has no folder ${lockEntryFolder(name)}/`);
+  if (missing.length > 0) {
+    throw new Error(`${LOCK_FILE}: ${missing.join("; ")}`);
+  }
+  const refreshed = [];
+  const unchanged = [];
+  for (const [name, entry] of Object.entries(lock.skills)) {
+    const computedHash = sha256Folder(join(root, lockEntryFolder(name)));
+    (computedHash === entry.computedHash ? unchanged : refreshed).push(name);
+    entry.computedHash = computedHash;
+  }
+  writeFileSync(
+    join(root, LOCK_FILE),
+    `${JSON.stringify(lock.json, null, 2)}\n`,
+  );
+  return { refreshed, unchanged };
 }
 
 function skillFolders(root) {
@@ -216,11 +270,11 @@ function checkSkillsTable(root, folders, vendored) {
       );
     } else if (vendored.has(name) && !marked) {
       problems.push(
-        `${file}: "${name}" is in skills-lock.json; mark its row ${VENDORED}`,
+        `${file}: "${name}" is in ${LOCK_FILE}; mark its row ${VENDORED}`,
       );
     } else if (!vendored.has(name) && marked) {
       problems.push(
-        `${file}: "${name}" is marked ${VENDORED} but has no skills-lock.json entry`,
+        `${file}: "${name}" is marked ${VENDORED} but has no ${LOCK_FILE} entry`,
       );
     }
   }
@@ -400,19 +454,16 @@ function claudeGrant(entry) {
   return `${tool.toLowerCase()} ${spec ?? "*"}`;
 }
 
+/** Each entry's computedHash must equal its whole folder's `sha256Folder`. */
 function checkLockEntries(root, skills) {
   return Object.entries(skills).flatMap(([name, entry]) => {
-    const folder = `${SKILLS_DIR}/${name}`;
-    const skillFile = join(root, folder, "SKILL.md");
+    const folder = lockEntryFolder(name);
     if (!existsSync(join(root, folder))) {
-      return [`skills-lock.json: "${name}" has no folder ${folder}/`];
+      return [`${LOCK_FILE}: "${name}" has no folder ${folder}/`];
     }
-    if (
-      !existsSync(skillFile) ||
-      sha256Normalized(skillFile) !== entry?.computedHash
-    ) {
+    if (sha256Folder(join(root, folder)) !== entry?.computedHash) {
       return [
-        `skills-lock.json: "${name}" computedHash does not match ${folder}/SKILL.md`,
+        `${LOCK_FILE}: "${name}" computedHash does not match the files under ${folder}/ (${REFRESH_HINT})`,
       ];
     }
     return [];
@@ -438,7 +489,30 @@ function findFiles(root, names, excluded) {
   return found.sort();
 }
 
-function main(root) {
+function main(root, argv) {
+  if (argv.includes("--help") || argv.includes("-h")) {
+    console.log(USAGE);
+    return 0;
+  }
+  if (argv.some((arg) => arg !== "--refresh-hashes")) {
+    console.error(USAGE);
+    return 2;
+  }
+  if (argv.includes("--refresh-hashes")) {
+    let refreshed;
+    let unchanged;
+    try {
+      ({ refreshed, unchanged } = refreshSkillsLock(root));
+    } catch (error) {
+      console.error(`Cannot refresh; ${error.message}`);
+      return 1;
+    }
+    console.log(
+      `${LOCK_FILE}: refreshed ${refreshed.length} hash(es)${
+        refreshed.length > 0 ? ` (${refreshed.join(", ")})` : ""
+      }, ${unchanged.length} unchanged.`,
+    );
+  }
   const problems = checkAgentDocs(root);
   if (problems.length === 0) {
     console.log("Agent docs are consistent.");
@@ -454,5 +528,6 @@ if (
 ) {
   process.exitCode = main(
     resolve(dirname(fileURLToPath(import.meta.url)), ".."),
+    process.argv.slice(2),
   );
 }

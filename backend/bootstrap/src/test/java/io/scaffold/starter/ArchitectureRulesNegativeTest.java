@@ -37,6 +37,7 @@ class ArchitectureRulesNegativeTest {
                 violation("servicesArePackagePrivateUseCases", ArchitectureRules::servicesArePackagePrivateUseCases,
                         "archfixture.orders.application.service.UnmarkedService"),
                 violation("areaPackageShape", ArchitectureRules::areaPackageShape, "archfixture.orders.misc.Stray"),
+                violation("areaPackageShape", ArchitectureRules::areaPackageShape, "archfixture.config.StrayWiring"),
                 violation("adaptersDoNotUseServices", ArchitectureRules::adaptersDoNotUseServices,
                         "archfixture.orders.adapter.in.web.ServiceCaller"),
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
