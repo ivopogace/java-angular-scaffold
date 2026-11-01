@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { globSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 
 /** Bytes a file is inspected for a NUL in to be called binary, as git does. */
@@ -29,24 +29,20 @@ function sha256File(path) {
   return createHash("sha256").update(hashed).digest("hex");
 }
 
-/** A path with a segment starting with `.`: OS and editor droppings such as `.DS_Store`, never skill content. */
-const isDotPath = (path) =>
-  path.split("/").some((segment) => segment.startsWith("."));
-
 /**
  * SHA-256 (hex) of a folder: the hash of its `sha256sum`-style manifest, one
  * line `<sha256File of the file>  <path relative to the folder, forward
  * slashes>\n` per file, sorted by path. Any added, removed or edited file
- * changes it; line endings and dotfiles do not.
+ * changes it; line endings do not, nor do dotfiles and dot directories (OS and editor droppings
+ * such as `.DS_Store`), which `globSync` skips.
  */
 export function sha256Folder(dir) {
-  const manifest = readdirSync(dir, { recursive: true, withFileTypes: true })
+  const manifest = globSync("**", { cwd: dir, withFileTypes: true })
     .filter((entry) => entry.isFile())
     .map((entry) => {
       const full = join(entry.parentPath, entry.name);
       return [relative(dir, full).split(sep).join("/"), full];
     })
-    .filter(([path]) => !isDotPath(path))
     .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
     .map(([path, full]) => `${sha256File(full)}  ${path}\n`)
     .join("");

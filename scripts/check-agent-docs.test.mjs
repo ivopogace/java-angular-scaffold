@@ -548,6 +548,7 @@ test("a dotfile dropped into a vendored skill folder is not skill content", (t) 
     check(t, {
       ".claude/skills/beta/.DS_Store": "finder junk",
       ".claude/skills/beta/references/.notes.md.swp": "editor junk",
+      ".claude/skills/beta/.cache/state.json": "{}",
     }),
     [],
   );
