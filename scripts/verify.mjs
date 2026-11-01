@@ -8,6 +8,20 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 export const NO_DOCKER_MESSAGE =
   "Docker is required for the full verify; run with --quick to skip container tests and e2e.";
 
+export const USAGE = "Usage: node scripts/verify.mjs [--quick]";
+
+/**
+ * @param {string[]} argv the arguments after the script name
+ * @returns {{ quick: boolean } | { error: string }} the options, or why the arguments are rejected.
+ */
+export function parseArgs(argv) {
+  const unknown = argv.filter((arg) => arg !== "--quick");
+  if (unknown.length > 0) {
+    return { error: `Unknown argument: ${unknown.join(" ")}\n${USAGE}` };
+  }
+  return { quick: argv.includes("--quick") };
+}
+
 /**
  * @typedef {{ name: string, cwd: string, command: string, args: string[] }} Step
  * `cwd` is relative to the repository root.
@@ -149,7 +163,12 @@ async function dockerAvailable() {
 }
 
 async function main(argv) {
-  const quick = argv.includes("--quick");
+  const args = parseArgs(argv);
+  if ("error" in args) {
+    console.error(args.error);
+    return 2;
+  }
+  const { quick } = args;
   const problem = await preflight({ quick, dockerAvailable });
   if (problem) {
     console.error(problem);

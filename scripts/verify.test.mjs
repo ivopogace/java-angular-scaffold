@@ -1,6 +1,14 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { test } from "node:test";
-import { planSteps, preflight, runCommand } from "./verify.mjs";
+import { fileURLToPath } from "node:url";
+import {
+  parseArgs,
+  planSteps,
+  preflight,
+  runCommand,
+  USAGE,
+} from "./verify.mjs";
 
 const base = {
   quick: false,
@@ -160,4 +168,23 @@ test("runCommand reports a command that cannot start as exit code 1", async () =
     { platform: "linux", stdio: "ignore" },
   );
   assert.equal(code, 1);
+});
+
+test("parseArgs accepts --quick and nothing else", () => {
+  assert.deepEqual(parseArgs([]), { quick: false });
+  assert.deepEqual(parseArgs(["--quick"]), { quick: true });
+  assert.deepEqual(parseArgs(["--quik"]), {
+    error: `Unknown argument: --quik\n${USAGE}`,
+  });
+});
+
+test("an unknown argument exits 2 with the usage line before any step runs", () => {
+  const result = spawnSync(
+    process.execPath,
+    [fileURLToPath(new URL("./verify.mjs", import.meta.url)), "--quik"],
+    { encoding: "utf8" },
+  );
+  assert.equal(result.status, 2);
+  assert.equal(result.stderr, `Unknown argument: --quik\n${USAGE}\n`);
+  assert.equal(result.stdout, "");
 });
