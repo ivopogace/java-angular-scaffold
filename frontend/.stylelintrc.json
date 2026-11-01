@@ -1,5 +1,6 @@
 {
   "customSyntax": "postcss-scss",
+  "plugins": ["./stylelint/overrides-no-color-literal.mjs"],
   "rules": {
     "selector-pseudo-element-disallowed-list": ["ng-deep"],
     "selector-disallowed-list": ["/\\.mdc-/", "/\\.mat-mdc-/"],
@@ -16,7 +17,8 @@
       "oklab",
       "oklch",
       "color"
-    ]
+    ],
+    "local/overrides-no-color-literal": true
   },
   "overrides": [
     {
@@ -24,7 +26,8 @@
       "rules": {
         "color-no-hex": null,
         "color-named": null,
-        "function-disallowed-list": null
+        "function-disallowed-list": null,
+        "local/overrides-no-color-literal": null
       }
     }
   ]
