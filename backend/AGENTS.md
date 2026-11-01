@@ -21,19 +21,20 @@ An area is a Spring Modulith module, package `io.scaffold.starter.<area>`, split
 `adapters`:
 
 ```
-core:      <area>/package-info.java    @ApplicationModule(allowedDependencies = …)
-           <area>/domain/model/        INTERNAL  aggregates, entities, value objects (jMolecules)
-           <area>/domain/id/           PUBLISHED typed ids other areas may hold (@NamedInterface)
-           <area>/domain/event/        PUBLISHED domain events: records of ids + immutable facts
-           <area>/application/port/in/ PUBLISHED use-case interfaces + command/result records
-           <area>/application/port/out/INTERNAL  driven ports (repositories of own aggregates)
-           <area>/application/service/ INTERNAL  use-case implementations, @UseCase, package-private
-           shared/                     kernel every area may use: @UseCase, Money,
-                                       DomainEventPublisher; no logic, no area state
-adapters:  <area>/adapter/in/web/      REST controllers + request/response DTOs + mapping
-           <area>/adapter/in/event/    listeners on other areas' events → call port/in
-           <area>/adapter/out/persistence/  JdbcClient adapters + row mapping
-           web/                        ApiErrorHandler, the one @RestControllerAdvice
+core:      <area>/package-info.java          @ApplicationModule(allowedDependencies = …)
+           <area>/domain/model/              INTERNAL  aggregates, entities, value objects (jMolecules)
+           <area>/domain/id/                 PUBLISHED typed ids other areas may hold (@NamedInterface)
+           <area>/domain/event/              PUBLISHED domain events: records of ids + immutable facts
+           <area>/application/port/in/       PUBLISHED use-case interfaces + command/result records
+           <area>/application/port/out/      INTERNAL  driven ports (repositories of own aggregates)
+           <area>/application/service/       INTERNAL  use-case implementations, @UseCase, package-private
+           shared/                           kernel every area may use: @UseCase, Money,
+                                             DomainEventPublisher; no logic, no area state
+adapters:  <area>/adapter/in/web/            REST controllers + request/response DTOs + mapping
+           <area>/adapter/in/event/          listeners on other areas' events → call port/in
+           <area>/adapter/out/persistence/   JdbcClient adapters + row mapping
+           <area>/adapter/out/<gateway>/     external systems, one package per system
+           web/                              ApiErrorHandler, the one @RestControllerAdvice
 ```
 
 The listed packages are the whole shape; no sub-packages beneath them.
