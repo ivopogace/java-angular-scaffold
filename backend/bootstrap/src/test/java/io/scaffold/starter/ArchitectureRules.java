@@ -21,13 +21,14 @@ import java.util.regex.Pattern;
 
 /**
  * The project's structural rules for one base package. An <em>area</em> is a direct sub-package of
- * the base package other than the shared kernel, the web edge and {@code config}; its layout is
+ * the base package other than the shared kernel and the web edge (wiring sits in the base package
+ * itself); its layout is
  * {@code <area>.domain|application|adapter...}. Every rule tolerates a class set that has no
  * areas yet.
  */
 final class ArchitectureRules {
 
-    private static final Set<String> NON_AREA_PACKAGES = Set.of("shared", "web", "config");
+    private static final Set<String> NON_AREA_PACKAGES = Set.of("shared", "web");
     private static final Pattern AREA_PACKAGE_SHAPE = Pattern.compile(
             "domain\\.(model|id|event)"
                     + "|application\\.(port\\.in|port\\.out|service)"
