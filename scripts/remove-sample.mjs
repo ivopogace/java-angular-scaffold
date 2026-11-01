@@ -206,7 +206,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/e2e/catalog.e2e.ts",
-    sha256: "b98b609ae106d78c7ef677d6d585a12b9a32ea695a6696af55de515db9cfd8a7",
+    sha256: "b9f7568fe92772c2089c213c1e19a4015ac5806c1228abf485da8c7c02663ae4",
   },
   {
     path: "frontend/e2e/real-backend/catalog.real.e2e.ts",
@@ -218,15 +218,15 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/catalog.service.spec.ts",
-    sha256: "3c790ef997d96b9f0f643210f66201c5d07a812c652f7f2d2e323036add19eb8",
+    sha256: "a356f9a236312895e2c6f571ec3ebecdc8802852aa67f35a40f852871390a776",
   },
   {
     path: "frontend/src/app/catalog/catalog.service.ts",
-    sha256: "79963d42a84449ff3536c137aff6e11492103a8645d8789f2f25f21e1158fb72",
+    sha256: "d8b455dfae82c604a29e87581297f3c0e28317462762bad5e3edd87dceaec0ca",
   },
   {
     path: "frontend/src/app/catalog/product-form/product-form.html",
-    sha256: "1a67520d620f1f3aa2dde7612bb4adf867588849aff5e71027e3c62a7401f209",
+    sha256: "93eb0ed39e0a4a83fbf0f757d1376fbd3766d1defcf9b986697a49572b58f674",
   },
   {
     path: "frontend/src/app/catalog/product-form/product-form.scss",
@@ -234,7 +234,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-form/product-form.spec.ts",
-    sha256: "c08cb6ad8d912f6777aba8d387b3b2b38c4e592db1c04ce85ed3601580f2e08b",
+    sha256: "b3dd8e975141871c1f5bdf8e5aa81194212f436c9348dddea18a9cddbf473f77",
   },
   {
     path: "frontend/src/app/catalog/product-form/product-form.ts",
@@ -242,7 +242,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.html",
-    sha256: "d561172f963ae7cb37073101b30d226540b8d51c1c7526c254c8e9f512733361",
+    sha256: "9f111ce27b67fe9e1cbd0c89e56872eab0ef9e1a0e42a36f4ea0dbbff3ef63f6",
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.scss",
@@ -250,11 +250,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.spec.ts",
-    sha256: "ce790993026c273ad1503ee6cba8bcd37eaa3cd5e9eea05ca0793d29beec14d2",
+    sha256: "e36114d37892e74ea8c3d5cec2b5ecbb65fddacfc4248463a5409270620a5ab4",
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.ts",
-    sha256: "2cf8b7458c54f892f2f822d0517b2712b56676f3075d6efd505aa7ae73135109",
+    sha256: "e293081e771e40f54a0bd17a92be725963e9f2c6f9987f6752c7953c8813623a",
   },
 ];
 

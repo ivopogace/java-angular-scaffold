@@ -20,6 +20,8 @@
 
   <div class="actions">
     <a mat-button routerLink="/catalog">Cancel</a>
-    <button mat-flat-button type="submit">Create product</button>
+    <button mat-flat-button type="submit" [disabled]="productForm().submitting()">
+      Create product
+    </button>
   </div>
 </form>

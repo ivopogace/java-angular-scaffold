@@ -1,14 +1,29 @@
 const DEFAULT_LOCALE = 'en-US';
 const AMOUNT = /^(\d+)(?:[.,](\d{1,2}))?$/;
 
-/** Formats an amount in minor units (cents) for display, scaled by the currency's fraction digits. */
+const FALLBACK_DIGITS = 2;
+
+/**
+ * Formats an amount in minor units (cents) for display, scaled by the currency's fraction digits.
+ * A currency code `Intl` rejects (not three letters) is shown as a two-decimal amount followed
+ * by the code as sent, so a bad row never breaks the page.
+ */
 export function formatMoney(
   minor: number,
   currency: string,
   locale: string = DEFAULT_LOCALE,
 ): string {
-  const format = new Intl.NumberFormat(locale, { style: 'currency', currency });
-  const digits = format.resolvedOptions().maximumFractionDigits ?? 2;
+  let format: Intl.NumberFormat;
+  try {
+    format = new Intl.NumberFormat(locale, { style: 'currency', currency });
+  } catch {
+    const amount = new Intl.NumberFormat(locale, {
+      minimumFractionDigits: FALLBACK_DIGITS,
+      maximumFractionDigits: FALLBACK_DIGITS,
+    }).format(minor / 10 ** FALLBACK_DIGITS);
+    return `${amount} ${currency}`.trim();
+  }
+  const digits = format.resolvedOptions().maximumFractionDigits ?? FALLBACK_DIGITS;
   return format.format(minor / 10 ** digits);
 }
 

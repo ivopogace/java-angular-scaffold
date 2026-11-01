@@ -18,6 +18,12 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   `com.scaffold_starter.app`, `io.scaffold.starter.orders`) is rejected up front, while a prefix
   such as `io.scaffold` works; a failure while planning says "Nothing was changed" instead of
   claiming a partly initialized tree.
+- Sample frontend: publish, retire and the create button are disabled while their request is in
+  flight, so a double click sends one request; the product list is loaded by the list page
+  (`CatalogService.loadProducts()`), so opening the form no longer requests the list;
+  `formatMoney` shows a plain amount plus the code for a currency `Intl` rejects instead of
+  throwing; table rows are typed through `shared/typed-cell-def/` (`*matCellDef="let product;
+  typedBy: …"`). Port the directive and the in-flight pattern to any list page you copied.
 
 ## 0.1.0 — 2026-11-01
 

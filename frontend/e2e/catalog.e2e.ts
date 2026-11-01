@@ -118,9 +118,16 @@ test('creating a product lands on the list with the new product', async ({ page 
 
 test('the form refuses a blank name and a three-decimal price', async ({ page }) => {
   await stubCatalog(page, []);
+  const listRequests: string[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'GET' && request.url().endsWith('/api/catalog/products')) {
+      listRequests.push(request.url());
+    }
+  });
   await page.goto('/catalog/new');
   await page.getByRole('button', { name: 'Create product' }).click();
   await expect(page.getByText('Enter a name.')).toBeVisible();
+  expect(listRequests, 'the form has no use for the product list').toEqual([]);
 
   await page.getByLabel('Name').fill('Mug');
   await page.getByLabel('Price').fill('12.345');

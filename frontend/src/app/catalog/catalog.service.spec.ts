@@ -21,29 +21,33 @@ describe('CatalogService', () => {
   let http: HttpTestingController;
   let service: CatalogService;
 
-  /** Sends the list request the resource has queued and answers it. */
-  async function flushList(products: Product[]): Promise<void> {
-    TestBed.tick();
-    http.expectOne(LIST_URL).flush(products);
-    await TestBed.inject(ApplicationRef).whenStable();
-  }
-
-  beforeEach(async () => {
+  beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
     http = TestBed.inject(HttpTestingController);
     service = TestBed.inject(CatalogService);
-    await flushList([DRAFT]);
   });
 
   afterEach(() => http.verify());
 
-  it('loads the products from the API', () => {
-    expect(service.products.value()).toEqual([DRAFT]);
+  it('loads nothing until a component asks for the list', () => {
+    TestBed.tick();
+
+    http.expectNone(LIST_URL);
   });
 
-  it('posts a new product and refreshes the list', async () => {
+  it('gives a component a list resource that loads the products', async () => {
+    const products = TestBed.runInInjectionContext(() => service.loadProducts());
+    TestBed.tick();
+
+    http.expectOne(LIST_URL).flush([DRAFT]);
+    await TestBed.inject(ApplicationRef).whenStable();
+
+    expect(products.value()).toEqual([DRAFT]);
+  });
+
+  it('posts a new product', () => {
     const request = { name: 'Mug', priceMinor: 1250, currency: 'EUR' };
     let created: Product | undefined;
     service.create(request).subscribe((product) => (created = product));
@@ -52,50 +56,40 @@ describe('CatalogService', () => {
     expect(post.request.method).toBe('POST');
     expect(post.request.body).toEqual(request);
     post.flush(DRAFT, { status: 201, statusText: 'Created' });
-    await flushList([DRAFT, { ...DRAFT, id: 'p2' }]);
 
     expect(created).toEqual(DRAFT);
-    expect(service.products.value()).toHaveLength(2);
   });
 
-  it('publishes a product and refreshes the list', async () => {
-    service.publish('p1').subscribe();
+  it('publishes a product', () => {
+    let published: Product | undefined;
+    service.publish('p1').subscribe((product) => (published = product));
 
     const post = http.expectOne(`${LIST_URL}/p1/publish`);
     expect(post.request.method).toBe('POST');
     post.flush({ ...DRAFT, state: 'PUBLISHED' });
-    await flushList([{ ...DRAFT, state: 'PUBLISHED' }]);
 
-    expect(service.products.value()?.[0].state).toBe('PUBLISHED');
+    expect(published?.state).toBe('PUBLISHED');
   });
 
-  it('retires a product and refreshes the list', async () => {
-    service.retire('p1').subscribe();
+  it('retires a product', () => {
+    let retired: Product | undefined;
+    service.retire('p1').subscribe((product) => (retired = product));
 
     const post = http.expectOne(`${LIST_URL}/p1/retire`);
     expect(post.request.method).toBe('POST');
     post.flush({ ...DRAFT, state: 'RETIRED' });
-    await flushList([{ ...DRAFT, state: 'RETIRED' }]);
 
-    expect(service.products.value()?.[0].state).toBe('RETIRED');
+    expect(retired?.state).toBe('RETIRED');
   });
 
-  it('does not refresh the list when a change fails', () => {
+  it('surfaces a rejected change as an error', () => {
     let status: number | undefined;
-    service.publish('p1').subscribe({ error: (e) => (status = e.status) });
+    service.publish('p1').subscribe({ error: (e: { status: number }) => (status = e.status) });
 
     http
       .expectOne(`${LIST_URL}/p1/publish`)
       .flush({ reason: 'NO_PRICE' }, { status: 409, statusText: 'Conflict' });
-    TestBed.tick();
 
     expect(status).toBe(409);
-  });
-
-  it('reloads the list on demand', async () => {
-    service.reload();
-    await flushList([]);
-
-    expect(service.products.value()).toEqual([]);
   });
 });

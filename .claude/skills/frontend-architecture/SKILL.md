@@ -36,25 +36,38 @@ change that needs it.
 
 ## Inside a feature
 
-Flat: `<feature>.model.ts` (wire types), `<feature>.service.ts` (HTTP + shared state), and one
+Flat: `<feature>.model.ts` (wire types), `<feature>.service.ts` (HTTP), and one
 folder per component. `npx ng generate component <feature>/<name>` creates the four files
 (`<name>.ts`, `.html`, `.scss`, `.spec.ts`, no `.component` suffix). Inline `template` or
 `styles` fail lint; `*.spec.ts` is exempt, so a throwaway test host may be inline.
 
-The service owns the API URLs and the shared state; components inject it:
+The service owns the API URLs and issues no request on its own; a component that shows a list
+creates the resource in a field initializer, so the request starts and ends with that component
+(a form that only posts never loads the list), and reloads it after a change it made:
 
 ```ts
 @Service()
 export class CatalogService {
   private readonly http = inject(HttpClient);
 
-  readonly products = httpResource<Product[]>(() => PRODUCTS_URL);
+  loadProducts(): HttpResourceRef<Product[] | undefined> {
+    return httpResource<Product[]>(() => PRODUCTS_URL);
+  }
 
   create(request: CreateProductRequest): Observable<Product> {
-    return this.http.post<Product>(PRODUCTS_URL, request).pipe(tap(() => this.reload()));
+    return this.http.post<Product>(PRODUCTS_URL, request);
   }
 }
+
+export class ProductList {
+  protected readonly products = inject(CatalogService).loadProducts();
+}
 ```
+
+An action that sends a request is disabled while it is in flight (`busy(product)`,
+`productForm().submitting()`), so a double click sends one request. Table rows are typed with
+`*matCellDef="let product; typedBy: products.value()"` (`shared/typed-cell-def/`); without it a
+`*matCellDef` row is `any` and a typo in a cell compiles.
 
 Wire types mirror the backend DTO exactly (`priceMinor: number | null`, `currency: string |
 null`); format at the view edge (`formatMoney`) and branch on a problem body's `reason`, never on
