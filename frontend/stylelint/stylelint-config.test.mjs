@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 import stylelint from 'stylelint';
 
+import { COLOR_FUNCTIONS } from './overrides-no-color-literal.mjs';
+
 const config = JSON.parse(readFileSync(new URL('../.stylelintrc.json', import.meta.url), 'utf8'));
 
 const configBasedir = fileURLToPath(new URL('..', import.meta.url));
@@ -59,6 +61,13 @@ describe('stylelint config', () => {
 
   it('passes theme tokens', async () => {
     assert.deepEqual(await lint('.x { color: var(--mat-sys-primary) }'), []);
+  });
+
+  it('bans the same colour functions in declarations and in *-overrides arguments', () => {
+    assert.deepEqual(
+      [...COLOR_FUNCTIONS].sort(),
+      [...config.rules['function-disallowed-list']].sort(),
+    );
   });
 
   it('flags colour literals passed to an *-overrides mixin', async () => {

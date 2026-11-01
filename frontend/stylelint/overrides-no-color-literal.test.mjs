@@ -28,6 +28,27 @@ describe(ruleName, () => {
     ]);
   });
 
+  it('flags hex colours in any case and length', async () => {
+    for (const literal of ['#FFF', '#AbCdEf', '#ffff', '#80808080']) {
+      assert.deepEqual(
+        (await lint(include(literal))).map((w) => w.text),
+        [rejected(literal)],
+        literal,
+      );
+    }
+  });
+
+  it('leaves a colour name alone where it is a map key, not a value', async () => {
+    assert.deepEqual(
+      await lint('@include my-overrides((orange: var(--mat-sys-tertiary), gray: $spacing));'),
+      [],
+    );
+    assert.deepEqual(
+      (await lint('@include my-overrides((orange: orange));')).map((w) => w.text),
+      [rejected('orange', 'my-overrides')],
+    );
+  });
+
   it('flags a hex colour inside a nested multi-line include', async () => {
     const code = [
       ':host {',

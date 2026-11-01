@@ -28,8 +28,8 @@ const HEX_COLOR = /#[0-9a-f]{3,8}(?![\w-])/gi;
 /** A Sass/CSS word: identifier characters plus `$` (variables) and `.` (module members). */
 const WORD = /[\w$.-]+/g;
 
-/** The same functions `.stylelintrc.json` bans in declarations. */
-const COLOR_FUNCTIONS = new Set([
+/** The same functions `.stylelintrc.json` bans in declarations; `stylelint-config.test.mjs` keeps the two in step. */
+export const COLOR_FUNCTIONS = new Set([
   'rgb',
   'rgba',
   'hsl',
@@ -210,12 +210,13 @@ export function colorLiterals(text) {
   scan = scan.replace(HEX_COLOR, (span) => ' '.repeat(span.length));
   for (const match of scan.matchAll(WORD)) {
     const word = match[0];
-    const after = scan.slice(match.index + word.length).match(/^\s*\(/);
-    if (after) {
+    const rest = scan.slice(match.index + word.length);
+    if (/^\s*\(/.test(rest)) {
       if (COLOR_FUNCTIONS.has(word.toLowerCase())) {
         found.push({ literal: `${word}()`, index: match.index, length: word.length });
       }
-    } else if (NAMED_COLORS.has(word.toLowerCase())) {
+    } else if (!/^\s*:/.test(rest) && NAMED_COLORS.has(word.toLowerCase())) {
+      // A word before `:` is a map key or a keyword argument name, never a colour value.
       found.push({ literal: word, index: match.index, length: word.length });
     }
   }
