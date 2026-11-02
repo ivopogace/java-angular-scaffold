@@ -142,18 +142,8 @@ runs `docker build` (tagged `<version>-dockerfile`) after checking that the Dock
 images match `.nvmrc` and the Gradle toolchain. The full `verify` runs both (buildpacks with
 `--skip-frontend-build`), `--quick` neither.
 
-#### Deploy to Render
-
-1. Create a PostgreSQL database on Render and note its host, port, database, user and password.
-2. Create a **Web Service** from this repository with the **Docker** runtime; Render finds the
-   `Dockerfile` at the root and builds it on every deploy. No build arguments are needed.
-3. Set the environment variables: `SPRING_DATASOURCE_URL` as
-   `jdbc:postgresql://<host>:5432/<database>`, built from the database's parts (Render's
-   `postgres://user:password@host/db` connection string is not a JDBC URL),
-   `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD`, and `PORT=8080`, the port Render
-   routes to, which is the one the app listens on (set `SERVER_PORT` to the same value if you change
-   it).
-4. Set the health check path to `/actuator/health`.
+The example app runs on Render: <https://scaffold-starter.onrender.com>. It is on the free plan,
+so after it has been idle the first request takes about two minutes while it wakes up.
 
 ## Credits
 

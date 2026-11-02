@@ -114,9 +114,10 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   `backend/` and `frontend/` and drops build output, so no local file reaches the image. Base
   images are pinned to exact tags: Renovate's `dockerfile` manager bumps the Temurin patch versions
   (JDK and JRE as one PR, a regex versioning that reads `_8` as a build number); the Node tag and
-  the Java major move by hand with `.nvmrc` and the Gradle toolchain. The README's *Production
-  image* section describes both builds and a Render deploy (Docker web service, `jdbc:postgresql://`
-  URL instead of Render's `postgres://` string, `PORT=8080`, health check `/actuator/health`).
+  the Java major move by hand with `.nvmrc` and the Gradle toolchain. `README.project.md`'s
+  *Production image* section describes both builds and a Render deploy (Docker web service,
+  `jdbc:postgresql://` URL instead of Render's `postgres://` string, `PORT=8080`, health check
+  `/actuator/health`); the template's README links the example app running on Render instead.
 - `scripts/smoke-image.mjs --builder buildpacks|dockerfile` (buildpacks by default):
   `dockerfile` runs `docker build` from the root, tagged `<version>-dockerfile`, after checking that
   the Dockerfile's Node and Temurin tags match `.nvmrc` and the Gradle toolchain, then runs the same
