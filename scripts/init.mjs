@@ -56,6 +56,9 @@ const TEMPLATE_ONLY = [
   "docs/superpowers",
   "scripts/init.mjs",
   "scripts/init.test.mjs",
+  ".github/workflows/release-tag.yml",
+  "scripts/release-tag.mjs",
+  "scripts/release-tag.test.mjs",
 ];
 const SAMPLE_SCRIPTS = [
   "scripts/remove-sample.mjs",

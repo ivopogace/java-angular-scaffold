@@ -126,6 +126,17 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   unnoticed until one; it adds a second image build (npm, Angular and the Gradle dependencies again,
   in fresh containers) to the full run. `--quick` runs neither. Port: copy `Dockerfile`,
   `.dockerignore`, the script, its test, the `verify.mjs` steps and the `renovate.json` rules.
+- Releasing: `.github/workflows/release-tag.yml` tags the template's releases in one click,
+  replacing the manual `git tag` step (kept in `CONTRIBUTING.md` as a fallback). It runs only by
+  hand on `main` (**Run workflow** in the Actions tab), never on a push, because a version's
+  heading lands on `main` several PRs before the version is complete and an automatic trigger
+  would tag it at the first of them. It fails unless `ci` and `template-ci` both succeeded for the
+  push of `main`'s tip; `scripts/release-tag.mjs` then reads the version from the top
+  `CHANGELOG.md` heading, fails if `TEMPLATE_VERSION` differs, skips when `vX.Y.Z` already exists
+  on the remote, and otherwise pushes the annotated tag as `github-actions[bot]`. The decision is
+  pure functions covered by `scripts/release-tag.test.mjs` (invariant #9), which also fails if the
+  workflow gains an automatic trigger. Template-only: `init` deletes the workflow, the script and
+  its test. Nothing to port.
 
 ## 0.1.1 — 2026-11-01
 

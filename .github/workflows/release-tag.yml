@@ -1,0 +1,35 @@
+# The template's release automation, not a check wrapper: run by hand from the Actions tab once a
+# version is complete. Tags main's tip as v<CHANGELOG version> if ci and template-ci both succeeded
+# for its push. init deletes this file with scripts/release-tag*.mjs.
+name: release-tag
+
+on:
+  # By hand only: a version's heading lands on main before its last entries do, so an automatic
+  # trigger would tag the version too early.
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-tag
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/release-tag.mjs --sha "$SHA"
+        env:
+          SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}

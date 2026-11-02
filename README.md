@@ -78,8 +78,8 @@ answers are rejected before any file is touched. Then it:
    `Scaffold Starter`) in the Gradle build, Spring config, `compose.yaml`, the Angular workspace,
    the specs and the agent docs, keeping each file's line endings, and moves the Java package folders;
 3. deletes the CI wrappers you did not choose and the template-only files — `template-ci.yml`,
-   `CHANGELOG.md`, `CONTRIBUTING.md`, this README, `docs/superpowers/` and `init` itself — and makes
-   `README.project.md` the `README.md`;
+   `release-tag.yml` and its script, `CHANGELOG.md`, `CONTRIBUTING.md`, this README,
+   `docs/superpowers/` and `init` itself — and makes `README.project.md` the `README.md`;
 4. resets the *What this is* section of `AGENTS.md` to a TODO for you to fill in;
 5. replaces `.git` with a fresh repository on `main`, sets `core.hooksPath` to `.githooks` and makes
    one commit, `Initial commit from scaffold v<version>`;

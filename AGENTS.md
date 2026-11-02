@@ -65,6 +65,9 @@ REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (l
   (`de` default, `en` source); translations in `frontend/src/locale/`.
 - `scripts/` — `verify.mjs` (the one check entry point; CI wrappers call it and nothing else),
   `smoke-image.mjs` (the production image's smoke test), `check-agent-docs.mjs`, `pre-commit.mjs` (run by `.githooks/pre-commit`), `mcp/` (MCP launchers).
+- CI wrappers: `ci.yml` in `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`; `init` keeps the
+  chosen ones. Any other workflow there is the template's own (its CI, and release automation that
+  tags versions rather than checking anything), with its script; `init` deletes them.
 - `docs/adr/` — decisions; `docs/agents/workflow.md` — tracker, CLI, branches, merge rules.
 - Skills: `.claude/skills/<name>/SKILL.md`, read by both tools.
 - Tool config, the only duplication — change both sides together: `.mcp.json` +
