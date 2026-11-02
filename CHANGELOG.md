@@ -13,6 +13,13 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   `check-agent-docs` like an edit to `SKILL.md`.
   After replacing a vendored skill from a new upstream ref, re-pin it with
   `node scripts/check-agent-docs.mjs --refresh-hashes` in the same commit.
+- Backend: two rules that only prose stated are now ArchUnit rules. `drivingAdaptersGoThroughPortIn`
+  fails a class in an area's `adapter.in` packages that depends on `domain.model` or
+  `application.port.out`, so a controller or listener cannot skip the use case or return an
+  aggregate. `onlyDrivenAdaptersRehydrate` fails a call to, or method reference of, a `rehydrate`
+  factory on a `domain.model` class from anywhere but that model and `adapter.out`, since
+  `rehydrate` skips the creation rules. Copy both rules with their fixtures; name your aggregates'
+  load-from-storage factory `rehydrate` so the second one sees it.
 - Sample backend: `GET /api/catalog/products/{id}` exists, so the `Location` header of a create
   resolves; it is the worked example of a read-one use case (`FindProduct`, `Optional` view, 404
   problem). Port it if your area copied the create endpoint.

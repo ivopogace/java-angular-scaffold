@@ -53,7 +53,15 @@ class ArchitectureRulesNegativeTest {
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
                         "archfixture.orders.application.port.in.LeakyOrderView"),
                 violation("publishedSurfaceIsAggregateFree", ArchitectureRules::publishedSurfaceIsAggregateFree,
-                        "archfixture.orders.domain.event.OrdersPlaced"));
+                        "archfixture.orders.domain.event.OrdersPlaced"),
+                violation("drivingAdaptersGoThroughPortIn", ArchitectureRules::drivingAdaptersGoThroughPortIn,
+                        "archfixture.orders.adapter.in.web.AggregateController"),
+                violation("drivingAdaptersGoThroughPortIn", ArchitectureRules::drivingAdaptersGoThroughPortIn,
+                        "archfixture.orders.adapter.in.event.RepositoryListener"),
+                violation("onlyDrivenAdaptersRehydrate", ArchitectureRules::onlyDrivenAdaptersRehydrate,
+                        "archfixture.orders.application.service.RehydratingService"),
+                violation("onlyDrivenAdaptersRehydrate", ArchitectureRules::onlyDrivenAdaptersRehydrate,
+                        "archfixture.orders.application.service.RehydratingSupplier"));
     }
 
     private static List<ArchRule> everyRule() {
@@ -75,7 +83,7 @@ class ArchitectureRulesNegativeTest {
 
     @Test
     void noRuleReportsTheCleanArea() {
-        assertThat(RULES.all()).hasSize(8);
+        assertThat(RULES.all()).hasSize(10);
         assertThat(RULES.testRules()).hasSize(1);
         for (ArchRule rule : everyRule()) {
             EvaluationResult result = rule.evaluate(FIXTURES);

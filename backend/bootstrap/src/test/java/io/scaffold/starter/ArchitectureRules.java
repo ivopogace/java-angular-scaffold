@@ -9,6 +9,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
+import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -32,6 +33,7 @@ import org.springframework.modulith.test.ApplicationModuleTest;
 final class ArchitectureRules {
 
     private static final Set<String> NON_AREA_PACKAGES = Set.of("shared", "web");
+    private static final String REHYDRATE = "rehydrate";
     private static final Pattern AREA_PACKAGE_SHAPE = Pattern.compile(
             "domain\\.(model|id|event)"
                     + "|application\\.(port\\.in|port\\.out|service)"
@@ -57,7 +59,9 @@ final class ArchitectureRules {
                 noJpa(),
                 adaptersDoNotUseServices(),
                 adaptersArePackagePrivate(),
-                publishedSurfaceIsAggregateFree());
+                publishedSurfaceIsAggregateFree(),
+                drivingAdaptersGoThroughPortIn(),
+                onlyDrivenAdaptersRehydrate());
     }
 
     /** Rules over test classes: an area's integration tests start only that area. */
@@ -174,6 +178,36 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
+    ArchRule drivingAdaptersGoThroughPortIn() {
+        return noClasses()
+                .that(isAreaClass().and(inLayer("adapter.in")))
+                .should().dependOnClassesThat(inDomainModel().or(inLayer("application.port.out")))
+                .as("driving adapters (adapter.in) do not depend on domain.model or application.port.out")
+                .allowEmptyShould(true);
+    }
+
+    /**
+     * A {@code rehydrate} factory on a {@code domain.model} class rebuilds stored state without the
+     * creation rules, so only that model and the driven adapters that load it may call or reference it.
+     */
+    ArchRule onlyDrivenAdaptersRehydrate() {
+        DescribedPredicate<JavaClass> mayRehydrate = inLayer("domain.model").or(inLayer("adapter.out"));
+        return classes()
+                .that(not(mayRehydrate))
+                .should(new ArchCondition<JavaClass>("not call or reference a domain.model " + REHYDRATE + " factory") {
+                    @Override
+                    public void check(JavaClass item, ConditionEvents events) {
+                        for (JavaAccess<?> access : item.getAccessesFromSelf()) {
+                            if (access.getName().equals(REHYDRATE) && inDomainModel().test(access.getTargetOwner())) {
+                                events.add(violated(access, access.getDescription()));
+                            }
+                        }
+                    }
+                })
+                .as("only domain.model and adapter.out call an aggregate's " + REHYDRATE + " factory")
+                .allowEmptyShould(true);
+    }
+
     private ArchCondition<JavaClass> onlyDependOnPermittedTypes() {
         return new ArchCondition<JavaClass>("depend only on permitted types") {
             @Override
@@ -251,7 +285,7 @@ final class ArchitectureRules {
                 .anyMatch(type -> type.isAnnotatedWith(annotation) || type.isMetaAnnotatedWith(annotation));
     }
 
-        private static DescribedPredicate<JavaClass> isPackageInfo() {
+    private static DescribedPredicate<JavaClass> isPackageInfo() {
         return DescribedPredicate.describe("package-info", item -> item.getSimpleName().equals("package-info"));
     }
 
