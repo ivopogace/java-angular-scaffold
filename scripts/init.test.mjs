@@ -892,7 +892,8 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       ["add", "-A"],
       ["commit", "--no-verify", "-m", COMMIT_SUBJECT],
     ]) {
-      git(root, args, { ...isolated, GIT_CONFIG_COUNT: "0" });
+      // Not the `git` helper: it merges process.env back in, GIT_CONFIG_PARAMETERS included.
+      execFileSync("git", args, { cwd: root, env: isolated, stdio: "pipe" });
     }
     assert.equal(git(root, ["log", "--format=%s"]).trim(), COMMIT_SUBJECT);
     assert.equal(git(root, ["status", "--porcelain"]), "");
