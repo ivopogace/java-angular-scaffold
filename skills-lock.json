@@ -12,28 +12,14 @@
       "source": "planetscale/database-skills",
       "skillPath": "skills/postgres/SKILL.md",
       "ref": "f6ed002d03084cb39c01d1d58904d47a36f5322a",
-      "computedHash": "7f1f804298805a4ad18d2426a229c7060541d4f2428f638336bc3df6497fddb6",
+      "computedHash": "e27faa2b8178ecfb14436ff5ea5a5d9d0b0860d41f96390763fed66ed3fa70fc",
       "license": "MIT"
     },
     "domain-modeling": {
       "source": "mattpocock/skills",
       "skillPath": "skills/engineering/domain-modeling/SKILL.md",
       "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
-      "computedHash": "3893125a434182ce7074765feda519e6b71abe18cafae97d818b586199110001",
-      "license": "MIT"
-    },
-    "codebase-design": {
-      "source": "mattpocock/skills",
-      "skillPath": "skills/engineering/codebase-design/SKILL.md",
-      "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
-      "computedHash": "c630c423797e30c40fb552cb46eec03c0551de9a9350ec31db8e3ea635c03660",
-      "license": "MIT"
-    },
-    "grilling": {
-      "source": "mattpocock/skills",
-      "skillPath": "skills/productivity/grilling/SKILL.md",
-      "ref": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d",
-      "computedHash": "6ccb8d69e69a7ae699c228f8304f1fc27befba9cbf602b8d08a4df7734b16e6c",
+      "computedHash": "5fdf525f310ee0ff858a464c25554e7f6d4a382ac690310789fc788a63ccde22",
       "license": "MIT"
     }
   }

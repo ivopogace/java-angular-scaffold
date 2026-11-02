@@ -13,6 +13,12 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   `check-agent-docs` like an edit to `SKILL.md`.
   After replacing a vendored skill from a new upstream ref, re-pin it with
   `node scripts/check-agent-docs.mjs --refresh-hashes` in the same commit.
+- Skills: the vendored `grilling` and `codebase-design` skills are gone (generic process and design
+  advice, cited by nothing here; process belongs to Superpowers). A vendored skill may now leave
+  out files that do not apply, never edit them, and `THIRD_PARTY_LICENSES.md` lists what each one
+  leaves out: `postgres` drops its PlanetScale-only `references/ps-*.md` and
+  `references/pgbouncer-configuration.md`, `domain-modeling` drops the Codex `agents/openai.yaml`.
+  Delete the same files and rows in your project, then re-pin with `--refresh-hashes`.
 - Backend: three new ArchUnit rules keep domain logic out of driving adapters.
   `drivingAdaptersGoThroughPortIn` fails a class in an area's `adapter.in` packages that depends
   on `domain.model` or `application.port.out`, so a controller or listener cannot skip the use

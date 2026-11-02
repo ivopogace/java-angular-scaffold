@@ -1,14 +1,16 @@
 # Third-party licences
 
 The skills under `.claude/skills/` listed in `skills-lock.json` are copied verbatim from the upstream
-repositories below, each pinned to the commit recorded in the lock file. Each licence is reproduced here
-as its upstream permission notice requires.
+repositories below, each pinned to the commit recorded in the lock file. Files that do not apply to this
+stack are left out, never edited; each section lists them. Each licence is reproduced here as its
+upstream permission notice requires.
 
 ## planetscale/database-skills
 
 - Repository: https://github.com/planetscale/database-skills
 - Pinned ref: `f6ed002d03084cb39c01d1d58904d47a36f5322a`
 - Skill folders: `.claude/skills/postgres/`
+- Left out (PlanetScale hosting only): `references/ps-*.md`, `references/pgbouncer-configuration.md`
 
 ```text
 MIT License
@@ -38,8 +40,8 @@ SOFTWARE.
 
 - Repository: https://github.com/mattpocock/skills
 - Pinned ref: `4ae2317ddb22b046e26455e4f9c9b3aaaf62212d`
-- Skill folders: `.claude/skills/domain-modeling/`, `.claude/skills/codebase-design/`,
-  `.claude/skills/grilling/`
+- Skill folders: `.claude/skills/domain-modeling/`
+- Left out (Codex metadata): `agents/openai.yaml`
 
 ```text
 MIT License
