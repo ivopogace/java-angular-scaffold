@@ -35,7 +35,7 @@ update the row with its pin; the Java toolchain, Node, npm and Playwright MCP st
 | Angular Material | `22.2.5` | `frontend/package.json` | `npx ng update @angular/material` from `frontend/` |
 | Angular CLI | `22.2.5` | `frontend/package.json` | with Angular, above |
 | TypeScript | `6.0.3` | `frontend/package.json` | `npm install --save-exact typescript@<version>` within the range `@angular/compiler-cli` accepts |
-| Vitest | `5.0.5` | `frontend/package.json` | `npm install --save-exact vitest@<version>` from `frontend/` |
+| Vitest | `5.0.5` | `frontend/package.json` | `npm install --save-exact vitest@<version> @vitest/coverage-v8@<version>` from `frontend/` |
 | Playwright | `1.64.1` | `frontend/package.json` | `npm install --save-exact @playwright/test@<version>` from `frontend/`, then `npx playwright install chromium` |
 | ESLint | `10.14.0` | `frontend/package.json` | `npm install --save-exact eslint@<version>` from `frontend/` |
 | Stylelint | `17.16.0` | `frontend/package.json` | `npm install --save-exact stylelint@<version>` from `frontend/` |

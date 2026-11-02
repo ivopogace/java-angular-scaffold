@@ -194,3 +194,7 @@ test("the Angular packages move together", () => {
     [],
   );
 });
+
+test("the Vitest coverage provider moves with Vitest", () => {
+  assert.equal(frontendPackage("@vitest/coverage-v8"), PINS.Vitest());
+});

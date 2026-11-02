@@ -112,6 +112,13 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   pause (three tries) and otherwise stops, telling you to delete `.git` and finish by hand, so a
   project never starts on top of the template's history. `init.test.mjs` disables gc and maintenance in its throwaway copies and tolerates a
   refusal that exits before reading stdin (EPIPE); both made the template CI fail intermittently.
+- Frontend: `npm run test:coverage` runs the unit tests once with the unit-test builder's own
+  `--coverage` (`@vitest/coverage-v8`, pinned to the `vitest` version) and prints a text summary;
+  `lcov.info` and an HTML report land in `frontend/coverage/<project name>/` (git-ignored). Every
+  `src/**/*.ts` counts, so a file no spec loads shows as 0 % instead of vanishing; `src/testing/`
+  helpers are left out. It is a report, not a gate: no threshold, and `verify` does not run it.
+  `scripts/readme-versions.test.mjs` fails when the two packages' versions differ. Copy the dev
+  dependency, the script and that test; bump both packages together.
 - Dependencies: `renovate.json` opens weekly update PRs for npm (`frontend/`), the Gradle version
   catalog and wrapper, GitHub Actions and `compose.yaml`, keeping exact pins and the Actions' major
   tags. The Angular packages, `angular-eslint` and TypeScript form one PR (a major one says to run
