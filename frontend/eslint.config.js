@@ -68,4 +68,16 @@ module.exports = defineConfig([
       '@angular-eslint/template/prefer-style-binding': 'error',
     },
   },
+  {
+    // Component templates: every user-facing text and attribute carries `i18n` with a stable
+    // custom id (`@@...`). `index.html` is the static shell and specs' inline hosts are fixtures.
+    files: ['src/app/**/*.html'],
+    ignores: ['**/*.spec.ts/**'],
+    rules: {
+      '@angular-eslint/template/i18n': [
+        'error',
+        { checkId: true, ignoreAttributes: ['inputmode', 'matColumnDef'] },
+      ],
+    },
+  },
 ]);

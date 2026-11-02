@@ -226,7 +226,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-form/product-form.html",
-    sha256: "93eb0ed39e0a4a83fbf0f757d1376fbd3766d1defcf9b986697a49572b58f674",
+    sha256: "eb7c094b26b775de4515e1ed0333f2b6bc25a9c54bbf3e732119942d4c3e6648",
   },
   {
     path: "frontend/src/app/catalog/product-form/product-form.scss",
@@ -238,11 +238,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-form/product-form.ts",
-    sha256: "1a0f117836ab62d91a6ee8dc0898de5227142f410baf5af0a1c7c3fd0a779d4e",
+    sha256: "9000b90878a2c566f90370401684be3421c27441f93e485110ea8fa136d1135b",
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.html",
-    sha256: "9f111ce27b67fe9e1cbd0c89e56872eab0ef9e1a0e42a36f4ea0dbbff3ef63f6",
+    sha256: "4deb9d823bcbfd09a2e2ca4bd529e5aa8f8593029eacaeb3a00fedbaf27f1a52",
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.scss",
@@ -254,7 +254,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.ts",
-    sha256: "e293081e771e40f54a0bd17a92be725963e9f2c6f9987f6752c7953c8813623a",
+    sha256: "d747451cd760ac50dafe7a227726d3f8ee2c885fa24181bb3d5ca07bd254a933",
   },
 ];
 
@@ -263,6 +263,7 @@ export const MARKED_FILES = [
   "AGENTS.md",
   "frontend/src/app/app.routes.ts",
   "frontend/src/app/app.html",
+  "frontend/src/locale/messages.de.xlf",
 ];
 
 const HELP = `Removes the catalog sample feature (backend area, frontend feature, migration, e2e specs, glossary).

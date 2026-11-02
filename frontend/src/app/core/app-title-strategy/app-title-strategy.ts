@@ -11,6 +11,10 @@ export class AppTitleStrategy extends TitleStrategy {
 
   override updateTitle(snapshot: RouterStateSnapshot): void {
     const routeTitle = this.buildTitle(snapshot);
-    this.title.setTitle(routeTitle ? `${routeTitle} · ${APP_NAME}` : APP_NAME);
+    this.title.setTitle(
+      routeTitle
+        ? $localize`:@@documentTitle:${routeTitle}:routeTitle: · ${APP_NAME}:appName:`
+        : APP_NAME,
+    );
   }
 }

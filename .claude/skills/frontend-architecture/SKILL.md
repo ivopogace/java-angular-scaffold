@@ -4,9 +4,10 @@ description: >-
   Angular structure authority for frontend/: which folder a file lands in
   (core/shared/pages/features), the import direction local/folder-boundary enforces, one folder
   per component, routes, app.config providers, feature services, and the unit / axe / mocked e2e
-  / real-backend e2e test split. Load BEFORE adding a file, folder, component, route, provider,
-  cross-folder import or e2e spec under frontend/, or when local/folder-boundary or
-  component-max-inline-declarations fails. Styling and .scss are `frontend-styling`'s; Angular
+  / real-backend e2e test split, and where translations live. Load BEFORE adding a file, folder,
+  component, route, provider, user-facing string, cross-folder import or e2e spec under
+  frontend/, or when local/folder-boundary, component-max-inline-declarations, template/i18n or
+  a missing translation fails. Styling and .scss are `frontend-styling`'s; Angular
   API questions go to `angular-developer` and the angular-cli MCP.
 ---
 
@@ -72,25 +73,54 @@ An action that sends a request is disabled while it is in flight (`busy(product)
 `*matCellDef` row is `any` and a typo in a cell compiles.
 
 Wire types mirror the backend DTO exactly (`priceMinor: number | null`, `currency: string |
-null`); format at the view edge (`formatMoney`) and branch on a problem body's `reason`, never on
-`detail` text.
+null`); format at the view edge (`injectFormatMoney()`, in the active `LOCALE_ID`) and branch on
+a problem body's `reason`, never on `detail` text.
 
 ## Routes and providers
 
-Every route is in `src/app/app.routes.ts`, lazy, with a `title` (`app.routes.spec.ts` resolves
-every `loadComponent` and fails a route without a title):
+Every route is in `src/app/app.routes.ts`, lazy, with a translated `title` (`app.routes.spec.ts`
+resolves every `loadComponent` and fails a route without a title):
 
 ```ts
 {
   path: '',
-  title: 'Home',
+  title: $localize`:@@route.home.title:Home`,
   loadComponent: () => import('./pages/home/home').then((m) => m.Home),
 },
 ```
 
 The file is `// prettier-ignore` (removable sample lines must stay one line each), so format a
 new route by hand like the one above. The `**` route stays last. App-wide providers go in
-`src/app/app.config.ts`; `AppTitleStrategy` turns a route title into `<title> · <app name>`.
+`src/app/app.config.ts`; `AppTitleStrategy` turns a route title into `<title> · <app name>`
+(`@@documentTitle`).
+
+## Translations
+
+Compile-time `@angular/localize` (`docs/adr/0005-compile-time-i18n-with-angular-localize.md`):
+English is the source locale in the code, German the default build users get. Translations live
+in `src/locale/messages.<locale>.xlf` (XLIFF 2, one `<unit>` per line, so a `sample:catalog`
+marker can drop a unit with its feature); only `messages.de.xlf` is committed.
+
+To add a user-facing string:
+
+1. Mark it with a stable custom id, `<area>.<place>.<what>`: `i18n="@@catalog.list.empty"` on the
+   element, `i18n-<attr>="@@…"` on an attribute, `` $localize`:@@catalog.dismiss:Dismiss` `` in
+   TypeScript (titles, snackbars, validation messages); a value goes in as a named placeholder,
+   `` $localize`:@@id:Use at most ${max}:max: characters.` ``. Never let the id default to a
+   content hash: a reworded string would get a new id and lose its translation.
+2. `npm run extract-i18n` writes the source units to `src/locale/messages.xlf` (not committed);
+   copy the new unit onto one line of `messages.de.xlf` and add the `<target>`, keeping each
+   `<ph>` element as extracted.
+3. `npm run build` fails on a unit without a `de` translation (`i18nMissingTranslation: error`);
+   `npm run lint` (`@angular-eslint/template/i18n`) fails template text or attributes without
+   `i18n` or without a custom id. Nothing flags a translation whose id no code uses any more:
+   delete its unit with the string.
+
+Formatting follows the locale: inject `LOCALE_ID` (`injectFormatMoney()` in `shared/money/`),
+never hard-code one. Bind a translated label that needs a value through `[attr.aria-label]` and a
+`$localize` method (`ProductList.publishLabel`): an interpolated `aria-label` binds the DOM
+property, which jsdom does not reflect. `npm start` serves only the source locale `en`; the
+mocked e2e suite asserts English text and pins the browser locale to `en-US`.
 
 ## Tests
 

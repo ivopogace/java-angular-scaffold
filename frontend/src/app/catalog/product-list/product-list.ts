@@ -6,22 +6,24 @@ import { MatTableModule } from '@angular/material/table';
 import { RouterLink } from '@angular/router';
 import { finalize, Observable } from 'rxjs';
 
-import { formatMoney } from '../../shared/money/money';
+import { injectFormatMoney } from '../../shared/money/money';
 import { TypedCellDef } from '../../shared/typed-cell-def/typed-cell-def';
 import { Product, ProductState } from '../catalog.model';
 import { CatalogService } from '../catalog.service';
 
 const CONFLICT_MESSAGES: Record<string, string> = {
-  NO_PRICE: 'Add a price before publishing.',
-  NOT_DRAFT: 'Only draft products can be published.',
-  NOT_PUBLISHED: 'Only published products can be retired.',
+  NO_PRICE: $localize`:@@catalog.conflict.noPrice:Add a price before publishing.`,
+  NOT_DRAFT: $localize`:@@catalog.conflict.notDraft:Only draft products can be published.`,
+  NOT_PUBLISHED: $localize`:@@catalog.conflict.notPublished:Only published products can be retired.`,
 };
-const FALLBACK_MESSAGE = 'Something went wrong. Try again.';
+const FALLBACK_MESSAGE = $localize`:@@catalog.error.generic:Something went wrong. Try again.`;
+const DISMISS = $localize`:@@catalog.dismiss:Dismiss`;
+const NO_PRICE = $localize`:@@catalog.list.noPrice:No price`;
 
 const STATE_LABELS: Record<ProductState, string> = {
-  DRAFT: 'Draft',
-  PUBLISHED: 'Published',
-  RETIRED: 'Retired',
+  DRAFT: $localize`:@@catalog.state.draft:Draft`,
+  PUBLISHED: $localize`:@@catalog.state.published:Published`,
+  RETIRED: $localize`:@@catalog.state.retired:Retired`,
 };
 
 @Component({
@@ -33,6 +35,7 @@ const STATE_LABELS: Record<ProductState, string> = {
 export class ProductList {
   private readonly catalog = inject(CatalogService);
   private readonly snackBar = inject(MatSnackBar);
+  private readonly formatMoney = injectFormatMoney();
 
   /** Ids whose publish or retire request is in flight. */
   private readonly inFlight = signal<ReadonlySet<string>>(new Set());
@@ -42,12 +45,20 @@ export class ProductList {
 
   protected price(product: Product): string {
     return product.priceMinor === null || product.currency === null
-      ? 'No price'
-      : formatMoney(product.priceMinor, product.currency);
+      ? NO_PRICE
+      : this.formatMoney(product.priceMinor, product.currency);
   }
 
   protected stateLabel(product: Product): string {
     return STATE_LABELS[product.state];
+  }
+
+  protected publishLabel(product: Product): string {
+    return $localize`:@@catalog.list.publishProduct:Publish ${product.name}:name:`;
+  }
+
+  protected retireLabel(product: Product): string {
+    return $localize`:@@catalog.list.retireProduct:Retire ${product.name}:name:`;
   }
 
   protected busy(product: Product): boolean {
@@ -70,7 +81,7 @@ export class ProductList {
     this.mark(product.id, true);
     request.pipe(finalize(() => this.mark(product.id, false))).subscribe({
       next: () => this.products.reload(),
-      error: (error: unknown) => this.snackBar.open(messageFor(error), 'Dismiss'),
+      error: (error: unknown) => this.snackBar.open(messageFor(error), DISMISS),
     });
   }
 

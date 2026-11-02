@@ -5,6 +5,65 @@ commit message (`Initial commit from scaffold vX.Y.Z`) and never links back; to 
 read the entries after that version here and apply them by hand. `TEMPLATE_VERSION` in
 `scripts/init.mjs` equals the top entry.
 
+## 0.2.0 — 2026-11-02
+
+- Frontend: internationalised with Angular's compile-time `@angular/localize`
+  (`docs/adr/0005-compile-time-i18n-with-angular-localize.md`). English stays the source text in
+  the code (`sourceLocale` `en`); German is the default a user gets, translated in
+  `frontend/src/locale/messages.de.xlf` (XLIFF 2: a format translation tools read, and one unit
+  per line so `remove-sample` can drop the sample's units by their marker; JSON has no comments to
+  carry one). Every template string has `i18n="@@id"`, every string in TypeScript (route titles,
+  the document title, snackbars, validation messages) `` $localize`:@@id:…` ``; custom ids keep
+  extraction from churning when wording changes. `npm run extract-i18n` writes the source units to
+  `src/locale/messages.xlf` (not committed). Port: add `@angular/localize` at your Angular version,
+  copy the `i18n` block, `localize`, `i18nMissingTranslation` / `i18nDuplicateTranslation`, the
+  `@angular/localize/init` polyfill and the `extract-i18n` target from `angular.json`, the
+  `@angular/localize` types in both `tsconfig`s, then mark your strings.
+- Frontend: enforced by the build (invariant #9). `npm run build` fails on a unit without a `de`
+  translation; `@angular-eslint/template/i18n` (scoped to component templates, with custom ids
+  required) fails lint on unmarked template text or attributes; the ESLint config suite proves it.
+- Frontend: `ng build` emits one app per locale (`browser/de/`, `browser/en/`), each with its
+  `<html lang>`, `<base href>` and `LOCALE_ID`. `formatMoney` takes the locale as a required
+  argument and `injectFormatMoney()` binds the active `LOCALE_ID`, instead of a hard-coded
+  `en-US`; the catalog list formats prices in the user's locale. Replace your `formatMoney` calls
+  in components with `injectFormatMoney()`.
+- Frontend: `npm start` (the `development` configuration) serves the source locale `en` only, and
+  the mocked and real-backend Playwright suites assert English text with the browser locale pinned
+  to `en-US`. The unused `nav-link` class is gone from the toolbar link.
+- Backend: `SpaWebConfig` serves `/de/…` and `/en/…` from their builds, each falling back to its
+  own `index.html` for client routes. A GET or HEAD that no controller or resource answers, outside
+  `/api` and `/actuator`, is redirected (302, `Vary: Accept-Language`) to the same path and query
+  under `de`, or `en` when `Accept-Language` prefers it, by a lowest-precedence handler mapping, so
+  a later `/login` or API-docs endpoint is never redirected. Boot's own static mappings are off
+  (`spring.web.resources.add-mappings=false`). `SpaWebConfigTest` covers the routing and fails
+  when `SpaWebConfig.LOCALES` and `angular.json`'s locales differ.
+  `npm run watch` builds both locales (`--localize`) so the backend can serve its output. Port
+  `SpaWebConfig` with its test fixtures under `static/de/` and `static/en/`.
+- Frontend: `npm run test:coverage` runs the unit tests once with the unit-test builder's own
+  `--coverage` (`@vitest/coverage-v8`, pinned to the `vitest` version) and prints a text summary;
+  `lcov.info` and an HTML report land in `frontend/coverage/<project name>/` (git-ignored). Every
+  `src/**/*.ts` counts, so a file no spec loads shows as 0 % instead of vanishing; `src/testing/`
+  helpers are left out. It is a report, not a gate: no threshold, and `verify` does not run it.
+  `scripts/readme-versions.test.mjs` fails when the two packages' versions differ. Copy the dev
+  dependency, the script and that test; bump both packages together.
+- Dependencies: `renovate.json` opens weekly update PRs for npm (`frontend/`), the Gradle version
+  catalog and wrapper, GitHub Actions and `compose.yaml`, keeping exact pins and the Actions' major
+  tags. The Angular packages, `angular-eslint` and TypeScript form one PR (a major one says to run
+  `ng update` for the migrations); so do the Postgres image in `compose.yaml` and
+  `TestcontainersConfiguration` (a regex manager reads the Java constant; `ignorePaths` drops
+  `config:recommended`'s `**/test/**` so it is seen; a major one says to run `docker compose down
+  -v`), and the Spring Boot plugin and BOM. Regex managers also update the README *What's inside*
+  rows, so a bump does not fail `readme-versions.test.mjs`, which also fails when a row other than
+  the manual ones has no manager. The Java toolchain, npm (`packageManager`) and the `@types/node`
+  major stay manual, since they move with the JDK and Node the CI wrappers install. Lock-file
+  maintenance and OSV vulnerability PRs keep transitive dependencies current. Renovate works on
+  GitHub and GitLab alike; enable the Renovate app (or a self-hosted runner) on your repository, and
+  copy `renovate.json` with the README rows it names.
+- `verify`: the full run fails on a high or critical `npm audit` advisory in `frontend/` (`frontend
+  audit`, first after `npm ci`, as it needs only the lockfile). `--quick` skips it: it needs the
+  registry, and its result changes with newly published advisories under an unchanged lockfile, so
+  an inner-loop run would fail on news unrelated to the change; CI runs the full verify.
+
 ## 0.1.1 — 2026-11-01
 
 - `skills-lock.json`: a vendored skill's `computedHash` covers its whole folder (every file under
@@ -112,30 +171,6 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   pause (three tries) and otherwise stops, telling you to delete `.git` and finish by hand, so a
   project never starts on top of the template's history. `init.test.mjs` disables gc and maintenance in its throwaway copies and tolerates a
   refusal that exits before reading stdin (EPIPE); both made the template CI fail intermittently.
-- Frontend: `npm run test:coverage` runs the unit tests once with the unit-test builder's own
-  `--coverage` (`@vitest/coverage-v8`, pinned to the `vitest` version) and prints a text summary;
-  `lcov.info` and an HTML report land in `frontend/coverage/<project name>/` (git-ignored). Every
-  `src/**/*.ts` counts, so a file no spec loads shows as 0 % instead of vanishing; `src/testing/`
-  helpers are left out. It is a report, not a gate: no threshold, and `verify` does not run it.
-  `scripts/readme-versions.test.mjs` fails when the two packages' versions differ. Copy the dev
-  dependency, the script and that test; bump both packages together.
-- Dependencies: `renovate.json` opens weekly update PRs for npm (`frontend/`), the Gradle version
-  catalog and wrapper, GitHub Actions and `compose.yaml`, keeping exact pins and the Actions' major
-  tags. The Angular packages, `angular-eslint` and TypeScript form one PR (a major one says to run
-  `ng update` for the migrations); so do the Postgres image in `compose.yaml` and
-  `TestcontainersConfiguration` (a regex manager reads the Java constant; `ignorePaths` drops
-  `config:recommended`'s `**/test/**` so it is seen; a major one says to run `docker compose down
-  -v`), and the Spring Boot plugin and BOM. Regex managers also update the README *What's inside*
-  rows, so a bump does not fail `readme-versions.test.mjs`, which also fails when a row other than
-  the manual ones has no manager. The Java toolchain, npm (`packageManager`) and the `@types/node`
-  major stay manual, since they move with the JDK and Node the CI wrappers install. Lock-file
-  maintenance and OSV vulnerability PRs keep transitive dependencies current. Renovate works on
-  GitHub and GitLab alike; enable the Renovate app (or a self-hosted runner) on your repository, and
-  copy `renovate.json` with the README rows it names.
-- `verify`: the full run fails on a high or critical `npm audit` advisory in `frontend/` (`frontend
-  audit`, first after `npm ci`, as it needs only the lockfile). `--quick` skips it: it needs the
-  registry, and its result changes with newly published advisories under an unchanged lockfile, so
-  an inner-loop run would fail on news unrelated to the change; CI runs the full verify.
 
 ## 0.1.0 — 2026-11-01
 

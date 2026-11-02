@@ -44,17 +44,26 @@ export class ProductForm {
       validate(path.name, ({ value }) => {
         const name = value().trim();
         if (name === '') {
-          return { kind: 'required', message: 'Enter a name.' };
+          return {
+            kind: 'required',
+            message: $localize`:@@catalog.form.name.required:Enter a name.`,
+          };
         }
         return name.length > NAME_MAX_LENGTH
-          ? { kind: 'maxLength', message: `Use at most ${NAME_MAX_LENGTH} characters.` }
+          ? {
+              kind: 'maxLength',
+              message: $localize`:@@catalog.form.name.maxLength:Use at most ${NAME_MAX_LENGTH}:max: characters.`,
+            }
           : undefined;
       });
       validate(path.price, ({ value }) => {
         const price = value().trim();
         return price === '' || parseMoneyToMinor(price) !== null
           ? undefined
-          : { kind: 'amount', message: 'Enter an amount such as 12.50.' };
+          : {
+              kind: 'amount',
+              message: $localize`:@@catalog.form.price.invalid:Enter an amount such as 12.50.`,
+            };
       });
     },
     { submission: { action: () => this.save() } },
@@ -64,7 +73,10 @@ export class ProductForm {
     try {
       await firstValueFrom(this.catalog.create(this.request()));
     } catch {
-      this.snackBar.open('Could not save the product. Try again.', 'Dismiss');
+      this.snackBar.open(
+        $localize`:@@catalog.form.saveFailed:Could not save the product. Try again.`,
+        $localize`:@@catalog.dismiss:Dismiss`,
+      );
       return;
     }
     await this.router.navigateByUrl('/catalog');

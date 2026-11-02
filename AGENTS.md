@@ -29,7 +29,7 @@ node scripts/check-agent-docs.mjs  # AGENTS.md / skills / MCP config consistency
 ./gradlew build                              # compile + all tests + structural net
 ./gradlew build -PexcludeTags=container      # same without Docker
 ./gradlew test --tests "*ClassName*"         # one test class
-./gradlew :bootstrap:bootRun                 # API + built SPA on :8080, Postgres from compose.yaml
+./gradlew :bootstrap:bootRun                 # API + SPA (/de/, /en/) on :8080, Postgres via compose
 ```
 
 Structural-net command: `backend/AGENTS.md`.
@@ -38,13 +38,14 @@ Structural-net command: `backend/AGENTS.md`.
 
 ```bash
 npm ci
-npm start                    # dev server on :4200, proxies /api and /actuator to :8080
+npm start                    # dev server on :4200, source locale en only; proxies /api, /actuator
 npm run lint                 # ESLint (incl. folder boundaries) + Stylelint
 npm run format:check         # Prettier (`npm run format` applies)
 npm test -- --watch=false    # Vitest in jsdom, incl. axe specs
 npm run test:coverage        # same, once, with a v8 coverage report in coverage/ (no threshold)
 npm run test:eslint-rules    # the repo's own ESLint rules, ESLint and Stylelint configs
-npm run build
+npm run build                # de + en builds; fails on a missing de translation
+npm run extract-i18n         # source strings → src/locale/messages.xlf (not committed)
 npm run typecheck:e2e        # tsc over e2e/ (Playwright transpiles without checking)
 npm run test:e2e             # Playwright, mocked API (CI-safe)
 REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (local only)
@@ -55,7 +56,8 @@ REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (l
 - `backend/` — Gradle build: `core` (domain + application, Spring-free), `adapters` (web, event
   listeners, persistence, gateways), `bootstrap` (`Application`, wiring, config, structural net).
   Flyway migrations: `backend/adapters/src/main/resources/db/migration/`.
-- `frontend/` — Angular workspace; the build output is served by `bootstrap`.
+- `frontend/` — Angular workspace; the build output is served by `bootstrap`, one build per locale
+  (`de` default, `en` source); translations in `frontend/src/locale/`.
 - `scripts/` — `verify.mjs` (the one check entry point; CI wrappers call it and nothing else),
   `check-agent-docs.mjs`, `pre-commit.mjs` (run by `.githooks/pre-commit`), `mcp/` (MCP launchers).
 - `docs/adr/` — decisions; `docs/agents/workflow.md` — tracker, CLI, branches, merge rules.
@@ -101,7 +103,7 @@ Their licence notices and left-out files are in `THIRD_PARTY_LICENSES.md`.
 |---|---|
 | `backend-architecture` | before adding or moving a class, package, port, event, area or Gradle dependency under `backend/`, or when the structural net fails |
 | `java-conventions` | before writing or refactoring any Java: class, record, port, service, adapter, event or test |
-| `frontend-architecture` | before adding a file, component, route, provider, cross-folder import or e2e spec under `frontend/` |
+| `frontend-architecture` | before adding a file, component, route, provider, user-facing string, cross-folder import or e2e spec under `frontend/` |
 | `frontend-styling` | before writing or changing `.scss` or customising a Material component, or when Stylelint fails |
 | `review-checklist` | reviewing any change here, your own included; adds items to a running review |
 | `docs-freshness` | before finishing a change that renames, moves or removes something a doc states |

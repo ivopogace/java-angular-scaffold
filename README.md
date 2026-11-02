@@ -89,8 +89,11 @@ read `CHANGELOG.md` here from that version on to port an improvement by hand.
 Postgres started from `compose.yaml` by Spring Boot's Docker Compose support.
 `spring.docker.compose.file` in `backend/bootstrap/src/main/resources/application.properties` is
 relative to `backend/bootstrap`, `bootRun`'s working directory; change it if you move
-`compose.yaml` or start the app from elsewhere. `npm start` (from `frontend/`) serves the SPA on
-`:4200`, proxying `/api` to `:8080`. `AGENTS.md` lists every command.
+`compose.yaml` or start the app from elsewhere. The SPA is built once per locale and served under
+`/de/` and `/en/`; a page request no controller answers, outside `/api` and `/actuator`, redirects
+to `/de/…`, or to `/en/…` when the browser's `Accept-Language` prefers English. `npm start` (from
+`frontend/`) serves the English source locale only on `:4200`, proxying `/api` to `:8080`.
+`AGENTS.md` lists every command.
 
 ## Credits
 
