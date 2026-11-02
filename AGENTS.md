@@ -91,8 +91,8 @@ Cited by number — **never renumber**; append new ones at the end.
 ## Skills
 
 Load a skill when its row's condition holds. Vendored rows are pinned in `skills-lock.json` and
-stay verbatim.
-Their licence notices are in `THIRD_PARTY_LICENSES.md`.
+stay verbatim: files may be left out, never edited.
+Their licence notices and left-out files are in `THIRD_PARTY_LICENSES.md`.
 
 | skill | load when |
 |---|---|
@@ -106,8 +106,6 @@ Their licence notices are in `THIRD_PARTY_LICENSES.md`.
 | `angular-developer` (vendored) | before writing or changing Angular code under `frontend/`: components, signals, forms, routing, DI, testing |
 | `postgres` (vendored) | before writing a Flyway migration, table, index or query under `backend/` |
 | `domain-modeling` (vendored) | when discussing domain terminology, editing the glossary, or recording an ADR |
-| `codebase-design` (vendored) | when designing or deepening a module interface or deciding where a seam goes |
-| `grilling` (vendored) | when asked to stress-test a plan, decision or idea ("grill me") |
 
 ## Way of working
 
