@@ -1,28 +1,22 @@
-# The template's release automation, not a check wrapper: tags a commit on main as v<CHANGELOG version>
-# once ci and template-ci both succeeded for its push. init deletes this file with scripts/release-tag*.mjs.
+# The template's release automation, not a check wrapper: run by hand from the Actions tab once a
+# version is complete. Tags main's tip as v<CHANGELOG version> if ci and template-ci both succeeded
+# for its push. init deletes this file with scripts/release-tag*.mjs.
 name: release-tag
 
 on:
-  # Both, so whichever finishes last finds the other green and tags.
-  workflow_run:
-    workflows: [ci, template-ci]
-    types: [completed]
-    branches: [main]
+  # By hand only: a version's heading lands on main before its last entries do, so an automatic
+  # trigger would tag the version too early.
   workflow_dispatch:
 
 permissions: {}
 
 concurrency:
-  group: release-tag-${{ github.event.workflow_run.head_sha || github.sha }}
+  group: release-tag
   cancel-in-progress: false
 
 jobs:
   tag:
-    if: >-
-      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' &&
-       github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push')
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -31,12 +25,11 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-      - run: node scripts/release-tag.mjs --sha "$SHA" --trigger "$TRIGGER"
+      - run: node scripts/release-tag.mjs --sha "$SHA"
         env:
-          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-          TRIGGER: ${{ github.event_name }}
+          SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}

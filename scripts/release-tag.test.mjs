@@ -20,7 +20,6 @@ const red = { status: "completed", conclusion: "failure" };
 const running = { status: "in_progress", conclusion: null };
 const allGreen = { "ci.yml": [green], "template-ci.yml": [green] };
 const input = (overrides = {}) => ({
-  trigger: "workflow_run",
   changelogVersion: "0.2.0",
   templateVersion: "0.2.0",
   runs: allGreen,
@@ -28,17 +27,12 @@ const input = (overrides = {}) => ({
   ...overrides,
 });
 
-test("parseArgs takes a full sha and a known trigger", () => {
-  assert.deepEqual(parseArgs(["--sha", SHA, "--trigger", "workflow_run"]), {
-    sha: SHA,
-    trigger: "workflow_run",
-  });
-  assert.ok(
-    "error" in parseArgs(["--sha", "abc1234", "--trigger", "workflow_run"]),
-  );
-  assert.ok("error" in parseArgs(["--sha", SHA, "--trigger", "push"]));
-  assert.ok("error" in parseArgs(["--sha", SHA]));
-  assert.ok("error" in parseArgs(["--sha", "--trigger", "workflow_run"]));
+test("parseArgs takes a full sha and nothing else", () => {
+  assert.deepEqual(parseArgs(["--sha", SHA]), { sha: SHA });
+  assert.ok("error" in parseArgs(["--sha", "abc1234"]));
+  assert.ok("error" in parseArgs(["--sha"]));
+  assert.ok("error" in parseArgs([]));
+  assert.ok("error" in parseArgs(["--sha", SHA, "--trigger", "workflow_run"]));
   assert.ok("error" in parseArgs(["--force"]));
 });
 
@@ -87,7 +81,6 @@ test("decide tags when both workflows are green and the tag is absent", () => {
     tag: "v0.2.0",
     reason: "tagging v0.2.0",
   });
-  assert.equal(decide(input({ trigger: "workflow_dispatch" })).action, "tag");
 });
 
 test("decide fails on a version mismatch before anything else", () => {
@@ -103,38 +96,29 @@ test("decide never moves an existing tag", () => {
   const decision = decide(input({ remoteTagSha: SHA }));
   assert.equal(decision.action, "skip");
   assert.match(decision.reason, /already exists.*0123456/);
-  assert.equal(
-    decide(input({ trigger: "workflow_dispatch", remoteTagSha: SHA })).action,
-    "skip",
-  );
 });
 
-test("decide waits for the other workflow under workflow_run, fails a manual run", () => {
+test("decide fails unless both workflows succeeded for the commit", () => {
   for (const runs of [
     { "ci.yml": [green], "template-ci.yml": [running] },
     { "ci.yml": [green] },
     { "ci.yml": [red], "template-ci.yml": [green] },
   ]) {
-    const later = decide(input({ runs }));
-    assert.equal(later.action, "skip");
-    assert.match(later.reason, /not tagging v0\.2\.0 yet/);
-    assert.equal(
-      decide(input({ runs, trigger: "workflow_dispatch" })).action,
-      "fail",
-    );
+    const decision = decide(input({ runs }));
+    assert.equal(decision.action, "fail");
+    assert.match(decision.reason, /not tagging v0\.2\.0: /);
   }
 });
 
-test("the workflow runs after exactly the required workflows and calls this script", () => {
+test("the workflow runs only by hand, on main, and calls this script", () => {
   const workflow = repoFile(".github/workflows/release-tag.yml");
-  const names = REQUIRED_WORKFLOWS.map(
-    (file) => /^name: (\S+)$/m.exec(repoFile(`.github/workflows/${file}`))[1],
-  );
-  assert.equal(
-    /^ {4}workflows: \[(.*)\]$/m.exec(workflow)?.[1],
-    names.join(", "),
-  );
-  assert.match(workflow, /^ {4}branches: \[main\]$/m);
+  for (const file of REQUIRED_WORKFLOWS) {
+    assert.ok(repoFile(`.github/workflows/${file}`), `${file} exists`);
+  }
+  // A version's heading lands on main before its last entries, so nothing may tag on its own.
+  assert.match(workflow, /^ {2}workflow_dispatch:$/m);
+  assert.doesNotMatch(workflow, /workflow_run|^ {2}push:|schedule:/m);
+  assert.match(workflow, /if: github\.ref == 'refs\/heads\/main'/);
   assert.match(workflow, /node scripts\/release-tag\.mjs/);
   assert.match(workflow, /^permissions: \{\}$/m);
   assert.match(workflow, /contents: write/);

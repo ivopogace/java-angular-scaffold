@@ -60,14 +60,15 @@ hand.
    and why.
 2. Set `TEMPLATE_VERSION` in `scripts/init.mjs` to the same version; `init.test.mjs` checks they
    match.
-3. Merge with CI green; the release-tag workflow tags it. `.github/workflows/release-tag.yml` runs
-   when `ci` or `template-ci` completes for a push to `main`; once both have succeeded for that
-   commit, `scripts/release-tag.mjs` creates the annotated tag `vX.Y.Z` (message `vX.Y.Z`) on it as
-   `github-actions[bot]` and pushes it. It fails when the top `CHANGELOG.md` heading and
-   `TEMPLATE_VERSION` differ, and leaves an existing `vX.Y.Z` alone, so merges without a new
-   version tag nothing. Run it by hand from the Actions tab (`workflow_dispatch`, `main` only),
-   which applies the same checks. Fallback, if the workflow cannot run: tag the merge commit and
-   push the tag yourself, `git tag -a vX.Y.Z -m "vX.Y.Z" <commit>` and `git push origin vX.Y.Z`.
+3. Once the version is complete and CI is green on `main`, run the release-tag workflow from the
+   Actions tab (**Run workflow** on `main`). It never runs on its own, because a version's heading
+   lands on `main` before its last entries do. `.github/workflows/release-tag.yml` checks that `ci`
+   and `template-ci` both succeeded for the push of `main`'s tip, then
+   `scripts/release-tag.mjs` creates the annotated tag `vX.Y.Z` (message `vX.Y.Z`) on it as
+   `github-actions[bot]` and pushes it. It fails when either workflow has not succeeded for that
+   commit or the top `CHANGELOG.md` heading and `TEMPLATE_VERSION` differ, and leaves an existing
+   `vX.Y.Z` alone. Fallback, if the workflow cannot run: tag the commit and push the tag yourself,
+   `git tag -a vX.Y.Z -m "vX.Y.Z" <commit>` and `git push origin vX.Y.Z`.
 
 This workflow is release automation, not a CI wrapper: wrappers run `verify` and nothing else,
 while this one runs no checks of its own and only reads the other two workflows' results.

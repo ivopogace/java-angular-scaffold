@@ -10,28 +10,27 @@ const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 /** The workflows that must both have succeeded for a push of the commit to main, by file name. */
 export const REQUIRED_WORKFLOWS = ["ci.yml", "template-ci.yml"];
-export const TRIGGERS = ["workflow_run", "workflow_dispatch"];
 const BOT = {
   name: "github-actions[bot]",
   email: "41898282+github-actions[bot]@users.noreply.github.com",
 };
 
-export const USAGE = `Usage: node scripts/release-tag.mjs --sha <commit> --trigger workflow_run|workflow_dispatch
+export const USAGE = `Usage: node scripts/release-tag.mjs --sha <commit>
 
-Tags <commit> as v<version> (the top CHANGELOG.md heading) once ${REQUIRED_WORKFLOWS.join(" and ")}
+Tags <commit> as v<version> (the top CHANGELOG.md heading) if ${REQUIRED_WORKFLOWS.join(" and ")}
 have both succeeded for a push of it to main, and pushes the tag. Needs gh with
 GH_TOKEN (the workflow passes GITHUB_TOKEN) and GITHUB_REPOSITORY; never moves an
 existing tag.`;
 
 /**
  * @param {string[]} argv the arguments after the script name
- * @returns {{ sha: string, trigger: string } | { error: string }}
+ * @returns {{ sha: string } | { error: string }}
  */
 export function parseArgs(argv) {
   const options = {};
   for (let i = 0; i < argv.length; i += 2) {
     const [flag, value] = [argv[i], argv[i + 1]];
-    if (flag !== "--sha" && flag !== "--trigger") {
+    if (flag !== "--sha") {
       return { error: `unknown argument ${flag}` };
     }
     if (value === undefined || value.startsWith("--")) {
@@ -42,10 +41,7 @@ export function parseArgs(argv) {
   if (!/^[0-9a-f]{40}$/.test(options.sha ?? "")) {
     return { error: "--sha must be a full 40-character commit hash" };
   }
-  if (!TRIGGERS.includes(options.trigger)) {
-    return { error: `--trigger must be one of ${TRIGGERS.join(", ")}` };
-  }
-  return { sha: options.sha, trigger: options.trigger };
+  return { sha: options.sha };
 }
 
 /**
@@ -81,7 +77,6 @@ export function workflowState(runs) {
  * What to do for one commit. Pure: every input is read by {@link main}.
  *
  * @param {object} input
- * @param {string} input.trigger one of {@link TRIGGERS}
  * @param {string|null} input.changelogVersion see {@link changelogVersion}
  * @param {string} input.templateVersion TEMPLATE_VERSION
  * @param {Record<string, {status: string, conclusion: string|null}[]>} input.runs
@@ -90,7 +85,6 @@ export function workflowState(runs) {
  * @returns {{ action: "tag"|"skip"|"fail", tag?: string, reason: string }}
  */
 export function decide({
-  trigger,
   changelogVersion: version,
   templateVersion,
   runs,
@@ -105,10 +99,7 @@ export function decide({
   ]).filter(([, state]) => state !== "success");
   if (notGreen.length > 0) {
     const list = notGreen.map(([w, state]) => `${w} ${state}`).join(", ");
-    // Under workflow_run the other workflow's own completion runs this again.
-    return trigger === "workflow_dispatch"
-      ? { action: "fail", tag, reason: `not tagging ${tag}: ${list}` }
-      : { action: "skip", tag, reason: `not tagging ${tag} yet: ${list}` };
+    return { action: "fail", tag, reason: `not tagging ${tag}: ${list}` };
   }
   if (remoteTagSha !== null) {
     return {
@@ -176,7 +167,6 @@ export async function main(argv) {
     REQUIRED_WORKFLOWS.map((w) => [w, pushRuns(repository, w, args.sha)]),
   );
   const decision = decide({
-    trigger: args.trigger,
     changelogVersion: version,
     templateVersion: TEMPLATE_VERSION,
     runs,
