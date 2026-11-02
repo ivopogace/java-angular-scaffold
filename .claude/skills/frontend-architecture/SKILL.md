@@ -129,7 +129,7 @@ mocked e2e suite asserts English text and pins the browser locale to `en-US`.
 | component, service, pure function | `<name>.spec.ts` next to it (Vitest, jsdom) | behaviour; HTTP via `provideHttpClientTesting` + `HttpTestingController` |
 | user-facing page | an `expectNoAxeViolations` case in its spec (`src/testing/axe.ts`) | no axe violation (contrast excluded: jsdom has no layout) |
 | user journey, contrast | `frontend/e2e/*.e2e.ts`, API stubbed with `page.route` | rendering in a browser, axe in both colour schemes; runs in CI |
-| wiring against the real API | `frontend/e2e/real-backend/*.e2e.ts` | round-trip through Spring and Postgres; local only, skips unless `REAL_BACKEND=1` |
+| wiring against the real API | `frontend/e2e/real-backend/*.e2e.ts` | round-trip through Spring and Postgres; `*.localized.real.e2e.ts`: the `de` / `en` builds as Spring serves them; local only, skips unless `REAL_BACKEND=1` |
 
 A component spec waits instead of forcing a render: `await fixture.whenStable()` once nothing
 is pending, `TestBed.tick()` while an `httpResource` load is unflushed, since a resource load is a

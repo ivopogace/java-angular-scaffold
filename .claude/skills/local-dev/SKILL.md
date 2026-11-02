@@ -43,14 +43,20 @@ While iterating, run the narrowest thing first: `./gradlew test --tests "*ClassN
 ## Running the stack
 
 ```bash
+cd frontend && npm run build                # de + en builds, which bootRun packages into the SPA
 cd backend && ./gradlew :bootstrap:bootRun   # API + built SPA on :8080; starts Postgres from compose.yaml
 cd frontend && npm start                    # dev server on :4200, proxies /api and /actuator to :8080
 REAL_BACKEND=1 npm run test:e2e:real        # from frontend/, with both of the above running
 ```
 
 `bootRun` brings up `compose.yaml`'s `postgres:18-alpine` on port 5432 through Spring Boot's
-Docker Compose support; Flyway migrates on start. The real-backend specs skip unless
-`REAL_BACKEND=1`.
+Docker Compose support; Flyway migrates on start. It serves the SPA only if `frontend/dist/`
+existed when it started: build first, and restart `bootRun` after a rebuild. The real-backend
+specs skip unless `REAL_BACKEND=1`. The `dev-server` project runs against `npm start` (English
+only); the `localized` project (`*.localized.real.e2e.ts`) runs against `:8080` and checks the
+`de` / `en` builds as users get them — `-- --project localized` runs it alone (Playwright still
+starts `npm start`, or reuses a running one). Its `beforeAll` fails with `Spring serves no /de/
+build` when `bootRun` started without a build.
 
 ## Hooks and formatting
 

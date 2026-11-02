@@ -76,6 +76,11 @@ memory.
   checked in Playwright, since jsdom has no layout.
 - Playwright: `e2e/` stubs the API per spec and runs in CI; `e2e/real-backend/` runs locally only,
   against the running stack (backend on `:8080`, `npm start`):
-  `REAL_BACKEND=1 npm run test:e2e:real` — without the variable every spec skips.
+  `REAL_BACKEND=1 npm run test:e2e:real` — without the variable every spec skips. Its
+  `dev-server` project drives `npm start` (`en` only); its `localized` project
+  (`*.localized.real.e2e.ts`, browser locale `de-DE`) drives Spring on `:8080` serving the
+  production build, so run `npm run build` before `bootRun`; it proves the `Accept-Language`
+  redirect, `<html lang>`, German text, deep links and German formatting. One project alone:
+  `REAL_BACKEND=1 npm run test:e2e:real -- --project localized`.
 - The repo's own ESLint rules, the ESLint and Stylelint configs have their own suite
   (`npm run test:eslint-rules`).

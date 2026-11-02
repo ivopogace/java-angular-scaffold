@@ -830,18 +830,36 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
 
   test("a failing git commit prints the state and the commands that finish the history", async (t) => {
     const root = await copyRepo(t);
+    // The commit is made to fail by signing it with a gpg that does not exist. The developer's
+    // global and system config are shut out, or a `gpg.format=ssh` there (with its own working
+    // `gpg.ssh.program`) would sign through that program and ignore `gpg.program`; the format is
+    // pinned to openpgp for the same reason.
+    const emptyConfig = `${root}-gitconfig`;
+    writeFileSync(emptyConfig, "");
+    t.after(() => rmSync(emptyConfig, { force: true }));
+    const isolated = {
+      ...Object.fromEntries(
+        Object.entries(process.env).filter(
+          ([key]) => !/^GIT_CONFIG_/.test(key),
+        ),
+      ),
+      ...TEST_IDENTITY,
+      GIT_CONFIG_GLOBAL: emptyConfig,
+      GIT_CONFIG_NOSYSTEM: "1",
+    };
     const result = await runInit(
       root,
       [...VALID, "--sample", "keep", "--ci", "github"],
       {
         env: {
-          ...process.env,
-          ...TEST_IDENTITY,
-          GIT_CONFIG_COUNT: "2",
+          ...isolated,
+          GIT_CONFIG_COUNT: "3",
           GIT_CONFIG_KEY_0: "commit.gpgsign",
           GIT_CONFIG_VALUE_0: "true",
-          GIT_CONFIG_KEY_1: "gpg.program",
-          GIT_CONFIG_VALUE_1: join(root, "no-such-gpg"),
+          GIT_CONFIG_KEY_1: "gpg.format",
+          GIT_CONFIG_VALUE_1: "openpgp",
+          GIT_CONFIG_KEY_2: "gpg.program",
+          GIT_CONFIG_VALUE_2: join(root, "no-such-gpg"),
         },
       },
     );
@@ -874,7 +892,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       ["add", "-A"],
       ["commit", "--no-verify", "-m", COMMIT_SUBJECT],
     ]) {
-      git(root, args);
+      git(root, args, { ...isolated, GIT_CONFIG_COUNT: "0" });
     }
     assert.equal(git(root, ["log", "--format=%s"]).trim(), COMMIT_SUBJECT);
     assert.equal(git(root, ["status", "--porcelain"]), "");

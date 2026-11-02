@@ -63,6 +63,22 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   audit`, first after `npm ci`, as it needs only the lockfile). `--quick` skips it: it needs the
   registry, and its result changes with newly published advisories under an unchanged lockfile, so
   an inner-loop run would fail on news unrelated to the change; CI runs the full verify.
+- Frontend: the real-backend Playwright suite gets a `localized` project that runs against Spring
+  on `:8080` serving the production build, because the existing specs only ever saw the `en`
+  dev server and nothing loaded the `de` / `en` builds through `SpaWebConfig`.
+  `e2e/real-backend/shell.localized.real.e2e.ts` proves `/` redirects to `/de/` without a preference and
+  to `/en/` for an English browser, the `de` build renders German text with `<html lang="de">`,
+  and a client-route deep link under `/de/` loads the shell; `catalog.localized.real.e2e.ts`
+  (sample) proves a catalog price is formatted in German. The former project is now `dev-server`.
+  Local only like the rest of the suite: `npm run build`, then `bootRun`, then
+  `REAL_BACKEND=1 npm run test:e2e:real`. Port: copy the two projects of
+  `playwright.real.config.ts` and the shell spec, with your own German strings.
+- `scripts/init.test.mjs`: the failing-commit test failed wherever the developer's git config
+  signs with `gpg.format=ssh` (and a working `gpg.ssh.program`), as in some cloud containers: git
+  then signs through that program and never runs the missing `gpg.program` the test forced, so the
+  commit succeeded. The test now shuts out global and system config (`GIT_CONFIG_GLOBAL` on an
+  empty file, `GIT_CONFIG_NOSYSTEM`) and pins `gpg.format=openpgp`, so the commit fails whatever
+  the machine's config is. Template-only; nothing to port.
 
 ## 0.1.1 — 2026-11-01
 
