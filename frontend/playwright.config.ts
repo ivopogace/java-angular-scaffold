@@ -5,7 +5,8 @@ import { defineConfig, devices } from '@playwright/test';
  * needs no backend and is safe for CI. The real-backend suite is `playwright.real.config.ts`.
  *
  * Specs assert English text: `npm start` serves only the source locale (`en`), not the `de` build
- * users get by default. The browser locale is pinned to match.
+ * users get by default. The browser locale is pinned to `en-US` too, so browser-side defaults
+ * (`navigator.language`, `Intl` without a locale) match on every machine.
  */
 export default defineConfig({
   testDir: './e2e',

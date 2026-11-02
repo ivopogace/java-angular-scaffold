@@ -6,7 +6,8 @@ import { defineConfig, devices } from '@playwright/test';
  * `REAL_BACKEND=1`. The dev server proxies `/api` to the backend.
  *
  * Specs assert English text: `npm start` serves only the source locale (`en`), not the `de` build
- * users get by default. The browser locale is pinned to match.
+ * users get by default. The browser locale is pinned to `en-US` too, so browser-side defaults
+ * (`navigator.language`, `Intl` without a locale) match on every machine.
  */
 export default defineConfig({
   testDir: './e2e/real-backend',

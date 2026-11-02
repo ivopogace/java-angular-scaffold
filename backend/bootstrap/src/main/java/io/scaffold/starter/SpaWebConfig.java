@@ -1,6 +1,5 @@
 package io.scaffold.starter;
 
-import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -10,30 +9,36 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.HttpRequestHandler;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 import org.springframework.web.servlet.resource.PathResourceResolver;
+import org.springframework.web.util.UrlPathHelper;
 
 /**
  * Serves the built Angular app from the same origin, one build per locale: {@code /de/…} from
  * {@code static/de/}, {@code /en/…} from {@code static/en/} (the locales of the {@code i18n}
- * block in {@code angular.json}). Inside a locale, a GET for a path that is not a file (no
- * {@code .}) answers with that locale's {@code index.html}, so client-side routes survive a
- * reload. A GET or HEAD for any other path except {@code /api}, {@code /actuator} and
- * {@code /error} (and below them) is redirected to the same path under the locale
- * {@code Accept-Language} prefers, {@code de} unless it prefers {@code en}; unknown API paths
- * still end in a 404 problem body. The shell ({@code index.html}, the fallback, anything unhashed)
- * is served with {@code Cache-Control: no-cache}, so a deploy is picked up on the next load;
- * scripts, styles and media whose name carries a content hash ({@code main-ABC123.js}, as
- * Angular's production {@code outputHashing} names them) are cached for a year as immutable.
+ * block in {@code angular.json}; {@code SpaWebConfigTest} fails when the two differ). Inside a
+ * locale, a GET for a path that is not a file (no {@code .}) answers with that locale's
+ * {@code index.html}, so client-side routes survive a reload. A GET or HEAD that no controller,
+ * resource or locale build answers, outside {@code /api} and {@code /actuator}, is redirected to
+ * the same path under the locale {@code Accept-Language} prefers: {@code de} unless it prefers
+ * {@code en}. Everything else unmatched, unknown API paths included, ends in a 404 problem body.
+ * Spring Boot's own static mappings are off ({@code spring.web.resources.add-mappings}), so these
+ * are the only ones. The shell ({@code index.html}, the fallback, anything unhashed) is served
+ * with {@code Cache-Control: no-cache}, so a deploy is picked up on the next load; scripts,
+ * styles and media whose name carries a content hash ({@code main-ABC123.js}, as Angular's
+ * production {@code outputHashing} names them) are cached for a year as immutable.
  */
 @Configuration(proxyBeanMethods = false)
 class SpaWebConfig implements WebMvcConfigurer {
@@ -47,7 +52,7 @@ class SpaWebConfig implements WebMvcConfigurer {
     private static final String HASHED_MEDIA = MEDIA + "*-*.*";
     private static final CacheControl HASHED = CacheControl.maxAge(Duration.ofDays(365)).immutable();
     private static final CacheControl SHELL = CacheControl.noCache();
-    private static final Pattern RESERVED = Pattern.compile("/(api|actuator|error)(/.*)?");
+    private static final Pattern RESERVED = Pattern.compile("/(api|actuator)(/.*)?");
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
@@ -72,18 +77,24 @@ class SpaWebConfig implements WebMvcConfigurer {
         }
     }
 
-    /** A resource handler never resolves the empty path below its prefix, so it forwards. */
+    /**
+     * A resource handler never resolves the empty path below its prefix: a locale's root forwards
+     * to its shell, and the bare prefix redirects to the root, its base href.
+     */
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         for (String locale : LOCALES) {
             registry.addViewController("/" + locale + "/")
                     .setViewName("forward:/" + locale + "/index.html");
+            registry.addRedirectViewController("/" + locale, "/" + locale + "/")
+                    .setKeepQueryParams(true)
+                    .setStatusCode(HttpStatus.FOUND);
         }
     }
 
     @Bean
-    OncePerRequestFilter localeRedirectFilter() {
-        return new LocaleRedirectFilter();
+    HandlerMapping localeRedirectMapping() {
+        return new LocaleRedirectMapping();
     }
 
     /** The supported locale {@code Accept-Language} prefers most, else {@link #DEFAULT_LOCALE}. */
@@ -118,40 +129,38 @@ class SpaWebConfig implements WebMvcConfigurer {
     }
 
     /**
-     * Sends a page request without a locale prefix to the preferred locale's build, keeping path
-     * and query; {@code /de} becomes {@code /de/}, the base href of that build.
+     * Consulted after every other mapping, so only a request nothing else answers reaches it. It
+     * takes a GET or HEAD outside {@code /api} and {@code /actuator} (judged on the decoded path
+     * without path parameters, as the other mappings judge it) and leaves everything else
+     * unhandled, which ends in a 404 problem body.
      */
-    private static final class LocaleRedirectFilter extends OncePerRequestFilter {
+    private static final class LocaleRedirectMapping extends AbstractHandlerMapping {
 
-        @Override
-        protected boolean shouldNotFilter(HttpServletRequest request) {
-            String method = request.getMethod();
-            if (!HttpMethod.GET.matches(method) && !HttpMethod.HEAD.matches(method)) {
-                return true;
-            }
-            String path = pathOf(request);
-            return RESERVED.matcher(path).matches()
-                    || LOCALES.stream().anyMatch(locale -> path.startsWith("/" + locale + "/"));
+        private static final HttpRequestHandler REDIRECT = LocaleRedirectMapping::redirect;
+
+        LocaleRedirectMapping() {
+            setOrder(Ordered.LOWEST_PRECEDENCE);
         }
 
         @Override
-        protected void doFilterInternal(
-                HttpServletRequest request, HttpServletResponse response, FilterChain chain) {
-            String path = pathOf(request);
-            String target = LOCALES.contains(path.substring(1))
-                    ? path + "/"
-                    : "/" + preferredLocale(request.getHeader(HttpHeaders.ACCEPT_LANGUAGE)) + path;
+        protected Object getHandlerInternal(HttpServletRequest request) {
+            String method = request.getMethod();
+            boolean page = HttpMethod.GET.matches(method) || HttpMethod.HEAD.matches(method);
+            String lookupPath = UrlPathHelper.defaultInstance.getLookupPathForRequest(request);
+            return page && !RESERVED.matcher(lookupPath).matches() ? REDIRECT : null;
+        }
+
+        /** Sends the request to the preferred locale's build, with its path and query. */
+        private static void redirect(HttpServletRequest request, HttpServletResponse response) {
+            String path = request.getRequestURI().substring(request.getContextPath().length());
             String query = request.getQueryString();
+            String locale = preferredLocale(request.getHeader(HttpHeaders.ACCEPT_LANGUAGE));
             response.setStatus(HttpStatus.FOUND.value());
             response.setHeader(HttpHeaders.VARY, HttpHeaders.ACCEPT_LANGUAGE);
             response.setHeader(
                     HttpHeaders.LOCATION,
-                    request.getContextPath() + target + (query == null ? "" : "?" + query));
-        }
-
-        private static String pathOf(HttpServletRequest request) {
-            String path = request.getRequestURI().substring(request.getContextPath().length());
-            return path.isEmpty() ? "/" : path;
+                    request.getContextPath() + "/" + locale + path
+                            + (query == null ? "" : "?" + query));
         }
     }
 }

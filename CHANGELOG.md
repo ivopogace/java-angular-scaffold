@@ -31,9 +31,12 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   the mocked and real-backend Playwright suites assert English text with the browser locale pinned
   to `en-US`. The unused `nav-link` class is gone from the toolbar link.
 - Backend: `SpaWebConfig` serves `/de/…` and `/en/…` from their builds, each falling back to its
-  own `index.html` for client routes, and redirects (302, `Vary: Accept-Language`) a GET or HEAD
-  for any other path except `/api`, `/actuator` and `/error` to the same path and query under `de`,
-  or `en` when `Accept-Language` prefers it; `SpaWebConfigTest` covers the routing.
+  own `index.html` for client routes. A GET or HEAD that no controller or resource answers, outside
+  `/api` and `/actuator`, is redirected (302, `Vary: Accept-Language`) to the same path and query
+  under `de`, or `en` when `Accept-Language` prefers it, by a lowest-precedence handler mapping, so
+  a later `/login` or API-docs endpoint is never redirected. Boot's own static mappings are off
+  (`spring.web.resources.add-mappings=false`). `SpaWebConfigTest` covers the routing and fails
+  when `SpaWebConfig.LOCALES` and `angular.json`'s locales differ.
   `npm run watch` builds both locales (`--localize`) so the backend can serve its output. Port
   `SpaWebConfig` with its test fixtures under `static/de/` and `static/en/`.
 
