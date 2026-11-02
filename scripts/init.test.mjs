@@ -579,10 +579,10 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
     const readme = readFileSync(join(root, "README.md"), "utf8");
     assert.equal(
       readme,
-      readFileSync(join(repoRoot, "README.project.md"), "utf8").replaceAll(
-        "Scaffold Starter",
-        "Acme Orders",
-      ),
+      readFileSync(join(repoRoot, "README.project.md"), "utf8")
+        .replaceAll("Scaffold Starter", "Acme Orders")
+        .replaceAll("scaffold-starter", "acme-orders")
+        .replaceAll("scaffold_starter", "acme_orders"),
     );
     assert.match(
       readFileSync(join(root, "AGENTS.md"), "utf8"),

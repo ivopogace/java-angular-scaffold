@@ -82,6 +82,29 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   commit succeeded. The test now shuts out global and system config (`GIT_CONFIG_GLOBAL` on an
   empty file, `GIT_CONFIG_NOSYSTEM`) and pins `gpg.format=openpgp`, so the commit fails whatever
   the machine's config is. Template-only; nothing to port.
+- Backend: a production container image. `./gradlew :bootstrap:bootBuildImage` builds
+  `<project name>:<version>` with Spring Boot's Cloud Native Buildpacks support (Paketo
+  `builder-noble-java-tiny`, `BP_JVM_VERSION` taken from the Gradle toolchain), no Dockerfile
+  (`docs/adr/0006-container-image-with-buildpacks.md`): the buildpacks bring layering, a
+  container-aware memory calculator, a non-root user and an SBOM we would otherwise maintain by
+  hand. The name comes from `rootProject.name`, so `init` renames it. `checkSpaPackaged` fails the
+  build unless every locale of `angular.json` was packaged into `static/`, because an image
+  without the SPA starts and reports healthy while serving no page. Nothing deployment-specific is
+  baked in: `SPRING_DATASOURCE_URL` / `USERNAME` / `PASSWORD` (and optionally
+  `APP_BUSINESS_TIME_ZONE`, `SERVER_PORT`) come from the environment at runtime; Spring Boot's
+  Docker Compose support stays `developmentOnly`, so it is not in the image. Port: copy the
+  `checkSpaPackaged` and `bootBuildImage` blocks of `backend/bootstrap/build.gradle` and the README's
+  *Production image* section.
+- `verify`: the full run smoke-tests the image (invariant #9), after the mocked e2e:
+  `scripts/smoke-image.mjs` builds it (the frontend too, unless `--skip-frontend-build`, which
+  `verify` passes as it has just built it), starts it with `compose.yaml`'s Postgres on a
+  throwaway Docker network, waits for `/actuator/health` to be `UP`, checks that `GET /` is a 302
+  to `/de/` and that `/de/` and `/en/` serve their `<html lang>`, prints the app log on failure and
+  always removes what it started. It is in `verify` rather than opt-in because nothing else would
+  notice a change that breaks the image before a deploy, and the full run already needs Docker and
+  the network; it costs a builder pull (several hundred MB) on a cold Docker cache. `--quick`
+  skips it. Under a TCP `DOCKER_HOST` (Docker-in-Docker, as in `.gitlab-ci.yml`) it calls the app
+  on the daemon's host. Port: copy the script, its test and the `verify.mjs` step.
 
 ## 0.1.1 — 2026-11-01
 

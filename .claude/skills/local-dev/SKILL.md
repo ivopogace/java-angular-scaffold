@@ -3,9 +3,10 @@ name: local-dev
 description: >-
   How to build, run and test this project on a developer machine: what verify and verify --quick
   run, Docker for Testcontainers and the local Postgres, running the stack for the real-backend
-  e2e, the pre-commit hook, removing the sample, and fixes for common local failures (no Docker,
-  missing JDK 25, Gradle's "Unable to establish loopback connection" on Windows, missing
-  Playwright browser, Prettier). Load BEFORE the session's first ./gradlew, npm or verify run, or
+  e2e, building, running and smoke-testing the production image, the pre-commit hook, removing the
+  sample, and fixes for common local failures (no Docker, missing JDK 25, Gradle's "Unable to
+  establish loopback connection" on Windows, missing Playwright browser, Docker Hub or Maven
+  Central rate limits, buildpack downloads behind a proxy, Prettier). Load BEFORE the session's first ./gradlew, npm or verify run, or
   when a local build, test or verify step fails for a reason that is not the code. What a failing
   architecture rule means is `backend-architecture`'s or `frontend-architecture`'s.
 ---
@@ -28,10 +29,11 @@ breaks for an environmental reason.
 order: `npm ci` (only when `frontend/node_modules` is missing), `npm audit --audit-level=high` in
 `frontend/`, backend `gradlew build`, frontend lint (ESLint + Stylelint), Prettier check of
 `frontend/` and of `scripts/`, the ESLint-rule and Stylelint-config suite, Vitest, production build,
-e2e type check, then `playwright install chromium` and the mocked e2e, then the `scripts/` tests and
+e2e type check, then `playwright install chromium` and the mocked e2e, then the image smoke test
+(`scripts/smoke-image.mjs --skip-frontend-build`, below), then the `scripts/` tests and
 `check-agent-docs.mjs`.
 
-`--quick` drops the audit, the Playwright install, the e2e and every test tagged `container`
+`--quick` drops the audit, the Playwright install, the e2e, the image smoke test and every test tagged `container`
 (`-PexcludeTags=container`), so it needs no Docker — use it while iterating, then run the full
 verify before calling the work done. The audit is left out because it asks the registry, whose
 advisories change under an unchanged lockfile. Without Docker the full verify stops at once with
@@ -57,6 +59,24 @@ only); the `localized` project (`*.localized.real.e2e.ts`) runs against `:8080` 
 `de` / `en` builds as users get them — `-- --project localized` runs it alone (Playwright still
 starts `npm start`, or reuses a running one). Its `beforeAll` fails with `Spring serves no /de/
 build` when `bootRun` started without a build.
+
+## The production image
+
+```bash
+cd frontend && npm run build                          # the image fails to build without it
+cd backend && ./gradlew :bootstrap:bootBuildImage     # <project name>:<version> in the local daemon
+node scripts/smoke-image.mjs                          # from the root: both builds, run, check, tear down
+```
+
+`bootBuildImage` uses Spring Boot's buildpack support (Paketo `builder-noble-java-tiny`): it pulls
+the builder and run images from Docker Hub and downloads the JRE from GitHub, inside a build
+container; later builds reuse Docker's cache. `checkSpaPackaged` fails it with `The image would
+serve no SPA for …` when `frontend/dist/` is missing. To run it by hand, start Postgres and pass
+`SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` (the README
+lists every variable); the image has no Docker Compose support and no shell.
+`smoke-image.mjs` names its network and containers `smoke-<random>`, always removes them, and
+prints the app's last 200 log lines on failure; `docker ps -a --filter name=smoke-` shows leftovers
+of a killed run (`docker rm -f` them).
 
 ## Hooks and formatting
 
@@ -92,5 +112,9 @@ database has applied the sample migration, remove by hand and add a forward drop
 | `bootRun`'s Postgres exits with "data in /var/lib/postgresql/data (unused mount/volume)" | the container was created by an older Postgres major; `docker compose down -v` from the repo root (drops the local database), then `bootRun` again |
 | `frontend audit` fails | a high or critical advisory reached a dependency: take the patched version (`npm audit` names it; Renovate's lock-file maintenance and vulnerability PRs bring it too), never lower `--audit-level` |
 | `frontend audit` fails with `ENOAUDIT` or a network error | the registry in `.npmrc` (a mirror such as Nexus or Artifactory) has no audit endpoint, or there is no network: audit against `https://registry.npmjs.org`, or run `--quick` until it is reachable |
+| `bootBuildImage` or a `docker pull` fails with `429 Too Many Requests` or `toomanyrequests` | Docker Hub's anonymous pull limit: `docker login`, wait and retry; once the builder, run and Postgres images are cached, later runs pull nothing |
+| `bootBuildImage` fails at `unable to get dependency BellSoft Liberica JRE` (or another buildpack download) | the build container has no route out: behind a proxy, pass it from a local, uncommitted Gradle init script (`~/.gradle/init.d/`) that sets `bootBuildImage`'s `network`, `HTTPS_PROXY` in its `environment` and, for a TLS-inspecting proxy, a `ca-certificates` binding with its CA; or point Paketo at a mirror (`BP_DEPENDENCY_MIRROR`) |
+| Gradle fails with `Received status code 429 from server` (Maven Central) | rate-limited: wait a minute and run again (resolved artifacts are cached, so each retry needs fewer); a persistent block needs a mirror through `~/.gradle/init.d/`, not a change to `settings.gradle` |
+| `image smoke test` times out on `/actuator/health` | read the app log it prints: usually the database (`SPRING_DATASOURCE_*`) or a Flyway migration |
 | Prettier check fails | `npm run format` (`frontend format`) or `npx prettier --write ../scripts` (`scripts format`), both from `frontend/`; then review the diff |
 | files show as fully changed with no visible edit | line endings: `.gitattributes` pins LF; `git ls-files --eol` shows which files differ |
