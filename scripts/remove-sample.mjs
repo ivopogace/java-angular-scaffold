@@ -209,6 +209,10 @@ export const SAMPLE_FILES = [
     sha256: "b9f7568fe92772c2089c213c1e19a4015ac5806c1228abf485da8c7c02663ae4",
   },
   {
+    path: "frontend/e2e/real-backend/catalog.localized.real.e2e.ts",
+    sha256: "7a6e82c0c8f26084882e2412d1d805729f35af43d8046584f083be59201fc1c1",
+  },
+  {
     path: "frontend/e2e/real-backend/catalog.real.e2e.ts",
     sha256: "508682fee63e8b15ea3dc11a5a0d738a28c551e8dd918641ca0ac37dbe0ef976",
   },
