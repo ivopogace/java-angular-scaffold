@@ -39,7 +39,10 @@ declarations and in `*-overrides` mixin arguments, formatting under `frontend/` 
   or listener ships a forward migration or a fixed listener `id`.
 - **RC-BE-4 Rule placement** — Major. A choice, calculation or lifecycle rule lives on the
   aggregate (`Product.checkPublish()`), not in a service or controller; a rule needing the time
-  takes an `Instant` the service read from the `Clock`.
+  takes an `Instant` the service read from the `Clock`. A driven adapter only maps: it calls no
+  behaviour method on an aggregate, and its SQL decides no business rule the aggregate owns
+  (`where price_minor is not null` re-implementing `checkPublish()`); a `check` mirroring a domain
+  constant is RC-BE-9, not this.
 - **RC-BE-5 Domain types at the edge** — Major. The controller maps a view record to a DTO
   rather than returning the view (an aggregate cannot reach it: `drivingAdaptersGoThroughPortIn`).
 - **RC-BE-6 Money and time** (#3, #4) — Major. `long` minor units + currency, no `double`; no
