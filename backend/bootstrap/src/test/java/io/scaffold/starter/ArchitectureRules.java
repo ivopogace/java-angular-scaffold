@@ -11,6 +11,7 @@ import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaAccess;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
@@ -61,7 +62,8 @@ final class ArchitectureRules {
                 adaptersArePackagePrivate(),
                 publishedSurfaceIsAggregateFree(),
                 drivingAdaptersGoThroughPortIn(),
-                onlyDrivenAdaptersRehydrate());
+                onlyDrivenAdaptersRehydrate(),
+                publishedTypesAreDataOnly());
     }
 
     /** Rules over test classes: an area's integration tests start only that area. */
@@ -206,6 +208,64 @@ final class ArchitectureRules {
                 })
                 .as("only domain.model and adapter.out call an aggregate's " + REHYDRATE + " factory")
                 .allowEmptyShould(true);
+    }
+
+    /**
+     * What a driving adapter receives carries no business rule it could call instead of a use case:
+     * {@code port.in} and {@code domain.event} hold interfaces without default methods, and records
+     * and enums whose only methods are accessors, {@code equals} / {@code hashCode} / {@code toString}
+     * and static factories returning their own type.
+     */
+    ArchRule publishedTypesAreDataOnly() {
+        return classes()
+                .that(isAreaClass()
+                        .and(inLayer("application.port.in").or(inLayer("domain.event")))
+                        .and(not(isPackageInfo())))
+                .should(new ArchCondition<JavaClass>("be interfaces without default methods, or records and enums without behaviour") {
+                    @Override
+                    public void check(JavaClass item, ConditionEvents events) {
+                        if (!item.isInterface() && !item.isRecord() && !item.isEnum()) {
+                            events.add(violated(item, item.getName()
+                                    + " is a class; port.in and domain.event hold only interfaces, records and enums"));
+                            return;
+                        }
+                        for (JavaMethod method : item.getMethods()) {
+                            if (!isDataOnly(item, method)) {
+                                events.add(violated(method, method.getFullName()
+                                        + " is behaviour; port.in and domain.event types carry data, the use case decides"));
+                            }
+                        }
+                    }
+                })
+                .as("port.in and domain.event types carry data, not behaviour")
+                .allowEmptyShould(true);
+    }
+
+    private static boolean isDataOnly(JavaClass owner, JavaMethod method) {
+        Set<JavaModifier> modifiers = method.getModifiers();
+        if (modifiers.contains(JavaModifier.STATIC)) {
+            return method.getRawReturnType().getBaseComponentType().equals(owner);
+        }
+        if (owner.isInterface()) {
+            return modifiers.contains(JavaModifier.ABSTRACT);
+        }
+        return isObjectMethod(method) || isAccessor(owner, method);
+    }
+
+    private static boolean isObjectMethod(JavaMethod method) {
+        List<JavaClass> parameters = method.getRawParameterTypes();
+        return switch (method.getName()) {
+            case "toString", "hashCode" -> parameters.isEmpty();
+            case "equals" -> parameters.size() == 1 && parameters.getFirst().isEquivalentTo(Object.class);
+            default -> false;
+        };
+    }
+
+    private static boolean isAccessor(JavaClass owner, JavaMethod method) {
+        return method.getRawParameterTypes().isEmpty()
+                && owner.getFields().stream()
+                        .anyMatch(field -> !field.getModifiers().contains(JavaModifier.STATIC)
+                                && field.getName().equals(method.getName()));
     }
 
     private ArchCondition<JavaClass> onlyDependOnPermittedTypes() {
