@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   appEndpoint,
+  buildPlan,
+  checkDockerfilePins,
   checkLocalePage,
   checkRootRedirect,
   imageName,
@@ -16,12 +18,124 @@ import {
 const repoFile = (path) =>
   readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("parseArgs accepts only --skip-frontend-build", () => {
-  assert.deepEqual(parseArgs([]), { skipFrontendBuild: false });
+test("parseArgs takes --builder and --skip-frontend-build, buildpacks by default", () => {
+  assert.deepEqual(parseArgs([]), {
+    skipFrontendBuild: false,
+    builder: "buildpacks",
+  });
   assert.deepEqual(parseArgs(["--skip-frontend-build"]), {
     skipFrontendBuild: true,
+    builder: "buildpacks",
   });
+  assert.deepEqual(parseArgs(["--builder", "dockerfile"]), {
+    skipFrontendBuild: false,
+    builder: "dockerfile",
+  });
+  assert.deepEqual(
+    parseArgs(["--builder=buildpacks", "--skip-frontend-build"]),
+    {
+      skipFrontendBuild: true,
+      builder: "buildpacks",
+    },
+  );
   assert.match(parseArgs(["--keep"]).error, /Unknown argument: --keep/);
+  assert.match(
+    parseArgs(["--builder", "jib"]).error,
+    /--builder takes buildpacks or dockerfile, not jib/,
+  );
+  assert.match(parseArgs(["--builder"]).error, /not nothing/);
+});
+
+test("buildpacks builds the frontend, unless skipped, then bootBuildImage", () => {
+  const options = {
+    builder: "buildpacks",
+    image: "acme-orders:1.0.0",
+    skipFrontendBuild: false,
+    platform: "linux",
+  };
+  const full = buildPlan(options);
+  assert.equal(full.image, "acme-orders:1.0.0");
+  assert.deepEqual(
+    full.steps.map((s) => [s.command, s.args, s.cwd]),
+    [
+      ["npm", ["run", "build"], "frontend"],
+      ["./gradlew", [":bootstrap:bootBuildImage"], "backend"],
+    ],
+  );
+  const skipped = buildPlan({ ...options, skipFrontendBuild: true });
+  assert.deepEqual(
+    skipped.steps.map((s) => s.name),
+    ["image build"],
+  );
+  assert.equal(
+    buildPlan({ ...options, platform: "win32" }).steps.at(-1).command,
+    "gradlew.bat",
+  );
+});
+
+test("the Dockerfile builds from the root under its own tag, frontend included", () => {
+  for (const skipFrontendBuild of [false, true]) {
+    const build = buildPlan({
+      builder: "dockerfile",
+      image: "acme-orders:1.0.0",
+      skipFrontendBuild,
+      platform: "linux",
+    });
+    assert.equal(build.image, "acme-orders:1.0.0-dockerfile");
+    assert.deepEqual(
+      build.steps.map((s) => [s.command, s.args, s.cwd]),
+      [
+        [
+          "docker",
+          [
+            "build",
+            "--file",
+            "Dockerfile",
+            "--tag",
+            "acme-orders:1.0.0-dockerfile",
+            ".",
+          ],
+          ".",
+        ],
+      ],
+    );
+  }
+});
+
+test("the Dockerfile's base images follow .nvmrc and the Gradle toolchain", () => {
+  const pins = {
+    nvmrc: "26.13.0\n",
+    javaConventions: "languageVersion = JavaLanguageVersion.of(25)",
+  };
+  const dockerfile = (node, jdk, jre) =>
+    `FROM node:${node}-trixie-slim AS frontend\n` +
+    `FROM eclipse-temurin:${jdk}-jdk-noble AS backend\n` +
+    `FROM eclipse-temurin:${jre}-jre-noble\n`;
+  assert.deepEqual(
+    checkDockerfilePins(dockerfile("26.13.0", "25.0.5_8", "25.0.5_8"), pins),
+    [],
+  );
+  assert.deepEqual(
+    checkDockerfilePins(dockerfile("26.12.1", "26.0.1_3", "25.0.5_8"), pins),
+    [
+      "node:26.12.1-trixie-slim is not the Node 26.13.0 of .nvmrc",
+      "eclipse-temurin:26.0.1_3-jdk-noble is not the Java 25 of the Gradle toolchain",
+    ],
+  );
+  assert.deepEqual(checkDockerfilePins("FROM scratch\n", pins), [
+    "the Dockerfile has no node stage",
+    "the Dockerfile has no eclipse-temurin jdk stage",
+    "the Dockerfile has no eclipse-temurin jre stage",
+  ]);
+  assert.deepEqual(
+    checkDockerfilePins(repoFile("Dockerfile"), {
+      nvmrc: repoFile(".nvmrc"),
+      javaConventions: repoFile(
+        "backend/build-logic/src/main/groovy/java-conventions.gradle",
+      ),
+    }),
+    [],
+  );
 });
 
 test("the image name is the Gradle project name and version", () => {

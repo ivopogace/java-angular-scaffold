@@ -22,6 +22,8 @@ node scripts/verify.mjs            # everything CI runs; fails up front without 
 node scripts/verify.mjs --quick    # inner loop: skips Testcontainers ITs, npm audit, e2e, image smoke
 node scripts/check-agent-docs.mjs  # AGENTS.md / skills / MCP config consistency (part of verify)
 node scripts/smoke-image.mjs       # frontend build + image + Postgres; health, / → /de/ (part of verify)
+node scripts/smoke-image.mjs --builder dockerfile  # same for the root Dockerfile's image (part of verify)
+docker build --tag <name> .        # the Dockerfile image, for hosts that build from source (Render)
 ```
 
 **Backend** (from `backend/`):
@@ -71,6 +73,8 @@ REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (l
 - `renovate.json` — weekly dependency-update PRs (Angular, and the Postgres image of `compose.yaml`
   and `TestcontainersConfiguration`, each move as one PR; README version rows move with their pin;
   Actions keep their major tag; a TypeScript major comes only with an Angular major's `ng update`).
+- `Dockerfile`, `.dockerignore` — the production image built from source, for hosts that only
+  build a Dockerfile; `bootBuildImage` stays primary (ADR 0007).
 - `compose.yaml` — local Postgres for `bootRun`. Glossary: `GLOSSARY.md` (`domain-modeling` creates
   it lazily when absent).
 

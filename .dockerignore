@@ -1,0 +1,19 @@
+# The Dockerfile needs backend/ and frontend/ only. An allow-list, so nothing local (an .env file,
+# IDE config, credentials) reaches the build context unless it is listed here.
+*
+!backend/
+!frontend/
+
+# Build output and caches, rebuilt inside the image.
+**/node_modules
+**/dist
+**/build
+**/.gradle
+**/.angular
+**/coverage
+**/test-results
+**/playwright-report
+**/*.log
+**/.env*
+**/.idea
+**/.vscode
