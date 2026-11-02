@@ -112,6 +112,11 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   pause (three tries) and otherwise stops, telling you to delete `.git` and finish by hand, so a
   project never starts on top of the template's history. `init.test.mjs` disables gc and maintenance in its throwaway copies and tolerates a
   refusal that exits before reading stdin (EPIPE); both made the template CI fail intermittently.
+- Frontend: `npm run test:coverage` runs the unit tests once with the unit-test builder's own
+  `--coverage` (`@vitest/coverage-v8`, pinned to the `vitest` version) and prints a text summary;
+  lcov and HTML land in `frontend/coverage/scaffold-starter/` (git-ignored). `src/testing/` helpers
+  are left out of the report. It is a report, not a gate: no threshold, and `verify` does not run
+  it. Copy the dev dependency and the script; bump both packages together.
 
 ## 0.1.0 — 2026-11-01
 
