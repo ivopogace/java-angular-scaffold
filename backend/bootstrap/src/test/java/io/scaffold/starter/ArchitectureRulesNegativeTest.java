@@ -61,7 +61,17 @@ class ArchitectureRulesNegativeTest {
                 violation("onlyDrivenAdaptersRehydrate", ArchitectureRules::onlyDrivenAdaptersRehydrate,
                         "archfixture.orders.application.service.RehydratingService"),
                 violation("onlyDrivenAdaptersRehydrate", ArchitectureRules::onlyDrivenAdaptersRehydrate,
-                        "archfixture.orders.application.service.RehydratingSupplier"));
+                        "archfixture.orders.application.service.RehydratingSupplier"),
+                violation("publishedTypesAreDataOnly", ArchitectureRules::publishedTypesAreDataOnly,
+                        "archfixture.orders.application.port.in.SmartOrderView.canCancel()"),
+                violation("publishedTypesAreDataOnly", ArchitectureRules::publishedTypesAreDataOnly,
+                        "archfixture.orders.application.port.in.OrderRules.canCancel("),
+                violation("publishedTypesAreDataOnly", ArchitectureRules::publishedTypesAreDataOnly,
+                        "archfixture.orders.application.port.in.DefaultingPlaceOrder.placeTwice()"),
+                violation("publishedTypesAreDataOnly", ArchitectureRules::publishedTypesAreDataOnly,
+                        "archfixture.orders.application.port.in.ClassyOrderView is a class"),
+                violation("publishedTypesAreDataOnly", ArchitectureRules::publishedTypesAreDataOnly,
+                        "archfixture.orders.domain.event.OrderShipped.isLate("));
     }
 
     private static List<ArchRule> everyRule() {
@@ -83,7 +93,7 @@ class ArchitectureRulesNegativeTest {
 
     @Test
     void noRuleReportsTheCleanArea() {
-        assertThat(RULES.all()).hasSize(10);
+        assertThat(RULES.all()).hasSize(11);
         assertThat(RULES.testRules()).hasSize(1);
         for (ArchRule rule : everyRule()) {
             EvaluationResult result = rule.evaluate(FIXTURES);

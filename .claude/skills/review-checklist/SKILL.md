@@ -18,7 +18,8 @@ RC-DOC. Invariant numbers cite the root `AGENTS.md`. Full worked example of conf
 **Not review items** — the build fails on them, so don't spend attention there: package shape,
 crossing rules between areas, an aggregate in a `port.in` or `domain.event` type,
 package-private `@UseCase` services, package-private adapters, an aggregate or `port.out` in a
-controller or listener, a `rehydrate` call outside `adapter.out`, `@SpringBootTest` in an area,
+controller or listener, a `rehydrate` call outside `adapter.out`, behaviour on a `port.in` or
+`domain.event` type, `@SpringBootTest` in an area,
 Spring or JPA in `core`, JPA anywhere, cross-feature imports, inline templates, decorator inputs
 and outputs, `@HostBinding` / `@HostListener`, a root `@Injectable`, constructor injection,
 `*ngIf` / `*ngFor`, `ngClass` / `ngStyle`, `::ng-deep` / MDC selectors / colour literals in
