@@ -188,7 +188,7 @@ final class ArchitectureRules {
 
     /**
      * A {@code rehydrate} factory on a {@code domain.model} class rebuilds stored state without the
-     * creation rules, so only that model and the driven adapters that load it may call or reference it.
+     * creation rules, so only {@code domain.model} and the driven adapters may call or reference it.
      */
     ArchRule onlyDrivenAdaptersRehydrate() {
         DescribedPredicate<JavaClass> mayRehydrate = inLayer("domain.model").or(inLayer("adapter.out"));

@@ -52,8 +52,8 @@ The listed packages are the whole shape; no sub-packages beneath them.
   aggregates to them — the one mapping inside `core`.
 - An area's adapters never use `service`. Driving adapters (`adapter/in`) go through `port/in`:
   never `domain/model` or `port/out`, so no aggregate reaches a REST response. Driven adapters
-  (`adapter/out`) implement `port/out` and map aggregates to rows; only they (and the aggregate
-  itself) call its `rehydrate` factory, which skips the creation rules.
+  (`adapter/out`) implement `port/out` and map aggregates to rows; only they and `domain/model`
+  call an aggregate's `rehydrate` factory, which skips the creation rules.
 - A value object several areas need goes to `shared`; one only an area needs stays in its
   `domain/model`.
 
