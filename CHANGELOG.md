@@ -114,9 +114,11 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   refusal that exits before reading stdin (EPIPE); both made the template CI fail intermittently.
 - Frontend: `npm run test:coverage` runs the unit tests once with the unit-test builder's own
   `--coverage` (`@vitest/coverage-v8`, pinned to the `vitest` version) and prints a text summary;
-  lcov and HTML land in `frontend/coverage/scaffold-starter/` (git-ignored). `src/testing/` helpers
-  are left out of the report. It is a report, not a gate: no threshold, and `verify` does not run
-  it. Copy the dev dependency and the script; bump both packages together.
+  `lcov.info` and an HTML report land in `frontend/coverage/<project name>/` (git-ignored). Every
+  `src/**/*.ts` counts, so a file no spec loads shows as 0 % instead of vanishing; `src/testing/`
+  helpers are left out. It is a report, not a gate: no threshold, and `verify` does not run it.
+  `scripts/readme-versions.test.mjs` fails when the two packages' versions differ. Copy the dev
+  dependency, the script and that test; bump both packages together.
 
 ## 0.1.0 — 2026-11-01
 

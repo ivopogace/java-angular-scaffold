@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "test:coverage": "ng test --watch=false --coverage --coverage-exclude=\"src/testing/**\" --coverage-reporters=text-summary --coverage-reporters=lcov --coverage-reporters=html",
+    "test:coverage": "ng test --watch=false --coverage --coverage-include=\"src/**/*.ts\" --coverage-exclude=\"src/testing/**\" --coverage-reporters=text-summary --coverage-reporters=lcovonly --coverage-reporters=html",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test:e2e": "playwright test",
