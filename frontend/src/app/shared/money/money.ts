@@ -1,18 +1,19 @@
-const DEFAULT_LOCALE = 'en-US';
+import { inject, LOCALE_ID } from '@angular/core';
+
 const AMOUNT = /^(\d+)(?:[.,](\d{1,2}))?$/;
 
 const FALLBACK_DIGITS = 2;
 
+/** `formatMoney` bound to a locale. */
+export type MoneyFormatter = (minor: number, currency: string) => string;
+
 /**
- * Formats an amount in minor units (cents) for display, scaled by the currency's fraction digits.
- * A currency code `Intl` rejects (not three letters) is shown as a two-decimal amount followed
- * by the code as sent, so a bad row never breaks the page.
+ * Formats an amount in minor units (cents) for display in `locale`, scaled by the currency's
+ * fraction digits. A currency code `Intl` rejects (not three letters) is shown as a two-decimal
+ * amount followed by the code as sent, so a bad row never breaks the page. Components use
+ * `injectFormatMoney()`, which passes the active `LOCALE_ID`.
  */
-export function formatMoney(
-  minor: number,
-  currency: string,
-  locale: string = DEFAULT_LOCALE,
-): string {
+export function formatMoney(minor: number, currency: string, locale: string): string {
   let format: Intl.NumberFormat;
   try {
     format = new Intl.NumberFormat(locale, { style: 'currency', currency });
@@ -25,6 +26,12 @@ export function formatMoney(
   }
   const digits = format.resolvedOptions().maximumFractionDigits ?? FALLBACK_DIGITS;
   return format.format(minor / 10 ** digits);
+}
+
+/** `formatMoney` in the active `LOCALE_ID`; call it in an injection context (a field initializer). */
+export function injectFormatMoney(): MoneyFormatter {
+  const locale = inject(LOCALE_ID);
+  return (minor, currency) => formatMoney(minor, currency, locale);
 }
 
 /**

@@ -18,8 +18,19 @@ memory.
 - `eslint-rules/folder-boundary.mjs` (`local/folder-boundary`) enforces the table, dynamic
   `import()` included (invariant #7).
 - Every route lives in `src/app/app.routes.ts`: lazy `loadComponent`, with a `title`.
-- Dev: `npm start` proxies `/api` and `/actuator` to `:8080` (`proxy.conf.json`). The production
-  build is copied into `bootstrap` and served same-origin by Spring.
+- Dev: `npm start` serves the source locale `en` only and proxies `/api` and `/actuator` to
+  `:8080` (`proxy.conf.json`). The production build (`de` and `en`, one app each) is copied into
+  `bootstrap` and served same-origin by Spring under `/de/` and `/en/`.
+
+## Translations
+
+- Compile-time `@angular/localize`: English source text in the code, German (`de`) the default
+  build; translations in `src/locale/messages.de.xlf` (XLIFF 2, one unit per line). How to add a
+  string: the `frontend-architecture` skill.
+- Every user-facing string carries a stable custom id: `i18n="@@…"` / `i18n-<attr>="@@…"` in
+  templates (`@angular-eslint/template/i18n` fails lint otherwise), `` $localize`:@@…:…` `` in
+  TypeScript. `npm run build` fails on a missing `de` translation.
+- Locale-dependent formatting uses `LOCALE_ID` (`injectFormatMoney()`), never a literal locale.
 
 ## Components
 

@@ -116,6 +116,40 @@ export class X {
     );
   });
 
+  it('flags template text not marked for translation', async () => {
+    const rules = await lintHtml('<p>Hello</p>\n');
+    assert.ok(rules.includes('@angular-eslint/template/i18n'), rules.join());
+  });
+
+  it('flags a translated attribute or text without a custom id', async () => {
+    const textRules = await lintHtml('<p i18n>Hello</p>\n');
+    assert.ok(textRules.includes('@angular-eslint/template/i18n'), textRules.join());
+    const attributeRules = await lintHtml(
+      '<button i18n-aria-label aria-label="Close" i18n="@@x.close">x</button>\n',
+    );
+    assert.ok(attributeRules.includes('@angular-eslint/template/i18n'), attributeRules.join());
+  });
+
+  it('accepts text and attributes marked with custom ids', async () => {
+    assertNone(
+      await lintHtml(
+        '<button i18n-aria-label="@@x.closeLabel" aria-label="Close" i18n="@@x.close">x</button>\n',
+      ),
+      '@angular-eslint/template/i18n',
+    );
+  });
+
+  it('leaves inline test hosts in specs to the spec', async () => {
+    assertNone(
+      await lintSpec(`import { Component } from '@angular/core';
+
+@Component({ selector: 'app-host', template: '<p>Hello</p>' })
+export class Host {}
+`),
+      '@angular-eslint/template/i18n',
+    );
+  });
+
   it('flags fixture.detectChanges() in a spec', async () => {
     const rules = await lintSpec(`import { TestBed } from '@angular/core/testing';
 

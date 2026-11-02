@@ -16,12 +16,21 @@
       },
       "root": "",
       "sourceRoot": "src",
+      "i18n": {
+        "sourceLocale": "en",
+        "locales": {
+          "de": {
+            "translation": "src/locale/messages.de.xlf"
+          }
+        }
+      },
       "prefix": "app",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
           "options": {
             "browser": "src/main.ts",
+            "polyfills": ["@angular/localize/init"],
             "tsConfig": "tsconfig.app.json",
             "inlineStyleLanguage": "scss",
             "assets": [
@@ -35,7 +44,10 @@
               "@fontsource/roboto/latin-400.css",
               "@fontsource/roboto/latin-500.css",
               "src/styles.scss"
-            ]
+            ],
+            "localize": true,
+            "i18nMissingTranslation": "error",
+            "i18nDuplicateTranslation": "error"
           },
           "configurations": {
             "production": {
@@ -56,7 +68,8 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true
+              "sourceMap": true,
+              "localize": false
             }
           },
           "defaultConfiguration": "production"
@@ -74,6 +87,14 @@
           "defaultConfiguration": "development",
           "options": {
             "proxyConfig": "proxy.conf.json"
+          }
+        },
+        "extract-i18n": {
+          "builder": "@angular/build:extract-i18n",
+          "options": {
+            "buildTarget": "scaffold-starter:build",
+            "format": "xliff2",
+            "outputPath": "src/locale"
           }
         },
         "test": {

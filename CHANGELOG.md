@@ -5,6 +5,38 @@ commit message (`Initial commit from scaffold vX.Y.Z`) and never links back; to 
 read the entries after that version here and apply them by hand. `TEMPLATE_VERSION` in
 `scripts/init.mjs` equals the top entry.
 
+## 0.2.0 — 2026-11-02
+
+- Frontend: internationalised with Angular's compile-time `@angular/localize`
+  (`docs/adr/0005-compile-time-i18n-with-angular-localize.md`). English stays the source text in
+  the code (`sourceLocale` `en`); German is the default a user gets, translated in
+  `frontend/src/locale/messages.de.xlf` (XLIFF 2: a format translation tools read, and one unit
+  per line so `remove-sample` can drop the sample's units by their marker; JSON has no comments to
+  carry one). Every template string has `i18n="@@id"`, every string in TypeScript (route titles,
+  the document title, snackbars, validation messages) `` $localize`:@@id:…` ``; custom ids keep
+  extraction from churning when wording changes. `npm run extract-i18n` writes the source units to
+  `src/locale/messages.xlf` (not committed). Port: add `@angular/localize` at your Angular version,
+  copy the `i18n` block, `localize`, `i18nMissingTranslation` / `i18nDuplicateTranslation`, the
+  `@angular/localize/init` polyfill and the `extract-i18n` target from `angular.json`, the
+  `@angular/localize` types in both `tsconfig`s, then mark your strings.
+- Frontend: enforced by the build (invariant #9). `npm run build` fails on a unit without a `de`
+  translation; `@angular-eslint/template/i18n` (scoped to component templates, with custom ids
+  required) fails lint on unmarked template text or attributes; the ESLint config suite proves it.
+- Frontend: `ng build` emits one app per locale (`browser/de/`, `browser/en/`), each with its
+  `<html lang>`, `<base href>` and `LOCALE_ID`. `formatMoney` takes the locale as a required
+  argument and `injectFormatMoney()` binds the active `LOCALE_ID`, instead of a hard-coded
+  `en-US`; the catalog list formats prices in the user's locale. Replace your `formatMoney` calls
+  in components with `injectFormatMoney()`.
+- Frontend: `npm start` (the `development` configuration) serves the source locale `en` only, and
+  the mocked and real-backend Playwright suites assert English text with the browser locale pinned
+  to `en-US`. The unused `nav-link` class is gone from the toolbar link.
+- Backend: `SpaWebConfig` serves `/de/…` and `/en/…` from their builds, each falling back to its
+  own `index.html` for client routes, and redirects (302, `Vary: Accept-Language`) a GET or HEAD
+  for any other path except `/api`, `/actuator` and `/error` to the same path and query under `de`,
+  or `en` when `Accept-Language` prefers it; `SpaWebConfigTest` covers the routing.
+  `npm run watch` builds both locales (`--localize`) so the backend can serve its output. Port
+  `SpaWebConfig` with its test fixtures under `static/de/` and `static/en/`.
+
 ## 0.1.1 — 2026-11-01
 
 - `skills-lock.json`: a vendored skill's `computedHash` covers its whole folder (every file under

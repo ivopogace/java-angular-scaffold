@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!-- German translations. Source strings: `npm run extract-i18n` writes src/locale/messages.xlf. -->
+<!-- One unit per line: `node scripts/remove-sample.mjs` drops the lines marked sample:catalog. -->
+<xliff version="2.0" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="en" trgLang="de">
+  <file id="ngi18n" original="ng.template">
+    <unit id="nav.catalog"><segment><source>Catalog</source><target>Katalog</target></segment></unit> <!-- sample:catalog -->
+    <unit id="route.home.title"><segment><source>Home</source><target>Startseite</target></segment></unit>
+    <unit id="route.catalog.title"><segment><source>Catalog</source><target>Katalog</target></segment></unit> <!-- sample:catalog -->
+    <unit id="route.catalogNew.title"><segment><source>New product</source><target>Neues Produkt</target></segment></unit> <!-- sample:catalog -->
+    <unit id="route.notFound.title"><segment><source>Not found</source><target>Nicht gefunden</target></segment></unit>
+    <unit id="catalog.form.heading"><segment><source>New product</source><target>Neues Produkt</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.form.name.label"><segment><source>Name</source><target>Name</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.form.price.label"><segment><source>Price</source><target>Preis</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.form.price.hint"><segment><source>Optional, in euros. A product needs a price to be published.</source><target>Optional, in Euro. Ohne Preis kann ein Produkt nicht veröffentlicht werden.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.form.cancel"><segment><source>Cancel</source><target>Abbrechen</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.form.submit"><segment><source> Create product </source><target> Produkt anlegen </target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.form.name.required"><segment><source>Enter a name.</source><target>Geben Sie einen Namen ein.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.form.name.maxLength"><segment><source>Use at most <ph id="0" equiv="max" disp="NAME_MAX_LENGTH"/> characters.</source><target>Verwenden Sie höchstens <ph id="0" equiv="max" disp="NAME_MAX_LENGTH"/> Zeichen.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.form.price.invalid"><segment><source>Enter an amount such as 12.50.</source><target>Geben Sie einen Betrag wie 12,50 ein.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.form.saveFailed"><segment><source>Could not save the product. Try again.</source><target>Das Produkt konnte nicht gespeichert werden. Versuchen Sie es erneut.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.dismiss"><segment><source>Dismiss</source><target>Schließen</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.heading"><segment><source>Catalog</source><target>Katalog</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.newProduct"><segment><source>New product</source><target>Neues Produkt</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.loadFailed"><segment><source>Could not load products.</source><target>Die Produkte konnten nicht geladen werden.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.empty"><segment><source>No products yet.</source><target>Noch keine Produkte.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.column.name"><segment><source>Name</source><target>Name</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.column.price"><segment><source>Price</source><target>Preis</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.column.state"><segment><source>State</source><target>Status</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.column.actions"><segment><source>Actions</source><target>Aktionen</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.publish"><segment><source> Publish </source><target> Veröffentlichen </target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.retire"><segment><source> Retire </source><target> Zurückziehen </target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.loading"><segment><source>Loading products…</source><target>Produkte werden geladen…</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.conflict.noPrice"><segment><source>Add a price before publishing.</source><target>Legen Sie vor dem Veröffentlichen einen Preis fest.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.conflict.notDraft"><segment><source>Only draft products can be published.</source><target>Nur Entwürfe können veröffentlicht werden.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.conflict.notPublished"><segment><source>Only published products can be retired.</source><target>Nur veröffentlichte Produkte können zurückgezogen werden.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.error.generic"><segment><source>Something went wrong. Try again.</source><target>Etwas ist schiefgelaufen. Versuchen Sie es erneut.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.noPrice"><segment><source>No price</source><target>Kein Preis</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.state.draft"><segment><source>Draft</source><target>Entwurf</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.state.published"><segment><source>Published</source><target>Veröffentlicht</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.state.retired"><segment><source>Retired</source><target>Zurückgezogen</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.publishProduct"><segment><source>Publish <ph id="0" equiv="name" disp="product.name"/></source><target><ph id="0" equiv="name" disp="product.name"/> veröffentlichen</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.list.retireProduct"><segment><source>Retire <ph id="0" equiv="name" disp="product.name"/></source><target><ph id="0" equiv="name" disp="product.name"/> zurückziehen</target></segment></unit> <!-- sample:catalog -->
+    <unit id="documentTitle"><segment><source><ph id="0" equiv="routeTitle" disp="routeTitle"/> · <ph id="1" equiv="appName" disp="APP_NAME"/></source><target><ph id="0" equiv="routeTitle" disp="routeTitle"/> · <ph id="1" equiv="appName" disp="APP_NAME"/></target></segment></unit>
+    <unit id="home.intro"><segment><source>Your application starts here.</source><target>Hier beginnt Ihre Anwendung.</target></segment></unit>
+    <unit id="notFound.heading"><segment><source>Page not found</source><target>Seite nicht gefunden</target></segment></unit>
+    <unit id="notFound.body"><segment><source>The page you are looking for does not exist.</source><target>Die gesuchte Seite gibt es nicht.</target></segment></unit>
+    <unit id="notFound.homeLink"><segment><source>Back to the home page</source><target>Zurück zur Startseite</target></segment></unit>
+  </file>
+</xliff>

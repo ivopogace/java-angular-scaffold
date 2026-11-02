@@ -1,8 +1,8 @@
-<h1>New product</h1>
+<h1 i18n="@@catalog.form.heading">New product</h1>
 
 <form [formRoot]="productForm">
   <mat-form-field>
-    <mat-label>Name</mat-label>
+    <mat-label i18n="@@catalog.form.name.label">Name</mat-label>
     <input matInput [formField]="productForm.name" />
     @if (productForm.name().touched() && productForm.name().invalid()) {
       <mat-error>{{ productForm.name().errors()[0].message }}</mat-error>
@@ -10,17 +10,24 @@
   </mat-form-field>
 
   <mat-form-field>
-    <mat-label>Price</mat-label>
+    <mat-label i18n="@@catalog.form.price.label">Price</mat-label>
     <input matInput inputmode="decimal" [formField]="productForm.price" />
-    <mat-hint>Optional, in euros. A product needs a price to be published.</mat-hint>
+    <mat-hint i18n="@@catalog.form.price.hint"
+      >Optional, in euros. A product needs a price to be published.</mat-hint
+    >
     @if (productForm.price().touched() && productForm.price().invalid()) {
       <mat-error>{{ productForm.price().errors()[0].message }}</mat-error>
     }
   </mat-form-field>
 
   <div class="actions">
-    <a mat-button routerLink="/catalog">Cancel</a>
-    <button mat-flat-button type="submit" [disabled]="productForm().submitting()">
+    <a mat-button routerLink="/catalog" i18n="@@catalog.form.cancel">Cancel</a>
+    <button
+      mat-flat-button
+      type="submit"
+      [disabled]="productForm().submitting()"
+      i18n="@@catalog.form.submit"
+    >
       Create product
     </button>
   </div>

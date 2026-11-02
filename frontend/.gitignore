@@ -42,3 +42,6 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# i18n: `npm run extract-i18n` output, the source for translations; only translations are committed
+/src/locale/messages.xlf
