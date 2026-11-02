@@ -18,6 +18,11 @@
   "osvVulnerabilityAlerts": true,
   "packageRules": [
     {
+      "description": "Actions keep their major tag (v7): :pinAllExceptPeerDependencies would pin it to v7.0.1; only a new major tag such as v8 opens a PR.",
+      "matchManagers": ["github-actions"],
+      "rangeStrategy": "replace"
+    },
+    {
       "description": "Angular moves as one: framework, CDK and Material, CLI and build, angular-eslint, and the TypeScript @angular/compiler-cli accepts.",
       "matchPackageNames": ["@angular/**", "@angular-eslint/**", "angular-eslint", "typescript"],
       "groupName": "angular"
@@ -25,7 +30,13 @@
     {
       "matchPackageNames": ["@angular/**", "@angular-eslint/**", "angular-eslint", "typescript"],
       "matchUpdateTypes": ["major"],
-      "prBodyNotes": ["A new Angular major: check out this branch and run `npx ng update @angular/core @angular/cli @angular/material` from `frontend/` so the migrations run, then push the result."]
+      "prBodyNotes": ["A new Angular major: check out this branch and run `npx ng update @angular/core @angular/cli @angular/material` from `frontend/` so the migrations run, then push the result. TypeScript gets no major PR of its own: `ng update` moves it to the range the new `@angular/compiler-cli` accepts."]
+    },
+    {
+      "description": "A TypeScript major comes with an Angular major through `ng update`: alone it fails `npm ci`, as @angular/compiler-cli accepts one TypeScript major. Minor and patch updates stay in the angular group.",
+      "matchPackageNames": ["typescript"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     },
     {
       "description": "The Spring Boot plugin and BOM share one catalog version.",

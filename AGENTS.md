@@ -66,7 +66,8 @@ REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (l
   `.claude/settings.json` (Claude Code) and `opencode.json` (opencode) declare the same MCP servers
   (`angular-cli`, `playwright`) and the same allow-list; `check-agent-docs.mjs` compares them.
 - `renovate.json` — weekly dependency-update PRs (Angular, and the Postgres image of `compose.yaml`
-  and `TestcontainersConfiguration`, each move as one PR; README version rows move with their pin).
+  and `TestcontainersConfiguration`, each move as one PR; README version rows move with their pin;
+  Actions keep their major tag; a TypeScript major comes only with an Angular major's `ng update`).
 - `compose.yaml` — local Postgres for `bootRun`. Glossary: `GLOSSARY.md` (`domain-modeling` creates
   it lazily when absent).
 
