@@ -65,6 +65,7 @@ test("frontend steps run in order", () => {
     "frontend e2e types",
     "frontend playwright install",
     "frontend e2e",
+    "image smoke test",
   ]);
   const unit = planSteps(base).find((s) => s.name === "frontend unit tests");
   assert.deepEqual(unit.args, ["test", "--", "--watch=false"]);
@@ -92,6 +93,22 @@ test("the full run audits the frontend's dependencies for high and critical advi
     "frontend audit",
     "backend build",
   ]);
+});
+
+test("the full run smoke-tests the production image from the frontend build; quick does not", () => {
+  const smoke = (options) =>
+    planSteps({ ...base, ...options }).find(
+      (s) => s.name === "image smoke test",
+    );
+  assert.deepEqual(
+    [smoke({}).command, smoke({}).args, smoke({}).cwd],
+    ["node", ["scripts/smoke-image.mjs", "--skip-frontend-build"], "."],
+  );
+  assert.equal(smoke({ quick: true }), undefined);
+  const order = names(planSteps(base));
+  assert.ok(
+    order.indexOf("frontend build") < order.indexOf("image smoke test"),
+  );
 });
 
 test("playwright browsers are installed in full runs only, with system deps only on CI", () => {

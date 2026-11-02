@@ -33,3 +33,41 @@ tasks.named('processResources') {
         }
     }
 }
+
+// The production image: Cloud Native Buildpacks through Spring Boot's own task, no Dockerfile
+// (docs/adr/0006-container-image-with-buildpacks.md). Everything environment-specific (database,
+// credentials, business time zone) comes from environment variables at runtime; nothing here
+// names a secret. developmentOnly dependencies (the Docker Compose support) are not in the jar.
+def frontendBrowser = layout.projectDirectory.dir('../../frontend/dist/scaffold-starter/browser')
+def angularJson = layout.projectDirectory.file('../../frontend/angular.json')
+def staticRoot = layout.buildDirectory.dir('resources/main/static')
+
+// An image without the SPA would start and pass its health check while serving no page, so
+// building one fails unless every locale of angular.json's i18n block was packaged.
+def checkSpaPackaged = tasks.register('checkSpaPackaged') {
+    description = 'Fails unless processResources packaged every locale build of the frontend.'
+    dependsOn tasks.named('processResources')
+    def angularFile = angularJson.asFile
+    def staticDir = staticRoot.map { it.asFile }
+    def frontendDir = frontendBrowser.asFile
+    doLast {
+        def i18n = new groovy.json.JsonSlurper().parse(angularFile).projects.values().first().i18n
+        def source = i18n.sourceLocale instanceof Map ? i18n.sourceLocale.code : i18n.sourceLocale
+        def locales = [source] + (i18n.locales?.keySet() ?: [])
+        def missing = locales.findAll { !new File(staticDir.get(), "${it}/index.html").isFile() }
+        if (missing) {
+            throw new GradleException(
+                    "The image would serve no SPA for ${missing.join(', ')}: ${frontendDir} has no build " +
+                    'for it. Run `npm run build` in frontend/ first, then build the image again.')
+        }
+    }
+}
+
+tasks.named('bootBuildImage') {
+    dependsOn checkSpaPackaged
+    imageName = "${rootProject.name}:${project.version}"
+    // Spring Boot's default builder, named so a Boot upgrade cannot swap it silently. Its
+    // BellSoft Liberica buildpack provides Java 25; BP_JVM_VERSION picks the toolchain's version.
+    builder = 'paketobuildpacks/builder-noble-java-tiny'
+    environment = ['BP_JVM_VERSION': java.toolchain.languageVersion.get().toString()]
+}

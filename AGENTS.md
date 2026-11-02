@@ -19,8 +19,9 @@ Needs JDK 25, Node per `.nvmrc`, and Docker for the full verify and the Testcont
 
 ```bash
 node scripts/verify.mjs            # everything CI runs; fails up front without Docker
-node scripts/verify.mjs --quick    # inner loop: skips Testcontainers ITs, npm audit and e2e
+node scripts/verify.mjs --quick    # inner loop: skips Testcontainers ITs, npm audit, e2e, image smoke
 node scripts/check-agent-docs.mjs  # AGENTS.md / skills / MCP config consistency (part of verify)
+node scripts/smoke-image.mjs       # frontend build + image + Postgres; health, / → /de/ (part of verify)
 ```
 
 **Backend** (from `backend/`):
@@ -30,6 +31,8 @@ node scripts/check-agent-docs.mjs  # AGENTS.md / skills / MCP config consistency
 ./gradlew build -PexcludeTags=container      # same without Docker
 ./gradlew test --tests "*ClassName*"         # one test class
 ./gradlew :bootstrap:bootRun                 # API + SPA (/de/, /en/) on :8080, Postgres via compose
+./gradlew :bootstrap:bootBuildImage          # production image <project name>:<version>; needs the
+                                             # frontend build first; runtime config: README
 ```
 
 Structural-net command: `backend/AGENTS.md`.
@@ -59,7 +62,7 @@ REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (l
 - `frontend/` — Angular workspace; the build output is served by `bootstrap`, one build per locale
   (`de` default, `en` source); translations in `frontend/src/locale/`.
 - `scripts/` — `verify.mjs` (the one check entry point; CI wrappers call it and nothing else),
-  `check-agent-docs.mjs`, `pre-commit.mjs` (run by `.githooks/pre-commit`), `mcp/` (MCP launchers).
+  `smoke-image.mjs` (the production image's smoke test), `check-agent-docs.mjs`, `pre-commit.mjs` (run by `.githooks/pre-commit`), `mcp/` (MCP launchers).
 - `docs/adr/` — decisions; `docs/agents/workflow.md` — tracker, CLI, branches, merge rules.
 - Skills: `.claude/skills/<name>/SKILL.md`, read by both tools.
 - Tool config, the only duplication — change both sides together: `.mcp.json` +

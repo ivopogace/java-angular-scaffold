@@ -99,6 +99,15 @@ export function planSteps({
             ],
           },
           npm("frontend e2e", "run", "test:e2e"),
+          // The production image, built from the frontend build above: health, the locale
+          // redirect and both builds, against Postgres. Needs Docker and registry access for the
+          // buildpack builder, so --quick leaves it out.
+          {
+            name: "image smoke test",
+            cwd: ".",
+            command: "node",
+            args: ["scripts/smoke-image.mjs", "--skip-frontend-build"],
+          },
         ]),
     ...(scriptTests
       ? [

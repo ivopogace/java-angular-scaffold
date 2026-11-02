@@ -11,7 +11,8 @@ This README is the template's. `init` replaces it with `README.project.md`.
 
 - JDK 25
 - Node at the version in `.nvmrc`
-- Docker, for the full `verify` (Testcontainers ITs and e2e) and for local Postgres
+- Docker, for the full `verify` (Testcontainers ITs, e2e and the image smoke test), for local
+  Postgres and for building the production image
 - git, with `user.name` and `user.email` set
 
 ## What's inside
@@ -85,7 +86,8 @@ read `CHANGELOG.md` here from that version on to port an improvement by hand.
 
 ## Running it locally
 
-`node scripts/verify.mjs` runs everything CI runs; `--quick` skips the Testcontainers ITs, npm audit and e2e.
+`node scripts/verify.mjs` runs everything CI runs; `--quick` skips the Testcontainers ITs, npm audit,
+e2e and the image smoke test.
 `./gradlew :bootstrap:bootRun` (from `backend/`) serves the API and the built SPA on `:8080`, with
 Postgres started from `compose.yaml` by Spring Boot's Docker Compose support.
 `spring.docker.compose.file` in `backend/bootstrap/src/main/resources/application.properties` is
@@ -95,6 +97,37 @@ relative to `backend/bootstrap`, `bootRun`'s working directory; change it if you
 to `/de/…`, or to `/en/…` when the browser's `Accept-Language` prefers English. `npm start` (from
 `frontend/`) serves the English source locale only on `:4200`, proxying `/api` to `:8080`.
 `AGENTS.md` lists every command.
+
+### Production image
+
+`./gradlew :bootstrap:bootBuildImage` (from `backend/`, after `npm run build` in `frontend/`)
+builds `scaffold-starter:<version>` with Cloud Native Buildpacks (Paketo `builder-noble-java-tiny`, Java
+25 through `BP_JVM_VERSION`), no Dockerfile (`docs/adr/0006-container-image-with-buildpacks.md`).
+It fails unless both locale builds are packaged. The image listens on `8080`, runs as a non-root
+user and has no shell; Flyway migrates on start, so the database user needs DDL rights. Nothing
+deployment-specific is baked in; set at runtime:
+
+| Variable | Required | Meaning |
+|---|---|---|
+| `SPRING_DATASOURCE_URL` | yes | `jdbc:postgresql://<host>:5432/<database>` |
+| `SPRING_DATASOURCE_USERNAME` | yes | database user |
+| `SPRING_DATASOURCE_PASSWORD` | yes | its password, from your secret store |
+| `APP_BUSINESS_TIME_ZONE` | no | business time zone, default `UTC` |
+| `SERVER_PORT` | no | listen port, default `8080` |
+| `JAVA_TOOL_OPTIONS`, `BPL_JVM_*` | no | extra JVM flags; the buildpack sizes the heap from the container's memory limit, so set one |
+
+```bash
+docker run --rm -p 8080:8080 \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://db.example:5432/scaffold_starter \
+  -e SPRING_DATASOURCE_USERNAME=scaffold_starter -e SPRING_DATASOURCE_PASSWORD=… \
+  scaffold-starter:0.0.1-SNAPSHOT
+```
+
+Spring Boot's Docker Compose support is a `developmentOnly` dependency, so it is not in the image.
+`/actuator/health` reports `UP` once the database answers. `node scripts/smoke-image.mjs` builds
+the frontend and the image, runs it against `compose.yaml`'s Postgres on a throwaway Docker network,
+checks health, the `/` → `/de/` redirect and both locale builds, and removes what it started; the
+full `verify` runs it (with `--skip-frontend-build`), `--quick` does not.
 
 ## Credits
 
