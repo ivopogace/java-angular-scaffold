@@ -50,8 +50,10 @@ The listed packages are the whole shape; no sub-packages beneath them.
   `domain/event` may import more (Modulith's `@NamedInterface`).
 - `port/in` records use `domain/id`, `shared` and JDK types, never aggregates; services map
   aggregates to them — the one mapping inside `core`.
-- An area's adapters use its `port/in`, `port/out` and `domain`, never `service`. Persistence maps
-  aggregates to rows, web maps `port/in` records to DTOs; no domain type in a REST response.
+- An area's adapters never use `service`. Driving adapters (`adapter/in`) go through `port/in`:
+  never `domain/model` or `port/out`, so no aggregate reaches a REST response. Driven adapters
+  (`adapter/out`) implement `port/out` and map aggregates to rows; only they (and the aggregate
+  itself) call its `rehydrate` factory, which skips the creation rules.
 - A value object several areas need goes to `shared`; one only an area needs stays in its
   `domain/model`.
 
@@ -94,8 +96,10 @@ dependencies or annotations:
 shape; `domain` depends only on the JDK, jMolecules, `shared`, its own `domain` and other areas'
 `domain/id`; `port/in` and `domain/event` never depend on `domain/model`; services are
 package-private and `@UseCase` when they implement a `port/in` interface; adapter classes and
-`web` are package-private; adapters never use `application/service`; no JPA anywhere; no Spring
-beyond `org.springframework.modulith`, and no `java.sql`, in `core` — plus jMolecules' DDD and
-hexagonal rules; over the test classes, an area's tests are `@ApplicationModuleTest`, never
-`@SpringBootTest`. `ArchitectureRulesNegativeTest` proves each rule fails on a violating fixture.
+`web` are package-private; adapters never use `application/service`; `adapter/in` never uses
+`domain/model` or `port/out`; only `domain/model` and `adapter/out` call a `rehydrate` factory on a
+`domain/model` class; no JPA anywhere; no Spring beyond `org.springframework.modulith`, and no
+`java.sql`, in `core` — plus jMolecules' DDD and hexagonal rules; over the test classes, an
+area's tests are `@ApplicationModuleTest`, never `@SpringBootTest`. `ArchitectureRulesNegativeTest`
+proves each rule fails on a violating fixture.
 A new rule gets a negative fixture in the same change.

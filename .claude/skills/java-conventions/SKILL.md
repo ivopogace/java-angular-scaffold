@@ -76,7 +76,8 @@ as UTC offsets:
         Types.TIMESTAMP_WITH_TIMEZONE)
 ```
 
-Rows rebuild aggregates through a factory that skips creation rules (`Product.rehydrate`).
+Rows rebuild aggregates through a factory that skips creation rules, named `rehydrate`
+(`Product.rehydrate`); only `adapter.out` may call it (`onlyDrivenAdaptersRehydrate`).
 Schema rules live in the migration too; a Java constant mirroring a `check` (`MAX_NAME_LENGTH`
 ↔ `char_length(name) between 1 and 120`) changes with it.
 
