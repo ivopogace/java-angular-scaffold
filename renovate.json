@@ -7,6 +7,7 @@
     "gradle-wrapper",
     "github-actions",
     "docker-compose",
+    "dockerfile",
     "custom.regex"
   ],
   "ignorePaths": ["**/node_modules/**"],
@@ -54,6 +55,26 @@
       "matchPackageNames": ["postgres"],
       "matchUpdateTypes": ["major"],
       "prBodyNotes": ["A new Postgres major cannot read the old data directory: after merging, run `docker compose down -v` from the repository root (drops the local database) before `bootRun`."]
+    },
+    {
+      "description": "The Dockerfile's Node image follows .nvmrc, bumped with Node by hand; smoke-image.mjs fails when they differ.",
+      "matchManagers": ["dockerfile"],
+      "matchPackageNames": ["node"],
+      "enabled": false
+    },
+    {
+      "description": "Temurin tags read 25.0.5_8-jdk-noble (25.0.4.1_1 for a respin): the _8 is the build, not a prerelease. JDK and JRE move as one PR.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["eclipse-temurin"],
+      "versioning": "regex:^(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)(?:\\.(?<build>\\d+))?_(?<revision>\\d+)-(?<compatibility>.+)$",
+      "groupName": "eclipse-temurin"
+    },
+    {
+      "description": "A new Java major moves with the Gradle toolchain and the JDK the CI wrappers install, bumped by hand; smoke-image.mjs fails when they differ.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["eclipse-temurin"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
     },
     {
       "description": "npm is the version the Node in .nvmrc bundles, bumped with Node by hand.",

@@ -105,6 +105,26 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   the network; it costs a builder pull (several hundred MB) on a cold Docker cache. `--quick`
   skips it. Under a TCP `DOCKER_HOST` (Docker-in-Docker, as in `.gitlab-ci.yml`) it calls the app
   on the daemon's host. Port: copy the script, its test and the `verify.mjs` step.
+- A root `Dockerfile` for hosts that build images from source and take only a Dockerfile, Render
+  in particular (`docs/adr/0007-dockerfile-for-source-builds.md`); `bootBuildImage` stays the
+  primary image. Three stages: Node (the `.nvmrc` version) runs `npm ci` and `npm run build`;
+  Temurin JDK 25 runs `checkSpaPackaged` and `bootJar`, so a build without both locales fails here
+  too, and extracts the layered jar; a Temurin JRE 25 stage runs it as a non-root user (uid 10001)
+  on `8080` with the heap at 75 % of the container's memory. `.dockerignore` allow-lists
+  `backend/` and `frontend/` and drops build output, so no local file reaches the image. Base
+  images are pinned to exact tags: Renovate's `dockerfile` manager bumps the Temurin patch versions
+  (JDK and JRE as one PR, a regex versioning that reads `_8` as a build number); the Node tag and
+  the Java major move by hand with `.nvmrc` and the Gradle toolchain. The README's *Production
+  image* section describes both builds and a Render deploy (Docker web service, `jdbc:postgresql://`
+  URL instead of Render's `postgres://` string, `PORT=8080`, health check `/actuator/health`).
+- `scripts/smoke-image.mjs --builder buildpacks|dockerfile` (buildpacks by default):
+  `dockerfile` runs `docker build` from the root, tagged `<version>-dockerfile`, after checking that
+  the Dockerfile's Node and Temurin tags match `.nvmrc` and the Gradle toolchain, then runs the same
+  checks. The full `verify` runs both (`image smoke test (buildpacks)`, `image smoke test
+  (dockerfile)`), since the Dockerfile is the path a Render deploy takes and would otherwise break
+  unnoticed until one; it adds a second image build (npm, Angular and the Gradle dependencies again,
+  in fresh containers) to the full run. `--quick` runs neither. Port: copy `Dockerfile`,
+  `.dockerignore`, the script, its test, the `verify.mjs` steps and the `renovate.json` rules.
 
 ## 0.1.1 — 2026-11-01
 

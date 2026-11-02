@@ -34,10 +34,11 @@ tasks.named('processResources') {
     }
 }
 
-// The production image: Cloud Native Buildpacks through Spring Boot's own task, no Dockerfile
-// (docs/adr/0006-container-image-with-buildpacks.md). Everything environment-specific (database,
-// credentials, business time zone) comes from environment variables at runtime; nothing here
-// names a secret. developmentOnly dependencies (the Docker Compose support) are not in the jar.
+// The production image: Cloud Native Buildpacks through Spring Boot's own task
+// (docs/adr/0006-container-image-with-buildpacks.md); the root Dockerfile, for hosts that build
+// from source, runs checkSpaPackaged and bootJar instead (ADR 0007). Everything
+// environment-specific (database, credentials, business time zone) comes from environment
+// variables at runtime; nothing here names a secret. developmentOnly dependencies (the Docker Compose support) are not in the jar.
 def frontendBrowser = layout.projectDirectory.dir('../../frontend/dist/scaffold-starter/browser')
 def angularJson = layout.projectDirectory.file('../../frontend/angular.json')
 def staticRoot = layout.buildDirectory.dir('resources/main/static')

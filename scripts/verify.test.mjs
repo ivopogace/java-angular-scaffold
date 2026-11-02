@@ -65,7 +65,8 @@ test("frontend steps run in order", () => {
     "frontend e2e types",
     "frontend playwright install",
     "frontend e2e",
-    "image smoke test",
+    "image smoke test (buildpacks)",
+    "image smoke test (dockerfile)",
   ]);
   const unit = planSteps(base).find((s) => s.name === "frontend unit tests");
   assert.deepEqual(unit.args, ["test", "--", "--watch=false"]);
@@ -95,19 +96,43 @@ test("the full run audits the frontend's dependencies for high and critical advi
   ]);
 });
 
-test("the full run smoke-tests the production image from the frontend build; quick does not", () => {
-  const smoke = (options) =>
+test("the full run smoke-tests the image from buildpacks and from the Dockerfile; quick does neither", () => {
+  const smoke = (builder, options = {}) =>
     planSteps({ ...base, ...options }).find(
-      (s) => s.name === "image smoke test",
+      (s) => s.name === `image smoke test (${builder})`,
     );
   assert.deepEqual(
-    [smoke({}).command, smoke({}).args, smoke({}).cwd],
-    ["node", ["scripts/smoke-image.mjs", "--skip-frontend-build"], "."],
+    [
+      smoke("buildpacks").command,
+      smoke("buildpacks").args,
+      smoke("buildpacks").cwd,
+    ],
+    [
+      "node",
+      [
+        "scripts/smoke-image.mjs",
+        "--builder",
+        "buildpacks",
+        "--skip-frontend-build",
+      ],
+      ".",
+    ],
   );
-  assert.equal(smoke({ quick: true }), undefined);
+  assert.deepEqual(
+    [
+      smoke("dockerfile").command,
+      smoke("dockerfile").args,
+      smoke("dockerfile").cwd,
+    ],
+    ["node", ["scripts/smoke-image.mjs", "--builder", "dockerfile"], "."],
+  );
+  for (const builder of ["buildpacks", "dockerfile"]) {
+    assert.equal(smoke(builder, { quick: true }), undefined);
+  }
   const order = names(planSteps(base));
   assert.ok(
-    order.indexOf("frontend build") < order.indexOf("image smoke test"),
+    order.indexOf("frontend build") <
+      order.indexOf("image smoke test (buildpacks)"),
   );
 });
 

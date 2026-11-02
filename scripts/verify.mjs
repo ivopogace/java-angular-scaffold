@@ -99,14 +99,26 @@ export function planSteps({
             ],
           },
           npm("frontend e2e", "run", "test:e2e"),
-          // The production image, built from the frontend build above: health, the locale
-          // redirect and both builds, against Postgres. Needs Docker and registry access for the
-          // buildpack builder, so --quick leaves it out.
+          // The production image both ways, against Postgres: health, the locale redirect and
+          // both builds. Buildpacks (bootBuildImage) packages the frontend build above; the
+          // Dockerfile, which source-building hosts such as Render use, builds its own. Both need
+          // Docker and registry access, so --quick leaves them out.
           {
-            name: "image smoke test",
+            name: "image smoke test (buildpacks)",
             cwd: ".",
             command: "node",
-            args: ["scripts/smoke-image.mjs", "--skip-frontend-build"],
+            args: [
+              "scripts/smoke-image.mjs",
+              "--builder",
+              "buildpacks",
+              "--skip-frontend-build",
+            ],
+          },
+          {
+            name: "image smoke test (dockerfile)",
+            cwd: ".",
+            command: "node",
+            args: ["scripts/smoke-image.mjs", "--builder", "dockerfile"],
           },
         ]),
     ...(scriptTests

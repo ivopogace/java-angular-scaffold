@@ -36,3 +36,6 @@ it.
   never a secret: everything deployment-specific comes from environment variables at runtime.
 - A project that must build without a Docker daemon, or on a registry-only CI builder, has to
   replace both `bootBuildImage` and the smoke step's build.
+
+Hosts that only build from a Dockerfile in the repository, such as Render, get one alongside this
+image: `docs/adr/0007-dockerfile-for-source-builds.md`.

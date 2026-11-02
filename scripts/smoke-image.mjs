@@ -9,13 +9,18 @@ import { runCommand } from "./verify.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-export const USAGE = `Usage: node scripts/smoke-image.mjs [--skip-frontend-build]
+export const BUILDERS = ["buildpacks", "dockerfile"];
 
-Builds the frontend and the production image (bootBuildImage), starts it with
-Postgres on a throwaway Docker network, checks health and the localized SPA,
-and removes everything it started.
+export const USAGE = `Usage: node scripts/smoke-image.mjs [--builder buildpacks|dockerfile] [--skip-frontend-build]
 
-  --skip-frontend-build   use the existing frontend/dist (verify builds it first)`;
+Builds the production image, starts it with Postgres on a throwaway Docker
+network, checks health and the localized SPA, and removes everything it started.
+
+  --builder buildpacks    (default) build the frontend, then bootBuildImage
+  --builder dockerfile    docker build the repository's Dockerfile, which builds
+                          the frontend and the jar itself
+  --skip-frontend-build   buildpacks only: use the existing frontend/dist (verify
+                          builds it first)`;
 
 const APP_PORT = 8080;
 const DB = { name: "smoke", user: "smoke", password: "smoke" };
@@ -25,14 +30,27 @@ const POLL_MS = 1_000;
 
 /**
  * @param {string[]} argv the arguments after the script name
- * @returns {{ skipFrontendBuild: boolean } | { error: string }}
+ * @returns {{ skipFrontendBuild: boolean, builder: string } | { error: string }}
  */
 export function parseArgs(argv) {
-  const unknown = argv.filter((arg) => arg !== "--skip-frontend-build");
-  if (unknown.length > 0) {
-    return { error: `Unknown argument: ${unknown.join(" ")}\n${USAGE}` };
+  const options = { skipFrontendBuild: false, builder: "buildpacks" };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--skip-frontend-build") {
+      options.skipFrontendBuild = true;
+    } else if (arg === "--builder" || arg.startsWith("--builder=")) {
+      const value = arg === "--builder" ? argv[++i] : arg.slice(10);
+      if (!BUILDERS.includes(value)) {
+        return {
+          error: `--builder takes ${BUILDERS.join(" or ")}, not ${value ?? "nothing"}\n${USAGE}`,
+        };
+      }
+      options.builder = value;
+    } else {
+      return { error: `Unknown argument: ${arg}\n${USAGE}` };
+    }
   }
-  return { skipFrontendBuild: argv.includes("--skip-frontend-build") };
+  return options;
 }
 
 /**
@@ -51,6 +69,94 @@ export function imageName(settingsGradle, buildGradle) {
     );
   }
   return `${name[1]}:${version[1]}`;
+}
+
+/**
+ * How to build the image under test. `bootBuildImage` tags `image`; the Dockerfile build gets
+ * its own tag, so neither run replaces the other's image.
+ *
+ * @param {{ builder: string, image: string, skipFrontendBuild: boolean,
+ *           platform: NodeJS.Platform }} options `image` as {@link imageName} returns it
+ * @returns {{ image: string, steps: { name: string, command: string, args: string[],
+ *            cwd: string }[] }} the tag to run and the build steps, `cwd` relative to the root
+ */
+export function buildPlan({ builder, image, skipFrontendBuild, platform }) {
+  if (builder === "dockerfile") {
+    const tag = `${image}-dockerfile`;
+    return {
+      image: tag,
+      steps: [
+        {
+          name: "image build",
+          command: "docker",
+          args: ["build", "--file", "Dockerfile", "--tag", tag, "."],
+          cwd: ".",
+        },
+      ],
+    };
+  }
+  return {
+    image,
+    steps: [
+      ...(skipFrontendBuild
+        ? []
+        : [
+            {
+              name: "frontend build",
+              command: "npm",
+              args: ["run", "build"],
+              cwd: "frontend",
+            },
+          ]),
+      {
+        name: "image build",
+        command: platform === "win32" ? "gradlew.bat" : "./gradlew",
+        args: [":bootstrap:bootBuildImage"],
+        cwd: "backend",
+      },
+    ],
+  };
+}
+
+/**
+ * The Dockerfile's base images against the versions the rest of the build pins: Node from
+ * `.nvmrc`, the JDK and JRE from the Gradle toolchain. Renovate bumps the images' patch
+ * versions; the Node version and the Java major move by hand, together.
+ *
+ * @param {string} dockerfile the `Dockerfile`
+ * @param {{ nvmrc: string, javaConventions: string }} pins `.nvmrc` and
+ *        `backend/build-logic/src/main/groovy/java-conventions.gradle`
+ * @returns {string[]} what disagrees, empty when nothing does
+ */
+export function checkDockerfilePins(dockerfile, { nvmrc, javaConventions }) {
+  const from = [...dockerfile.matchAll(/^FROM\s+(\S+)/gm)].map((m) => m[1]);
+  const node = nvmrc.trim().replace(/^v/, "");
+  const java = javaConventions.match(/JavaLanguageVersion\.of\((\d+)\)/)?.[1];
+  const problems = [];
+  const nodeImages = from.filter((image) => image.startsWith("node:"));
+  if (nodeImages.length === 0)
+    problems.push("the Dockerfile has no node stage");
+  for (const image of nodeImages) {
+    if (!image.startsWith(`node:${node}-`)) {
+      problems.push(`${image} is not the Node ${node} of .nvmrc`);
+    }
+  }
+  for (const kind of ["jdk", "jre"]) {
+    const images = from.filter((image) =>
+      new RegExp(`^eclipse-temurin:[\\d._]+-${kind}-`).test(image),
+    );
+    if (images.length === 0) {
+      problems.push(`the Dockerfile has no eclipse-temurin ${kind} stage`);
+    }
+    for (const image of images) {
+      if (!image.startsWith(`eclipse-temurin:${java}.`)) {
+        problems.push(
+          `${image} is not the Java ${java} of the Gradle toolchain`,
+        );
+      }
+    }
+  }
+  return problems;
 }
 
 /** The Postgres image of `compose.yaml`, so the smoke test runs the database `bootRun` runs. */
@@ -270,23 +376,31 @@ async function main(argv) {
     return 2;
   }
   const read = (file) => readFileSync(join(root, file), "utf8");
-  const image = imageName(
-    read("backend/settings.gradle"),
-    read("backend/build.gradle"),
-  );
-  if (
-    !args.skipFrontendBuild &&
-    !(await step("frontend build", "npm", ["run", "build"], "frontend"))
-  ) {
-    return 1;
+  if (args.builder === "dockerfile") {
+    const problems = checkDockerfilePins(read("Dockerfile"), {
+      nvmrc: read(".nvmrc"),
+      javaConventions: read(
+        "backend/build-logic/src/main/groovy/java-conventions.gradle",
+      ),
+    });
+    if (problems.length > 0) {
+      console.error(`✘ image smoke test: ${problems.join("\n")}`);
+      return 1;
+    }
   }
-  const built = await step(
-    "image build",
-    process.platform === "win32" ? "gradlew.bat" : "./gradlew",
-    [":bootstrap:bootBuildImage"],
-    "backend",
-  );
-  if (!built) return 1;
+  const build = buildPlan({
+    builder: args.builder,
+    image: imageName(
+      read("backend/settings.gradle"),
+      read("backend/build.gradle"),
+    ),
+    skipFrontendBuild: args.skipFrontendBuild,
+    platform: process.platform,
+  });
+  const { image } = build;
+  for (const { name, command, args: commandArgs, cwd } of build.steps) {
+    if (!(await step(name, command, commandArgs, cwd))) return 1;
+  }
   const endpoint = appEndpoint(process.env.DOCKER_HOST);
   const names = plan({
     id: randomBytes(4).toString("hex"),
@@ -304,7 +418,9 @@ async function main(argv) {
     docker(["network", "create", names.network], { quiet: true });
     docker(names.dbRun, { quiet: true });
     await smoke(names, `http://${endpoint.host}`);
-    console.log(`✔ ${image} is healthy and serves /de/ and /en/`);
+    console.log(
+      `✔ ${image} (${args.builder}) is healthy and serves /de/ and /en/`,
+    );
     return 0;
   } catch (error) {
     console.error(`✘ image smoke test: ${error.message}`);
