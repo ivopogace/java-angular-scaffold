@@ -26,9 +26,9 @@ class Host {
 }
 
 describe('TypedCellDef', () => {
-  it('leaves the cell template rendering as before while typing its row', () => {
+  it('leaves the cell template rendering as before while typing its row', async () => {
     const fixture = TestBed.createComponent(Host);
-    fixture.detectChanges();
+    await fixture.whenStable();
 
     const cells = Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('td')).map(
       (cell) => cell.textContent?.trim(),

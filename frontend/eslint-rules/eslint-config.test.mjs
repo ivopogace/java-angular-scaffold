@@ -13,6 +13,7 @@ const lint = async (code, filePath) => {
 
 const lintTs = (code) => lint(code, 'src/app/x/x.ts');
 const lintHtml = (code) => lint(code, 'src/app/x/x.html');
+const lintSpec = (code) => lint(code, 'src/app/x/x.spec.ts');
 
 const assertNone = (rules, ...ruleIds) =>
   assert.deepEqual(
@@ -112,6 +113,29 @@ export class X {
       await lintHtml('<p [class.on]="shown" [style.width]="size">x</p>\n'),
       '@angular-eslint/template/prefer-class-binding',
       '@angular-eslint/template/prefer-style-binding',
+    );
+  });
+
+  it('flags fixture.detectChanges() in a spec', async () => {
+    const rules = await lintSpec(`import { TestBed } from '@angular/core/testing';
+
+it('renders', () => {
+  TestBed.createComponent(Object).detectChanges();
+});
+`);
+    assert.ok(rules.includes('no-restricted-syntax'), rules.join());
+  });
+
+  it('accepts whenStable() and TestBed.tick() in a spec', async () => {
+    assertNone(
+      await lintSpec(`import { TestBed } from '@angular/core/testing';
+
+it('renders', async () => {
+  TestBed.tick();
+  await TestBed.createComponent(Object).whenStable();
+});
+`),
+      'no-restricted-syntax',
     );
   });
 });

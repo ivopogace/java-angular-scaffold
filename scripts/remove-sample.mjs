@@ -234,7 +234,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-form/product-form.spec.ts",
-    sha256: "b3dd8e975141871c1f5bdf8e5aa81194212f436c9348dddea18a9cddbf473f77",
+    sha256: "5eb513ae6922d45e172783caad9b739238f56ac79da411515ca1964000ccf1d6",
   },
   {
     path: "frontend/src/app/catalog/product-form/product-form.ts",
@@ -250,7 +250,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.spec.ts",
-    sha256: "e36114d37892e74ea8c3d5cec2b5ecbb65fddacfc4248463a5409270620a5ab4",
+    sha256: "fc5e6e247cb73a8ee2229feb1e4a42b31b898336d4ca1ecc5334cec36eea3932",
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.ts",

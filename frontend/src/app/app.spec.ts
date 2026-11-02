@@ -6,23 +6,23 @@ import { App } from './app';
 import { APP_NAME } from './shared/app-name/app-name';
 
 describe('App', () => {
-  function render(): HTMLElement {
+  async function render(): Promise<HTMLElement> {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
     const fixture = TestBed.createComponent(App);
-    fixture.detectChanges();
+    await fixture.whenStable();
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('renders a toolbar titled with the application name', () => {
-    const toolbar = render().querySelector('mat-toolbar');
+  it('renders a toolbar titled with the application name', async () => {
+    const toolbar = (await render()).querySelector('mat-toolbar');
     expect(toolbar?.textContent).toContain(APP_NAME);
   });
 
-  it('hosts a router outlet', () => {
-    expect(render().querySelector('router-outlet')).not.toBeNull();
+  it('hosts a router outlet', async () => {
+    expect((await render()).querySelector('router-outlet')).not.toBeNull();
   });
 
   it('has no accessibility violations', async () => {
-    await expectNoAxeViolations(render());
+    await expectNoAxeViolations(await render());
   });
 });

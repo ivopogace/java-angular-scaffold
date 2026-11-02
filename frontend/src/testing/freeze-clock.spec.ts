@@ -1,5 +1,3 @@
-import { vi } from 'vitest';
-
 import { FROZEN_INSTANT, freezeClock } from './freeze-clock';
 
 describe('frozen clock', () => {
