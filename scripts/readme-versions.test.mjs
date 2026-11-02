@@ -115,6 +115,41 @@ test("the Testcontainers ITs run the Postgres image compose.yaml runs", () => {
   );
 });
 
+/** Rows Renovate leaves alone: each moves with something it cannot bump (the CI JDK, Node). */
+const BUMPED_BY_HAND = ["Java toolchain", "Node", "npm", "Playwright MCP"];
+
+test("Renovate updates every other README row with its pin", (t) => {
+  if (!existsSync(join(root, "renovate.json"))) {
+    t.skip("renovate.json is not in this tree");
+    return;
+  }
+  const managers = JSON.parse(read("renovate.json")).customManagers ?? [];
+  for (const readme of ["README.md", "README.project.md"]) {
+    if (!existsSync(join(root, readme))) continue;
+    const text = read(readme);
+    const covered = readmeRows(text)
+      .map(([component]) => component)
+      .filter((component) => {
+        const row = text
+          .split("\n")
+          .find((line) => line.startsWith(`| ${component} |`));
+        return managers.some(
+          (m) =>
+            m.managerFilePatterns.some((pattern) =>
+              new RegExp(pattern.slice(1, -1)).test(readme),
+            ) && m.matchStrings.some((source) => new RegExp(source).test(row)),
+        );
+      });
+    assert.deepEqual(
+      covered.sort(),
+      Object.keys(PINS)
+        .filter((component) => !BUMPED_BY_HAND.includes(component))
+        .sort(),
+      `${readme}: the rows renovate.json's regex managers update`,
+    );
+  }
+});
+
 /** Where else the JDK is named: CI wrappers, prerequisites, agent docs. Absent files are skipped. */
 const JDK_MENTIONS = [
   [".github/workflows/*.yml", /java-version: '(\d+)'/g],
