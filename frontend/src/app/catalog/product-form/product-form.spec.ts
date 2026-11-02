@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { HarnessLoader, manualChangeDetection, parallel } from '@angular/cdk/testing';
+import { HarnessLoader, parallel } from '@angular/cdk/testing';
 import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
@@ -21,9 +21,9 @@ const FORM_PATH = '/catalog/new';
 class ListStub {}
 
 /*
- * `whenStable()`, and so every harness call, waits for open HTTP requests, so a submit that sends
- * one runs inside `manualChangeDetection`. A Signal Forms submission is not a pending task either:
- * what follows the answer (re-enabling the button, the snackbar, the navigation) is polled for.
+ * Under `provideHttpClientTesting()` an open `HttpClient` request is no pending task, so harness
+ * calls do not wait for the POST. Nor is a Signal Forms submission: what follows the answer
+ * (re-enabling the button, the snackbar, the navigation) is polled for.
  */
 describe('ProductForm', () => {
   let http: HttpTestingController;
@@ -67,15 +67,8 @@ describe('ProductForm', () => {
     return loader.getHarness(MatButtonHarness.with({ text: 'Create product' }));
   }
 
-  /** Submits a form the client rejects, so no request is left open. */
-  async function submitInvalid(): Promise<void> {
+  async function submit(): Promise<void> {
     await (await submitButton()).click();
-  }
-
-  /** Submits a valid form; the POST stays open until the spec answers it. */
-  async function submitValid(): Promise<void> {
-    const button = await submitButton();
-    await manualChangeDetection(() => button.click());
   }
 
   async function errors(): Promise<string> {
@@ -102,7 +95,7 @@ describe('ProductForm', () => {
 
   it('rejects a blank name without calling the API', async () => {
     await type('Name', '   ');
-    await submitInvalid();
+    await submit();
 
     expect(await errors()).toContain('Enter a name.');
     expectNoPost();
@@ -112,7 +105,7 @@ describe('ProductForm', () => {
   it('rejects a price with more than two decimals', async () => {
     await type('Name', 'Mug');
     await type('Price', '12.345');
-    await submitInvalid();
+    await submit();
 
     expect(await errors()).toContain('Enter an amount such as 12.50.');
     expectNoPost();
@@ -120,7 +113,7 @@ describe('ProductForm', () => {
 
   it('rejects a name longer than the API allows', async () => {
     await type('Name', 'x'.repeat(121));
-    await submitInvalid();
+    await submit();
 
     expect(await errors()).toContain('Use at most 120 characters.');
     expectNoPost();
@@ -129,7 +122,7 @@ describe('ProductForm', () => {
   it('submits the name and the price in minor units, then returns to the list', async () => {
     await type('Name', ' Mug ');
     await type('Price', '12.50');
-    await submitValid();
+    await submit();
 
     const post = expectPost();
     expect(post.request.body).toEqual({ name: 'Mug', priceMinor: 1250, currency: 'EUR' });
@@ -141,7 +134,7 @@ describe('ProductForm', () => {
   it('accepts a decimal comma', async () => {
     await type('Name', 'Mug');
     await type('Price', '12,5');
-    await submitValid();
+    await submit();
 
     const post = expectPost();
     expect(post.request.body).toEqual({ name: 'Mug', priceMinor: 1250, currency: 'EUR' });
@@ -150,7 +143,7 @@ describe('ProductForm', () => {
 
   it('creates a draft without a price when the price is left blank', async () => {
     await type('Name', 'Poster');
-    await submitValid();
+    await submit();
 
     const post = expectPost();
     expect(post.request.body).toEqual({ name: 'Poster' });
@@ -159,11 +152,10 @@ describe('ProductForm', () => {
 
   it('disables the submit button while the request is in flight', async () => {
     await type('Name', 'Mug');
-    await submitValid();
+    await submit();
     const button = await submitButton();
 
-    TestBed.tick();
-    expect(await manualChangeDetection(() => button.isDisabled())).toBe(true);
+    expect(await button.isDisabled()).toBe(true);
     expectPost().flush({}, { status: 400, statusText: 'Bad Request' });
 
     await expect.poll(() => button.isDisabled()).toBe(false);
@@ -171,7 +163,7 @@ describe('ProductForm', () => {
 
   it('stays on the form and says so when the API rejects the product', async () => {
     await type('Name', 'Mug');
-    await submitValid();
+    await submit();
 
     expectPost().flush({}, { status: 400, statusText: 'Bad Request' });
 
@@ -188,7 +180,7 @@ describe('ProductForm', () => {
   it('has no accessibility violations while showing errors', async () => {
     await type('Name', '');
     await type('Price', 'abc');
-    await submitInvalid();
+    await submit();
 
     expect(await errors()).not.toBe('');
     await expectNoAxeViolations(element);

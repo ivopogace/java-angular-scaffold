@@ -40,9 +40,11 @@ const SHIRT: Product = {
 };
 
 /*
- * `whenStable()`, and so every harness call, waits for open HTTP requests. While a request is
- * still unanswered the specs render with `TestBed.tick()` and drive harnesses inside
- * `manualChangeDetection`; once it is flushed they wait with `fixture.whenStable()`.
+ * The list is an `httpResource`, whose load is a pending task: `whenStable()`, and so every
+ * harness call, waits until the list request is flushed. While it is open the specs render with
+ * `TestBed.tick()` and drive harnesses inside `manualChangeDetection`. The publish and retire
+ * POSTs are plain `HttpClient` requests, which `provideHttpClientTesting()` keeps out of
+ * stability, so clicks that send them need neither.
  */
 describe('ProductList', () => {
   let http: HttpTestingController;
@@ -77,11 +79,6 @@ describe('ProductList', () => {
 
   function button(label: string): Promise<MatButtonHarness> {
     return loader.getHarness(MatButtonHarness.with({ selector: `[aria-label="${label}"]` }));
-  }
-
-  /** Clicks a button whose request stays open, so the click must not wait for stability. */
-  function clickSendingRequest(target: MatButtonHarness): Promise<void> {
-    return manualChangeDetection(() => target.click());
   }
 
   async function snackBarMessage(): Promise<string> {
@@ -121,7 +118,7 @@ describe('ProductList', () => {
   it('publishes a draft and refreshes the list', async () => {
     await render([MUG]);
 
-    await clickSendingRequest(await button('Publish Mug'));
+    await (await button('Publish Mug')).click();
     http.expectOne(`${LIST_URL}/p1/publish`).flush({ ...MUG, state: 'PUBLISHED' });
     await flushList([{ ...MUG, state: 'PUBLISHED' }]);
 
@@ -132,6 +129,8 @@ describe('ProductList', () => {
     await render([POSTER]);
     const publish = await button('Publish Poster');
 
+    // Without a render between the clicks the button is still enabled, so the second click reaches
+    // the component's guard instead of being skipped by the harness as a click on a disabled button.
     await manualChangeDetection(async () => {
       await publish.click();
       await publish.click();
@@ -149,6 +148,7 @@ describe('ProductList', () => {
     await render([MUG]);
     const publish = await button('Publish Mug');
 
+    // A successful change reloads the list, whose open request would hold every harness call.
     await manualChangeDetection(async () => {
       await publish.click();
       TestBed.tick();
@@ -166,7 +166,7 @@ describe('ProductList', () => {
   it('retires a published product and refreshes the list', async () => {
     await render([SHIRT]);
 
-    await clickSendingRequest(await button('Retire Shirt'));
+    await (await button('Retire Shirt')).click();
     http.expectOne(`${LIST_URL}/p3/retire`).flush({ ...SHIRT, state: 'RETIRED' });
     await flushList([{ ...SHIRT, state: 'RETIRED' }]);
 
@@ -180,7 +180,7 @@ describe('ProductList', () => {
   ])('explains a %s conflict in a snackbar', async (reason, message) => {
     await render([POSTER]);
 
-    await clickSendingRequest(await button('Publish Poster'));
+    await (await button('Publish Poster')).click();
     http
       .expectOne(`${LIST_URL}/p2/publish`)
       .flush({ reason }, { status: 409, statusText: 'Conflict' });
@@ -191,7 +191,7 @@ describe('ProductList', () => {
   it('falls back to a generic message for other failures', async () => {
     await render([MUG]);
 
-    await clickSendingRequest(await button('Publish Mug'));
+    await (await button('Publish Mug')).click();
     http
       .expectOne(`${LIST_URL}/p1/publish`)
       .flush(null, { status: 500, statusText: 'Server Error' });
