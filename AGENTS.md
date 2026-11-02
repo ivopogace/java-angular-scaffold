@@ -42,6 +42,7 @@ npm start                    # dev server on :4200, source locale en only; proxi
 npm run lint                 # ESLint (incl. folder boundaries) + Stylelint
 npm run format:check         # Prettier (`npm run format` applies)
 npm test -- --watch=false    # Vitest in jsdom, incl. axe specs
+npm run test:coverage        # same, once, with a v8 coverage report in coverage/ (no threshold)
 npm run test:eslint-rules    # the repo's own ESLint rules, ESLint and Stylelint configs
 npm run build                # de + en builds; fails on a missing de translation
 npm run extract-i18n         # source strings → src/locale/messages.xlf (not committed)
