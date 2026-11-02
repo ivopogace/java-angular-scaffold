@@ -1,5 +1,10 @@
 # Scaffold — Java + Angular project template
 
+## **Try the example app live: [scaffold-starter.onrender.com](https://scaffold-starter.onrender.com)**
+
+**Free Render plan: after it has been idle, the first request takes about two minutes while it wakes
+up.**
+
 A starter for web apps with a Spring Boot backend in DDD + hexagonal architecture, whose boundaries
 the build enforces, and an Angular Material frontend the backend serves same-origin. It ships agent
 instructions and skills for Claude Code and opencode, one check entry point (`verify`) with CI
