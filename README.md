@@ -18,7 +18,8 @@ This README is the template's. `init` replaces it with `README.project.md`.
 
 The versions the repository pins; `scripts/readme-versions.test.mjs` (part of `verify`) fails when
 a row no longer matches its file. Renovate (`renovate.json`) opens the bumps as weekly PRs that
-update the row with its pin; the Java toolchain, Node, npm and Playwright MCP stay manual.
+update the row with its pin; the Java toolchain, Node, npm, Playwright MCP and a TypeScript major
+stay manual.
 
 | Component | Version | Pinned in | To bump |
 |---|---|---|---|
@@ -34,7 +35,7 @@ update the row with its pin; the Java toolchain, Node, npm and Playwright MCP st
 | Angular | `22.2.4` | `frontend/package.json` | `npx ng update @angular/core @angular/cli` from `frontend/` |
 | Angular Material | `22.2.5` | `frontend/package.json` | `npx ng update @angular/material` from `frontend/` |
 | Angular CLI | `22.2.5` | `frontend/package.json` | with Angular, above |
-| TypeScript | `6.0.3` | `frontend/package.json` | `npm install --save-exact typescript@<version>` within the range `@angular/compiler-cli` accepts |
+| TypeScript | `6.0.3` | `frontend/package.json` | `npm install --save-exact typescript@<version>` within the range `@angular/compiler-cli` accepts; a new major comes with an Angular major's `ng update` |
 | Vitest | `5.0.5` | `frontend/package.json` | `npm install --save-exact vitest@<version> @vitest/coverage-v8@<version>` from `frontend/` |
 | Playwright | `1.64.1` | `frontend/package.json` | `npm install --save-exact @playwright/test@<version>` from `frontend/`, then `npx playwright install chromium` |
 | ESLint | `10.14.0` | `frontend/package.json` | `npm install --save-exact eslint@<version>` from `frontend/` |
