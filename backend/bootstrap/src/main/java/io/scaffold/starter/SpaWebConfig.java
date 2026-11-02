@@ -18,21 +18,22 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
 /**
  * Serves the built Angular app from the same origin, one build per locale: {@code /de/…} from
- * {@code static/de/}, {@code /en/…} from {@code static/en/} (the locales of {@code angular.json}'s
- * {@code i18n} block). Inside a locale, a GET for a path that is not a file (no {@code .}) answers
- * with that locale's {@code index.html}, so client-side routes survive a reload. A GET or HEAD for
- * any other path except {@code /api}, {@code /actuator} and {@code /error} (and below them) is
- * redirected to the same path under the locale {@code Accept-Language} prefers, {@code de} unless
- * it prefers {@code en}; unknown API paths still end in a 404 problem body. The shell
- * ({@code index.html}, the fallback, anything unhashed) is served with {@code Cache-Control:
- * no-cache}, so a deploy is picked up on the next load; scripts, styles and media whose name carries
- * a content hash ({@code main-ABC123.js}, as Angular's production {@code outputHashing} names them)
- * are cached for a year as immutable.
+ * {@code static/de/}, {@code /en/…} from {@code static/en/} (the locales of the {@code i18n}
+ * block in {@code angular.json}). Inside a locale, a GET for a path that is not a file (no
+ * {@code .}) answers with that locale's {@code index.html}, so client-side routes survive a
+ * reload. A GET or HEAD for any other path except {@code /api}, {@code /actuator} and
+ * {@code /error} (and below them) is redirected to the same path under the locale
+ * {@code Accept-Language} prefers, {@code de} unless it prefers {@code en}; unknown API paths
+ * still end in a 404 problem body. The shell ({@code index.html}, the fallback, anything unhashed)
+ * is served with {@code Cache-Control: no-cache}, so a deploy is picked up on the next load;
+ * scripts, styles and media whose name carries a content hash ({@code main-ABC123.js}, as
+ * Angular's production {@code outputHashing} names them) are cached for a year as immutable.
  */
 @Configuration(proxyBeanMethods = false)
 class SpaWebConfig implements WebMvcConfigurer {
@@ -68,6 +69,15 @@ class SpaWebConfig implements WebMvcConfigurer {
                     .resourceChain(true)
                     .addResolver(new SpaFallbackResolver(
                             new ClassPathResource(STATIC_ROOT + locale + "/index.html")));
+        }
+    }
+
+    /** A resource handler never resolves the empty path below its prefix, so it forwards. */
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        for (String locale : LOCALES) {
+            registry.addViewController("/" + locale + "/")
+                    .setViewName("forward:/" + locale + "/index.html");
         }
     }
 

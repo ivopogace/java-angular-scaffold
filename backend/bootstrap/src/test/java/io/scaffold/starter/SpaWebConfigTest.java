@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.head;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,14 +35,20 @@ class SpaWebConfigTest {
     @CsvSource({
         "/de/catalog/new, spa-fixture-de",
         "/en/catalog/new, spa-fixture-en",
-        "/de/, spa-fixture-de",
-        "/en/, spa-fixture-en",
         "/de/api/x, spa-fixture-de",
     })
-    void clientRouteIsAnsweredWithItsLocalesIndexHtml(String path, String fixture) throws Exception {
+    void clientRouteGetsItsLocalesIndexHtml(String path, String fixture) throws Exception {
         mockMvc.perform(get(path))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(fixture)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"de", "en"})
+    void aLocalesRootIsForwardedToItsShell(String locale) throws Exception {
+        mockMvc.perform(get("/" + locale + "/"))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("/" + locale + "/index.html"));
     }
 
     @Test
@@ -86,7 +93,9 @@ class SpaWebConfigTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"en", "en-US", "en-GB,en;q=0.9,de;q=0.8", "fr,en;q=0.5", "de;q=0.4,en;q=0.9"})
+    @ValueSource(strings = {
+        "en", "en-US", "en-GB,en;q=0.9,de;q=0.8", "fr,en;q=0.5", "de;q=0.4,en;q=0.9",
+    })
     void anEnglishPreferenceGoesToTheEnglishBuild(String acceptLanguage) throws Exception {
         mockMvc.perform(get("/catalog").header(HttpHeaders.ACCEPT_LANGUAGE, acceptLanguage))
                 .andExpect(status().isFound())
@@ -94,7 +103,9 @@ class SpaWebConfigTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"de", "de-AT,en;q=0.5", "en;q=0.5,de", "fr", "*", "en;q=0", "not a header;;"})
+    @ValueSource(strings = {
+        "de", "de-AT,en;q=0.5", "en;q=0.5,de", "fr", "*", "en;q=0", "not a header;;",
+    })
     void anyOtherPreferenceGoesToTheGermanBuild(String acceptLanguage) throws Exception {
         mockMvc.perform(get("/").header(HttpHeaders.ACCEPT_LANGUAGE, acceptLanguage))
                 .andExpect(status().isFound())
