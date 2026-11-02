@@ -9,6 +9,7 @@
     "docker-compose",
     "custom.regex"
   ],
+  "ignorePaths": ["**/node_modules/**"],
   "schedule": ["* 0-4 * * 1"],
   "lockFileMaintenance": {
     "enabled": true,
@@ -17,9 +18,14 @@
   "osvVulnerabilityAlerts": true,
   "packageRules": [
     {
-      "description": "Angular moves as one: framework, CDK and Material, CLI and build, angular-eslint.",
-      "matchPackageNames": ["@angular/**", "@angular-eslint/**", "angular-eslint"],
+      "description": "Angular moves as one: framework, CDK and Material, CLI and build, angular-eslint, and the TypeScript @angular/compiler-cli accepts.",
+      "matchPackageNames": ["@angular/**", "@angular-eslint/**", "angular-eslint", "typescript"],
       "groupName": "angular"
+    },
+    {
+      "matchPackageNames": ["@angular/**", "@angular-eslint/**", "angular-eslint", "typescript"],
+      "matchUpdateTypes": ["major"],
+      "prBodyNotes": ["A new Angular major: check out this branch and run `npx ng update @angular/core @angular/cli @angular/material` from `frontend/` so the migrations run, then push the result."]
     },
     {
       "description": "The Spring Boot plugin and BOM share one catalog version.",
@@ -31,6 +37,12 @@
       "matchDatasources": ["docker"],
       "matchPackageNames": ["postgres"],
       "groupName": "postgres"
+    },
+    {
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["postgres"],
+      "matchUpdateTypes": ["major"],
+      "prBodyNotes": ["A new Postgres major cannot read the old data directory: after merging, run `docker compose down -v` from the repository root (drops the local database) before `bootRun`."]
     },
     {
       "description": "npm is the version the Node in .nvmrc bundles, bumped with Node by hand.",
@@ -104,9 +116,7 @@
     {
       "customType": "regex",
       "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
-      "matchStrings": [
-        "\\| Angular \\| `(?<currentValue>[^`]+)` \\|"
-      ],
+      "matchStrings": ["\\| Angular \\| `(?<currentValue>[^`]+)` \\|"],
       "depNameTemplate": "@angular/core",
       "datasourceTemplate": "npm"
     },

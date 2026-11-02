@@ -19,25 +19,26 @@ const base = {
   ci: false,
 };
 const names = (steps) => steps.map((s) => s.name);
+const backendBuild = (options) =>
+  planSteps({ ...base, ...options }).find((s) => s.name === "backend build");
 
 test("linux runs ./gradlew, win32 runs gradlew.bat", () => {
-  assert.equal(planSteps(base)[0].command, "./gradlew");
-  assert.equal(
-    planSteps({ ...base, platform: "win32" })[0].command,
-    "gradlew.bat",
-  );
-  assert.equal(planSteps(base)[0].cwd, "backend");
+  assert.equal(backendBuild({}).command, "./gradlew");
+  assert.equal(backendBuild({ platform: "win32" }).command, "gradlew.bat");
+  assert.equal(backendBuild({}).cwd, "backend");
 });
 
 test("full run builds the backend without a tag filter and runs the mocked e2e", () => {
-  const steps = planSteps(base);
-  assert.deepEqual(steps[0].args, ["build"]);
-  assert.ok(names(steps).includes("frontend e2e"));
+  assert.deepEqual(backendBuild({}).args, ["build"]);
+  assert.ok(names(planSteps(base)).includes("frontend e2e"));
 });
 
 test("quick excludes container tests and e2e", () => {
   const steps = planSteps({ ...base, quick: true });
-  assert.deepEqual(steps[0].args, ["build", "-PexcludeTags=container"]);
+  assert.deepEqual(backendBuild({ quick: true }).args, [
+    "build",
+    "-PexcludeTags=container",
+  ]);
   assert.ok(!names(steps).includes("frontend e2e"));
   assert.ok(names(steps).includes("frontend build"));
 });
@@ -53,6 +54,7 @@ test("npm ci runs first, and only without node_modules", () => {
 
 test("frontend steps run in order", () => {
   assert.deepEqual(names(planSteps(base)), [
+    "frontend audit",
     "backend build",
     "frontend lint",
     "frontend format",
@@ -61,7 +63,6 @@ test("frontend steps run in order", () => {
     "frontend unit tests",
     "frontend build",
     "frontend e2e types",
-    "frontend audit",
     "frontend playwright install",
     "frontend e2e",
   ]);
@@ -85,6 +86,12 @@ test("the full run audits the frontend's dependencies for high and critical advi
     ["npm", ["audit", "--audit-level=high"], "frontend"],
   );
   assert.equal(audit({ quick: true }), undefined);
+  const order = names(planSteps({ ...base, hasNodeModules: false }));
+  assert.deepEqual(order.slice(0, 3), [
+    "npm ci",
+    "frontend audit",
+    "backend build",
+  ]);
 });
 
 test("playwright browsers are installed in full runs only, with system deps only on CI", () => {

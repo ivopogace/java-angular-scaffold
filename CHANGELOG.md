@@ -114,18 +114,21 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   refusal that exits before reading stdin (EPIPE); both made the template CI fail intermittently.
 - Dependencies: `renovate.json` opens weekly update PRs for npm (`frontend/`), the Gradle version
   catalog and wrapper, GitHub Actions and `compose.yaml`, keeping exact pins and the Actions' major
-  tags. The Angular packages and `angular-eslint` form one PR; so do the Postgres image in
-  `compose.yaml` and `TestcontainersConfiguration` (a regex manager reads the Java constant), and
-  the Spring Boot plugin and BOM. Regex managers also update the README *What's inside* rows, so a
-  bump does not fail `readme-versions.test.mjs`. The Java toolchain, npm (`packageManager`) and the
-  `@types/node` major stay manual, since they move with the JDK and Node the CI wrappers install.
-  Lock-file maintenance and OSV vulnerability PRs keep transitive dependencies current. Renovate
-  works on GitHub and GitLab alike; enable the Renovate app (or a self-hosted runner) on your
-  repository, and copy `renovate.json` with the README rows it names.
-- `verify`: the full run fails on a high or critical `npm audit` advisory in `frontend/`
-  (`frontend audit`, before the Playwright install). `--quick` skips it: it needs the registry, and
-  its result changes with newly published advisories under an unchanged lockfile, so an inner-loop
-  run would fail on news unrelated to the change; CI runs the full verify.
+  tags. The Angular packages, `angular-eslint` and TypeScript form one PR (a major one says to run
+  `ng update` for the migrations); so do the Postgres image in `compose.yaml` and
+  `TestcontainersConfiguration` (a regex manager reads the Java constant; `ignorePaths` drops
+  `config:recommended`'s `**/test/**` so it is seen; a major one says to run `docker compose down
+  -v`), and the Spring Boot plugin and BOM. Regex managers also update the README *What's inside*
+  rows, so a bump does not fail `readme-versions.test.mjs`, which also fails when a row other than
+  the manual ones has no manager. The Java toolchain, npm (`packageManager`) and the `@types/node`
+  major stay manual, since they move with the JDK and Node the CI wrappers install. Lock-file
+  maintenance and OSV vulnerability PRs keep transitive dependencies current. Renovate works on
+  GitHub and GitLab alike; enable the Renovate app (or a self-hosted runner) on your repository, and
+  copy `renovate.json` with the README rows it names.
+- `verify`: the full run fails on a high or critical `npm audit` advisory in `frontend/` (`frontend
+  audit`, first after `npm ci`, as it needs only the lockfile). `--quick` skips it: it needs the
+  registry, and its result changes with newly published advisories under an unchanged lockfile, so
+  an inner-loop run would fail on news unrelated to the change; CI runs the full verify.
 
 ## 0.1.0 — 2026-11-01
 

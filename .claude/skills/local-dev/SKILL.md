@@ -24,12 +24,12 @@ breaks for an environmental reason.
 
 ## verify
 
-`node scripts/verify.mjs` is the one check entry point; CI runs the same command. It fails fast,
-in order: `npm ci` (only when `frontend/node_modules` is missing), backend `gradlew build`, frontend
-lint (ESLint + Stylelint), Prettier check of `frontend/` and of `scripts/`, the ESLint-rule and
-Stylelint-config suite, Vitest, production build, e2e type check, then `npm audit
---audit-level=high` in `frontend/`, `playwright install chromium` and the mocked e2e, then the
-`scripts/` tests and `check-agent-docs.mjs`.
+`node scripts/verify.mjs` is the one check entry point; CI runs the same command. It fails fast, in
+order: `npm ci` (only when `frontend/node_modules` is missing), `npm audit --audit-level=high` in
+`frontend/`, backend `gradlew build`, frontend lint (ESLint + Stylelint), Prettier check of
+`frontend/` and of `scripts/`, the ESLint-rule and Stylelint-config suite, Vitest, production build,
+e2e type check, then `playwright install chromium` and the mocked e2e, then the `scripts/` tests and
+`check-agent-docs.mjs`.
 
 `--quick` drops the audit, the Playwright install, the e2e and every test tagged `container`
 (`-PexcludeTags=container`), so it needs no Docker — use it while iterating, then run the full
@@ -85,5 +85,6 @@ database has applied the sample migration, remove by hand and add a forward drop
 | `bootRun` fails to bind 5432 | another Postgres holds the port; stop it |
 | `bootRun`'s Postgres exits with "data in /var/lib/postgresql/data (unused mount/volume)" | the container was created by an older Postgres major; `docker compose down -v` from the repo root (drops the local database), then `bootRun` again |
 | `frontend audit` fails | a high or critical advisory reached a dependency: take the patched version (`npm audit` names it; Renovate's lock-file maintenance and vulnerability PRs bring it too), never lower `--audit-level` |
+| `frontend audit` fails with `ENOAUDIT` or a network error | the registry in `.npmrc` (a mirror such as Nexus or Artifactory) has no audit endpoint, or there is no network: audit against `https://registry.npmjs.org`, or run `--quick` until it is reachable |
 | Prettier check fails | `npm run format` (`frontend format`) or `npx prettier --write ../scripts` (`scripts format`), both from `frontend/`; then review the diff |
 | files show as fully changed with no visible edit | line endings: `.gitattributes` pins LF; `git ls-files --eol` shows which files differ |
