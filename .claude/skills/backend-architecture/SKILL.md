@@ -125,6 +125,6 @@ breaks proves nothing.
 | Adapter imports `application.service` | inject the `port.in` interface |
 | Controller or listener uses an aggregate or a `port.out` (`drivingAdaptersGoThroughPortIn` fails) | add or extend a `port.in` use case and call that |
 | A view, outcome or event gains a method such as `canRetire()`, or a use-case interface a `default` method (`publishedTypesAreDataOnly` fails) | put the rule on the aggregate; the use case returns the decision as an outcome |
-| `rehydrate` called outside `adapter.out` (`onlyDrivenAdaptersRehydrate` fails) | create through the aggregate's creation factory; only a driven adapter rebuilds stored state |
+| `rehydrate` called outside `adapter.out` and `domain.model` (`onlyDrivenAdaptersRehydrate` fails) | create through the aggregate's creation factory; only a driven adapter rebuilds stored state |
 | Sub-package such as `adapter.in.web.dto` | flatten into the listed package |
 | Raising `allowedDependencies` to make `verify()` pass | publish the needed type through `port.in`, `domain.id` or `domain.event` |
