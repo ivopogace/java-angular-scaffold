@@ -45,9 +45,20 @@ module.exports = defineConfig([
     },
   },
   {
-    // Throwaway stub components in specs are fixtures, not shipped components.
     files: ['**/*.spec.ts'],
-    rules: { '@angular-eslint/component-max-inline-declarations': 'off' },
+    rules: {
+      // Throwaway stub components in specs are fixtures, not shipped components.
+      '@angular-eslint/component-max-inline-declarations': 'off',
+      // A forced render hides a component that changes state without notifying Angular.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "CallExpression[callee.property.name='detectChanges']",
+          message:
+            'Wait with `await fixture.whenStable()`, or `TestBed.tick()` while an HTTP request is open; do not force a render.',
+        },
+      ],
+    },
   },
   {
     files: ['**/*.html'],

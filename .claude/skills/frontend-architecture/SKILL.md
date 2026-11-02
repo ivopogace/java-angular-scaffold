@@ -101,6 +101,14 @@ new route by hand like the one above. The `**` route stays last. App-wide provid
 | user journey, contrast | `frontend/e2e/*.e2e.ts`, API stubbed with `page.route` | rendering in a browser, axe in both colour schemes; runs in CI |
 | wiring against the real API | `frontend/e2e/real-backend/*.e2e.ts` | round-trip through Spring and Postgres; local only, skips unless `REAL_BACKEND=1` |
 
+A component spec waits instead of forcing a render: `await fixture.whenStable()` once nothing
+is pending, `TestBed.tick()` while an HTTP request is unflushed, since `whenStable()` (and so every
+harness call) waits for open requests; lint rejects `detectChanges()` in specs. Material components
+go through their harnesses — a harness action that leaves a request open runs inside
+`manualChangeDetection` — and navigation through `RouterTestingHarness` with real routes. A Signal
+Forms submission is no pending task, so what follows its answer is awaited with `expect.poll`
+(`catalog/product-form/product-form.spec.ts`).
+
 `Date` is frozen at `FROZEN_INSTANT` (`src/testing/freeze-clock.ts`) for every spec; a spec that
 fakes timers restores with `freezeClock()`, never `vi.useRealTimers()`. e2e locators are roles and
 labels (`getByRole('button', { name: 'Publish Poster' })`), with web-first `expect` and no fixed

@@ -1,69 +1,87 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { ApplicationRef } from '@angular/core';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { HarnessLoader, manualChangeDetection, parallel } from '@angular/cdk/testing';
+import { TestbedHarnessEnvironment } from '@angular/cdk/testing/testbed';
+import { Component } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import { MatButtonHarness } from '@angular/material/button/testing';
+import { MatFormFieldHarness } from '@angular/material/form-field/testing';
+import { MatInputHarness } from '@angular/material/input/testing';
+import { MatSnackBarHarness } from '@angular/material/snack-bar/testing';
 import { provideRouter, Router } from '@angular/router';
+import { RouterTestingHarness } from '@angular/router/testing';
 
 import { expectNoAxeViolations } from '../../../testing/axe';
 import { ProductForm } from './product-form';
 
 const LIST_URL = '/api/catalog/products';
+const FORM_PATH = '/catalog/new';
 
+@Component({ template: '' })
+class ListStub {}
+
+/*
+ * `whenStable()`, and so every harness call, waits for open HTTP requests, so a submit that sends
+ * one runs inside `manualChangeDetection`. A Signal Forms submission is not a pending task either:
+ * what follows the answer (re-enabling the button, the snackbar, the navigation) is polled for.
+ */
 describe('ProductForm', () => {
   let http: HttpTestingController;
-  let router: Router;
-  let fixture: ComponentFixture<ProductForm>;
+  let router: RouterTestingHarness;
+  let loader: HarnessLoader;
   let element: HTMLElement;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     TestBed.configureTestingModule({
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
+      providers: [
+        provideRouter([
+          { path: 'catalog', component: ListStub },
+          { path: 'catalog/new', component: ProductForm },
+        ]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
     });
     http = TestBed.inject(HttpTestingController);
-    router = TestBed.inject(Router);
-    vi.spyOn(router, 'navigateByUrl').mockResolvedValue(true);
-    fixture = TestBed.createComponent(ProductForm);
-    element = fixture.nativeElement as HTMLElement;
-    fixture.detectChanges();
+    router = await RouterTestingHarness.create(FORM_PATH);
+    loader = TestbedHarnessEnvironment.loader(router.fixture);
+    element = router.routeNativeElement as HTMLElement;
   });
-
-  async function settle(): Promise<void> {
-    await TestBed.inject(ApplicationRef).whenStable();
-    fixture.detectChanges();
-  }
 
   afterEach(() => http.verify());
 
-  function input(label: string): HTMLInputElement {
-    const found = Array.from(element.querySelectorAll('mat-form-field')).find((field) =>
-      field.querySelector('mat-label')?.textContent?.includes(label),
-    );
-    const control = found?.querySelector('input');
-    if (!control) {
-      throw new Error(`no field "${label}"`);
+  function field(label: string): Promise<MatFormFieldHarness> {
+    return loader.getHarness(MatFormFieldHarness.with({ floatingLabelText: label }));
+  }
+
+  async function type(label: string, text: string): Promise<void> {
+    const input = await (await field(label)).getControl(MatInputHarness);
+    if (!input) {
+      throw new Error(`no input in field "${label}"`);
     }
-    return control;
+    await input.setValue(text);
+    await input.blur();
   }
 
-  function type(label: string, text: string): void {
-    const control = input(label);
-    control.value = text;
-    control.dispatchEvent(new Event('input'));
-    control.dispatchEvent(new Event('blur'));
-    fixture.detectChanges();
+  function submitButton(): Promise<MatButtonHarness> {
+    return loader.getHarness(MatButtonHarness.with({ text: 'Create product' }));
   }
 
-  async function submit(): Promise<void> {
-    element.querySelector('form')?.dispatchEvent(new Event('submit', { cancelable: true }));
-    fixture.detectChanges();
-    await Promise.resolve();
-    fixture.detectChanges();
+  /** Submits a form the client rejects, so no request is left open. */
+  async function submitInvalid(): Promise<void> {
+    await (await submitButton()).click();
   }
 
-  function errors(): string {
-    return Array.from(element.querySelectorAll('mat-error'))
-      .map((error) => (error.textContent ?? '').trim())
-      .join(' | ');
+  /** Submits a valid form; the POST stays open until the spec answers it. */
+  async function submitValid(): Promise<void> {
+    const button = await submitButton();
+    await manualChangeDetection(() => button.click());
+  }
+
+  async function errors(): Promise<string> {
+    const fields = await loader.getAllHarnesses(MatFormFieldHarness);
+    const texts = await parallel(() => fields.map((f) => f.getTextErrors()));
+    return texts.flat().join(' | ');
   }
 
   function expectPost(): ReturnType<HttpTestingController['expectOne']> {
@@ -74,63 +92,56 @@ describe('ProductForm', () => {
     http.expectNone((request) => request.method === 'POST');
   }
 
-  function submitButton(): HTMLButtonElement {
-    const found = element.querySelector<HTMLButtonElement>('button[type="submit"]');
-    if (!found) {
-      throw new Error('no submit button');
-    }
-    return found;
+  function url(): string {
+    return TestBed.inject(Router).url;
   }
 
   it('does not load the product list', () => {
-    TestBed.tick();
-
     http.expectNone((request) => request.method === 'GET');
   });
 
   it('rejects a blank name without calling the API', async () => {
-    type('Name', '   ');
-    await submit();
+    await type('Name', '   ');
+    await submitInvalid();
 
-    expect(errors()).toContain('Enter a name.');
+    expect(await errors()).toContain('Enter a name.');
     expectNoPost();
-    expect(router.navigateByUrl).not.toHaveBeenCalled();
+    expect(url()).toBe(FORM_PATH);
   });
 
   it('rejects a price with more than two decimals', async () => {
-    type('Name', 'Mug');
-    type('Price', '12.345');
-    await submit();
+    await type('Name', 'Mug');
+    await type('Price', '12.345');
+    await submitInvalid();
 
-    expect(errors()).toContain('Enter an amount such as 12.50.');
+    expect(await errors()).toContain('Enter an amount such as 12.50.');
     expectNoPost();
   });
 
   it('rejects a name longer than the API allows', async () => {
-    type('Name', 'x'.repeat(121));
-    await submit();
+    await type('Name', 'x'.repeat(121));
+    await submitInvalid();
 
-    expect(errors()).toContain('Use at most 120 characters.');
+    expect(await errors()).toContain('Use at most 120 characters.');
     expectNoPost();
   });
 
   it('submits the name and the price in minor units, then returns to the list', async () => {
-    type('Name', ' Mug ');
-    type('Price', '12.50');
-    await submit();
+    await type('Name', ' Mug ');
+    await type('Price', '12.50');
+    await submitValid();
 
     const post = expectPost();
     expect(post.request.body).toEqual({ name: 'Mug', priceMinor: 1250, currency: 'EUR' });
     post.flush({}, { status: 201, statusText: 'Created' });
-    await settle();
 
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/catalog');
+    await expect.poll(url).toBe('/catalog');
   });
 
   it('accepts a decimal comma', async () => {
-    type('Name', 'Mug');
-    type('Price', '12,5');
-    await submit();
+    await type('Name', 'Mug');
+    await type('Price', '12,5');
+    await submitValid();
 
     const post = expectPost();
     expect(post.request.body).toEqual({ name: 'Mug', priceMinor: 1250, currency: 'EUR' });
@@ -138,8 +149,8 @@ describe('ProductForm', () => {
   });
 
   it('creates a draft without a price when the price is left blank', async () => {
-    type('Name', 'Poster');
-    await submit();
+    await type('Name', 'Poster');
+    await submitValid();
 
     const post = expectPost();
     expect(post.request.body).toEqual({ name: 'Poster' });
@@ -147,25 +158,27 @@ describe('ProductForm', () => {
   });
 
   it('disables the submit button while the request is in flight', async () => {
-    type('Name', 'Mug');
-    await submit();
+    await type('Name', 'Mug');
+    await submitValid();
+    const button = await submitButton();
 
-    expect(submitButton().disabled).toBe(true);
+    TestBed.tick();
+    expect(await manualChangeDetection(() => button.isDisabled())).toBe(true);
     expectPost().flush({}, { status: 400, statusText: 'Bad Request' });
-    await settle();
 
-    expect(submitButton().disabled).toBe(false);
+    await expect.poll(() => button.isDisabled()).toBe(false);
   });
 
   it('stays on the form and says so when the API rejects the product', async () => {
-    type('Name', 'Mug');
-    await submit();
+    await type('Name', 'Mug');
+    await submitValid();
 
     expectPost().flush({}, { status: 400, statusText: 'Bad Request' });
-    await settle();
 
-    expect(router.navigateByUrl).not.toHaveBeenCalled();
-    expect(document.body.textContent).toContain('Could not save the product. Try again.');
+    const rootLoader = TestbedHarnessEnvironment.documentRootLoader(router.fixture);
+    const snackBar = await rootLoader.getHarness(MatSnackBarHarness);
+    expect(await snackBar.getMessage()).toBe('Could not save the product. Try again.');
+    expect(url()).toBe(FORM_PATH);
   });
 
   it('has no accessibility violations', async () => {
@@ -173,11 +186,11 @@ describe('ProductForm', () => {
   });
 
   it('has no accessibility violations while showing errors', async () => {
-    type('Name', '');
-    type('Price', 'abc');
-    await submit();
+    await type('Name', '');
+    await type('Price', 'abc');
+    await submitInvalid();
 
-    expect(errors()).not.toBe('');
+    expect(await errors()).not.toBe('');
     await expectNoAxeViolations(element);
   });
 });

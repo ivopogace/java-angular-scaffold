@@ -18,7 +18,7 @@ describe('AppTitleStrategy', () => {
           { path: '', component: Stub, title: 'Home' },
           { path: 'untitled', component: Stub },
         ]),
-        { provide: TitleStrategy, useClass: AppTitleStrategy },
+        { provide: TitleStrategy, useExisting: AppTitleStrategy },
       ],
     });
   }
