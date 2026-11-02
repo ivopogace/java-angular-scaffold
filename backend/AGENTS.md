@@ -103,6 +103,5 @@ package-private and `@UseCase` when they implement a `port/in` interface; adapte
 `domain/model` class; `port/in` and `domain/event` types carry no behaviour; no JPA anywhere; no
 Spring beyond `org.springframework.modulith`, and no `java.sql`, in `core` — plus jMolecules' DDD
 and hexagonal rules; over the test classes, an area's tests are `@ApplicationModuleTest`, never
-`@SpringBootTest`. `ArchitectureRulesNegativeTest`
-proves each rule fails on a violating fixture.
+`@SpringBootTest`. `ArchitectureRulesNegativeTest` proves each rule fails on a violating fixture.
 A new rule gets a negative fixture in the same change.
