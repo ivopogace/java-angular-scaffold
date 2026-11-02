@@ -1,0 +1,42 @@
+# The template's release automation, not a check wrapper: tags a commit on main as v<CHANGELOG version>
+# once ci and template-ci both succeeded for its push. init deletes this file with scripts/release-tag*.mjs.
+name: release-tag
+
+on:
+  # Both, so whichever finishes last finds the other green and tags.
+  workflow_run:
+    workflows: [ci, template-ci]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-tag-${{ github.event.workflow_run.head_sha || github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - run: node scripts/release-tag.mjs --sha "$SHA" --trigger "$TRIGGER"
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          TRIGGER: ${{ github.event_name }}
+          GH_TOKEN: ${{ github.token }}

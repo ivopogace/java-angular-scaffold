@@ -21,8 +21,8 @@ Check every change with `node scripts/verify.mjs` (`--quick` while iterating). T
   `io/scaffold/starter`), `scaffold-starter`, `scaffold_starter` and `Scaffold Starter`. Any other
   spelling of the template's name must stay out of every file that survives `init`, vendored skill
   folders excepted; `scripts/init.test.mjs` fails otherwise. Files `init` deletes (this one,
-  `README.md`, `CHANGELOG.md`, `docs/superpowers/`, `scripts/init*.mjs`, `template-ci.yml`) are free
-  to use it.
+  `README.md`, `CHANGELOG.md`, `docs/superpowers/`, `scripts/init*.mjs`, `scripts/release-tag*.mjs`,
+  `template-ci.yml`, `release-tag.yml`) are free to use it.
 - **Placeholder lines must survive the longest names.** `init` rewrites without reformatting, and
   a display name may be 60 characters. In the frontend, reference `APP_NAME`
   (`frontend/src/app/shared/app-name/app-name.ts`) instead of writing the display name again; a
@@ -60,8 +60,17 @@ hand.
    and why.
 2. Set `TEMPLATE_VERSION` in `scripts/init.mjs` to the same version; `init.test.mjs` checks they
    match.
-3. Merge with the template CI green, then tag the merge commit and push the tag:
-   `git tag -a vX.Y.Z -m "vX.Y.Z"` and `git push origin vX.Y.Z`.
+3. Merge with CI green; the release-tag workflow tags it. `.github/workflows/release-tag.yml` runs
+   when `ci` or `template-ci` completes for a push to `main`; once both have succeeded for that
+   commit, `scripts/release-tag.mjs` creates the annotated tag `vX.Y.Z` (message `vX.Y.Z`) on it as
+   `github-actions[bot]` and pushes it. It fails when the top `CHANGELOG.md` heading and
+   `TEMPLATE_VERSION` differ, and leaves an existing `vX.Y.Z` alone, so merges without a new
+   version tag nothing. Run it by hand from the Actions tab (`workflow_dispatch`, `main` only),
+   which applies the same checks. Fallback, if the workflow cannot run: tag the merge commit and
+   push the tag yourself, `git tag -a vX.Y.Z -m "vX.Y.Z" <commit>` and `git push origin vX.Y.Z`.
+
+This workflow is release automation, not a CI wrapper: wrappers run `verify` and nothing else,
+while this one runs no checks of its own and only reads the other two workflows' results.
 
 Versions follow semver as seen from a project: a minor version adds or changes what new projects
 get; a patch fixes the template without changing what a project should port.
