@@ -61,6 +61,7 @@ test("frontend steps run in order", () => {
     "frontend unit tests",
     "frontend build",
     "frontend e2e types",
+    "frontend audit",
     "frontend playwright install",
     "frontend e2e",
   ]);
@@ -74,6 +75,16 @@ test("scripts are checked with the frontend's Prettier", () => {
     [format.command, format.args, format.cwd],
     ["npx", ["prettier", "--check", "../scripts"], "frontend"],
   );
+});
+
+test("the full run audits the frontend's dependencies for high and critical advisories; quick does not", () => {
+  const audit = (options) =>
+    planSteps({ ...base, ...options }).find((s) => s.name === "frontend audit");
+  assert.deepEqual(
+    [audit({}).command, audit({}).args, audit({}).cwd],
+    ["npm", ["audit", "--audit-level=high"], "frontend"],
+  );
+  assert.equal(audit({ quick: true }), undefined);
 });
 
 test("playwright browsers are installed in full runs only, with system deps only on CI", () => {

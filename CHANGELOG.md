@@ -112,6 +112,20 @@ read the entries after that version here and apply them by hand. `TEMPLATE_VERSI
   pause (three tries) and otherwise stops, telling you to delete `.git` and finish by hand, so a
   project never starts on top of the template's history. `init.test.mjs` disables gc and maintenance in its throwaway copies and tolerates a
   refusal that exits before reading stdin (EPIPE); both made the template CI fail intermittently.
+- Dependencies: `renovate.json` opens weekly update PRs for npm (`frontend/`), the Gradle version
+  catalog and wrapper, GitHub Actions and `compose.yaml`, keeping exact pins and the Actions' major
+  tags. The Angular packages and `angular-eslint` form one PR; so do the Postgres image in
+  `compose.yaml` and `TestcontainersConfiguration` (a regex manager reads the Java constant), and
+  the Spring Boot plugin and BOM. Regex managers also update the README *What's inside* rows, so a
+  bump does not fail `readme-versions.test.mjs`. The Java toolchain, npm (`packageManager`) and the
+  `@types/node` major stay manual, since they move with the JDK and Node the CI wrappers install.
+  Lock-file maintenance and OSV vulnerability PRs keep transitive dependencies current. Renovate
+  works on GitHub and GitLab alike; enable the Renovate app (or a self-hosted runner) on your
+  repository, and copy `renovate.json` with the README rows it names.
+- `verify`: the full run fails on a high or critical `npm audit` advisory in `frontend/`
+  (`frontend audit`, before the Playwright install). `--quick` skips it: it needs the registry, and
+  its result changes with newly published advisories under an unchanged lockfile, so an inner-loop
+  run would fail on news unrelated to the change; CI runs the full verify.
 
 ## 0.1.0 — 2026-11-01
 

@@ -1,0 +1,163 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":pinAllExceptPeerDependencies"],
+  "enabledManagers": [
+    "npm",
+    "gradle",
+    "gradle-wrapper",
+    "github-actions",
+    "docker-compose",
+    "custom.regex"
+  ],
+  "schedule": ["* 0-4 * * 1"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["* 0-4 * * 1"]
+  },
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "description": "Angular moves as one: framework, CDK and Material, CLI and build, angular-eslint.",
+      "matchPackageNames": ["@angular/**", "@angular-eslint/**", "angular-eslint"],
+      "groupName": "angular"
+    },
+    {
+      "description": "The Spring Boot plugin and BOM share one catalog version.",
+      "matchPackageNames": ["org.springframework.boot", "org.springframework.boot:**"],
+      "groupName": "spring-boot"
+    },
+    {
+      "description": "compose.yaml and TestcontainersConfiguration run the same image; readme-versions.test.mjs keeps them equal.",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["postgres"],
+      "groupName": "postgres"
+    },
+    {
+      "description": "npm is the version the Node in .nvmrc bundles, bumped with Node by hand.",
+      "matchDepTypes": ["packageManager"],
+      "enabled": false
+    },
+    {
+      "description": "The Java toolchain moves with the JDK the CI wrappers install, bumped by hand.",
+      "matchDatasources": ["java-version"],
+      "enabled": false
+    },
+    {
+      "description": "@types/node follows the Node major in .nvmrc, bumped with Node by hand.",
+      "matchPackageNames": ["@types/node"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "The Postgres image of the Testcontainers ITs.",
+      "managerFilePatterns": ["/(^|/)TestcontainersConfiguration\\.java$/"],
+      "matchStrings": ["new PostgreSQLContainer\\(\"(?<depName>postgres):(?<currentValue>[^\"]+)\"\\)"],
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "README version table rows (readme-versions.test.mjs), so each bump updates its row.",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| Gradle \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "gradle",
+      "datasourceTemplate": "gradle-version",
+      "versioningTemplate": "gradle"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| Spring Boot \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "org.springframework.boot:spring-boot-dependencies",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| Spring Modulith \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "org.springframework.modulith:spring-modulith-bom",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| jMolecules BOM \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "org.jmolecules:jmolecules-bom",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| ArchUnit \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "com.tngtech.archunit:archunit-junit5",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| Postgres \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "postgres",
+      "datasourceTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": [
+        "\\| Angular \\| `(?<currentValue>[^`]+)` \\|"
+      ],
+      "depNameTemplate": "@angular/core",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| Angular Material \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "@angular/material",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| Angular CLI \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "@angular/cli",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| TypeScript \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "typescript",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| Vitest \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "vitest",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| Playwright \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "@playwright/test",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| ESLint \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "eslint",
+      "datasourceTemplate": "npm"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/^README(\\.project)?\\.md$/"],
+      "matchStrings": ["\\| Stylelint \\| `(?<currentValue>[^`]+)` \\|"],
+      "depNameTemplate": "stylelint",
+      "datasourceTemplate": "npm"
+    }
+  ]
+}

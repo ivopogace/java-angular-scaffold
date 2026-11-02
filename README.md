@@ -17,7 +17,8 @@ This README is the template's. `init` replaces it with `README.project.md`.
 ## What's inside
 
 The versions the repository pins; `scripts/readme-versions.test.mjs` (part of `verify`) fails when
-a row no longer matches its file.
+a row no longer matches its file. Renovate (`renovate.json`) opens the bumps as weekly PRs that
+update the row with its pin; the Java toolchain, Node, npm and Playwright MCP stay manual.
 
 | Component | Version | Pinned in | To bump |
 |---|---|---|---|
@@ -83,7 +84,7 @@ read `CHANGELOG.md` here from that version on to port an improvement by hand.
 
 ## Running it locally
 
-`node scripts/verify.mjs` runs everything CI runs; `--quick` skips the Testcontainers ITs and e2e.
+`node scripts/verify.mjs` runs everything CI runs; `--quick` skips the Testcontainers ITs, npm audit and e2e.
 `./gradlew :bootstrap:bootRun` (from `backend/`) serves the API and the built SPA on `:8080`, with
 Postgres started from `compose.yaml` by Spring Boot's Docker Compose support.
 `spring.docker.compose.file` in `backend/bootstrap/src/main/resources/application.properties` is

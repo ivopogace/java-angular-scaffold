@@ -16,7 +16,8 @@ After cloning, run `git config core.hooksPath .githooks` once so the pre-commit 
 ## What's inside
 
 The versions the repository pins; `scripts/readme-versions.test.mjs` (part of `verify`) fails when
-a row no longer matches its file.
+a row no longer matches its file. Renovate (`renovate.json`) opens the bumps as weekly PRs that
+update the row with its pin; the Java toolchain, Node, npm and Playwright MCP stay manual.
 
 | Component | Version | Pinned in | To bump |
 |---|---|---|---|
@@ -43,7 +44,7 @@ a row no longer matches its file.
 
 ```bash
 node scripts/verify.mjs             # everything CI runs
-node scripts/verify.mjs --quick     # skips the Testcontainers ITs and e2e
+node scripts/verify.mjs --quick     # skips the Testcontainers ITs, npm audit and e2e
 ```
 
 `./gradlew :bootstrap:bootRun` (from `backend/`) serves the API and the built SPA on `:8080`, with

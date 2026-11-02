@@ -80,9 +80,12 @@ export function planSteps({
     npm("frontend unit tests", "test", "--", "--watch=false"),
     npm("frontend build", "run", "build"),
     npm("frontend e2e types", "run", "typecheck:e2e"),
+    // npm audit asks the registry, whose advisories change under an unchanged lockfile, so --quick
+    // leaves it out; the full verify, which CI runs, fails on a high or critical advisory.
     ...(quick
       ? []
       : [
+          npm("frontend audit", "audit", "--audit-level=high"),
           {
             name: "frontend playwright install",
             cwd: "frontend",

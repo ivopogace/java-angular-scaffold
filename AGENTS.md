@@ -19,7 +19,7 @@ Needs JDK 25, Node per `.nvmrc`, and Docker for the full verify and the Testcont
 
 ```bash
 node scripts/verify.mjs            # everything CI runs; fails up front without Docker
-node scripts/verify.mjs --quick    # inner loop: skips Testcontainers ITs and e2e
+node scripts/verify.mjs --quick    # inner loop: skips Testcontainers ITs, npm audit and e2e
 node scripts/check-agent-docs.mjs  # AGENTS.md / skills / MCP config consistency (part of verify)
 ```
 
@@ -62,6 +62,8 @@ REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (l
 - Tool config, the only duplication — change both sides together: `.mcp.json` +
   `.claude/settings.json` (Claude Code) and `opencode.json` (opencode) declare the same MCP servers
   (`angular-cli`, `playwright`) and the same allow-list; `check-agent-docs.mjs` compares them.
+- `renovate.json` — weekly dependency-update PRs (Angular, and the Postgres image of `compose.yaml`
+  and `TestcontainersConfiguration`, each move as one PR; README version rows move with their pin).
 - `compose.yaml` — local Postgres for `bootRun`. Glossary: `GLOSSARY.md` (`domain-modeling` creates
   it lazily when absent).
 
