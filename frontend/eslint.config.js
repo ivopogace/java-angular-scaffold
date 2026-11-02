@@ -55,7 +55,7 @@ module.exports = defineConfig([
         {
           selector: "CallExpression[callee.property.name='detectChanges']",
           message:
-            'Wait with `await fixture.whenStable()`, or `TestBed.tick()` while an HTTP request is open; do not force a render.',
+            'Wait with `await fixture.whenStable()`, or `TestBed.tick()` while an `httpResource` load is unflushed; do not force a render.',
         },
       ],
     },

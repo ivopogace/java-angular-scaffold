@@ -56,10 +56,11 @@ memory.
   (`src/testing/freeze-clock.ts`); a spec using full fake timers restores with `freezeClock()`,
   never `vi.useRealTimers()`.
 - Wait for Angular, never force a render: `await fixture.whenStable()`, or `TestBed.tick()` while
-  an HTTP request is still unflushed (`whenStable()` waits for it); lint rejects `detectChanges()`
-  in specs. Material components are driven through their harnesses
-  (`TestbedHarnessEnvironment`), inside `manualChangeDetection` while a request is open; routing
-  through `RouterTestingHarness`, never a mocked `Router`.
+  an `httpResource` load is unflushed (`whenStable()` waits for it; a plain `HttpClient` request
+  does not count under `provideHttpClientTesting()`); lint rejects `detectChanges()` in specs.
+  Material components are driven through their harnesses (`TestbedHarnessEnvironment`), inside
+  `manualChangeDetection` while such a load is open; routing through `RouterTestingHarness`, never
+  a mocked `Router`.
 - User-facing pages get an axe spec via `expectNoAxeViolations` (`src/testing/axe.ts`); contrast is
   checked in Playwright, since jsdom has no layout.
 - Playwright: `e2e/` stubs the API per spec and runs in CI; `e2e/real-backend/` runs locally only,

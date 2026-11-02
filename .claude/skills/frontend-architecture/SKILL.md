@@ -102,12 +102,15 @@ new route by hand like the one above. The `**` route stays last. App-wide provid
 | wiring against the real API | `frontend/e2e/real-backend/*.e2e.ts` | round-trip through Spring and Postgres; local only, skips unless `REAL_BACKEND=1` |
 
 A component spec waits instead of forcing a render: `await fixture.whenStable()` once nothing
-is pending, `TestBed.tick()` while an HTTP request is unflushed, since `whenStable()` (and so every
-harness call) waits for open requests; lint rejects `detectChanges()` in specs. Material components
-go through their harnesses — a harness action that leaves a request open runs inside
-`manualChangeDetection` — and navigation through `RouterTestingHarness` with real routes. A Signal
-Forms submission is no pending task, so what follows its answer is awaited with `expect.poll`
-(`catalog/product-form/product-form.spec.ts`).
+is pending, `TestBed.tick()` while an `httpResource` load is unflushed, since a resource load is a
+pending task that `whenStable()` (and so every harness call) waits for. A plain `HttpClient`
+request is not one under `provideHttpClientTesting()`. Lint rejects `detectChanges()` in specs.
+Material components go through their harnesses — inside `manualChangeDetection` while a resource
+load is open, or when the render a harness action triggers would disable the next click (the
+harness skips clicks on disabled elements) — and navigation through `RouterTestingHarness` with
+real routes. A Signal Forms submission is no pending task either, so what follows its answer is
+awaited with `expect.poll` (`catalog/product-form/product-form.spec.ts`,
+`catalog/product-list/product-list.spec.ts`).
 
 `Date` is frozen at `FROZEN_INSTANT` (`src/testing/freeze-clock.ts`) for every spec; a spec that
 fakes timers restores with `freezeClock()`, never `vi.useRealTimers()`. e2e locators are roles and
