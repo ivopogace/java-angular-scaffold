@@ -76,8 +76,12 @@ dependencies or annotations:
 ```
 
 `ModularityTests` checks what one area may see of another. `ArchitectureTest` applies
-`ArchitectureRules`: the package shape and *What may cross* above, plus package-private adapter
-classes and `web`; no JPA anywhere; no Spring beyond Modulith and no `java.sql` / `javax.sql` in
-`application-core`; jMolecules' DDD and hexagonal rules; and, over the tests, area tests are
-`@ApplicationModuleTest`, never `@SpringBootTest`. `ArchitectureRulesNegativeTest` proves each rule
-fails on a violating fixture; a new rule gets one in the same change.
+`ArchitectureRules`: the package shape; `domain`'s imports; `port/in` and `domain/event` free of
+`domain/model` and data-only; adapters never using `service`; `adapter/in` only through `port/in`;
+who may call `rehydrate`; package-private services (`@UseCase` when they implement `port/in`),
+adapter classes and `web`; no JPA anywhere; no Spring beyond Modulith and no `java.sql` /
+`javax.sql` in `application-core`; jMolecules' DDD and hexagonal rules; and, over the tests, area
+tests are `@ApplicationModuleTest`, never `@SpringBootTest`. No rule checks the raw-UUID,
+`adapter/out`-implements-`port/out` or `shared`-value-object points; review catches those.
+`ArchitectureRulesNegativeTest` proves each rule fails on a violating fixture; a new rule gets one
+in the same change.
