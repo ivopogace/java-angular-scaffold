@@ -1,8 +1,6 @@
 # Backend
 
-Gradle build (Groovy DSL; versions in `gradle/libs.versions.toml`, conventions in `build-logic/`).
-Run commands from here; the general list is in the root `AGENTS.md`. Decisions behind this layout:
-`../docs/adr/`.
+Run commands from here; the list is in the root `AGENTS.md`.
 
 ## Layers: Gradle modules, dependencies point inward
 
@@ -61,29 +59,10 @@ The listed packages are the whole shape; no sub-packages beneath them.
 - A value object several areas need goes to `shared`; one only an area needs stays in its
   `domain/model`.
 
-## Spring-free application-core: the three replacements
+## Migrations
 
-| Concern | In `application-core` | Wired by |
-|---|---|---|
-| Beans | `@UseCase` on package-private services | `UseCaseConfiguration` scans for it |
-| Transactions | `jakarta.transaction.Transactional` on use-case methods | Spring's transaction support |
-| Domain events | `DomainEventPublisher` port | adapter over Spring's publisher → Modulith's JDBC event publication registry; listeners in `adapter/in/event` call `port/in` |
-
-## Conventions
-
-- Rich aggregates with jMolecules annotations (`@AggregateRoot`, `@Entity`, `@ValueObject`,
-  `@Identity`); typed ids; `Money` from `shared` (invariant #3).
-- Expected failures are sealed outcome types returned from use cases, not exceptions.
-- Errors leave as RFC 9457 `ProblemDetail`: outcome rejections built in the controller,
-  everything thrown through `ApiErrorHandler`.
-- Time: inject the `Clock` bean; business dates use the `ZoneId` bean from `app.business-time-zone`
-  (invariant #4).
-- Migrations: infrastructure is `V1…`; project migrations continue after it; never edit an applied
-  one (invariant #2).
-- Tests: `application-core` — plain unit tests with in-memory fakes of `port/out`; web — slice
-  tests; persistence and an area's flows — `@ApplicationModuleTest` Testcontainers ITs, which start
-  only that area; the whole app — `@SpringBootTest` in the base package. ITs are tagged `container`
-  (`-PexcludeTags=container` skips them).
+Infrastructure is `V1…`; project migrations continue after it; never edit an applied one
+(invariant #2).
 
 ## The structural net
 
@@ -96,15 +75,15 @@ dependencies or annotations:
   --tests "*ArchitectureRulesNegativeTest*"
 ```
 
-`ModularityTests` runs Modulith's `verify()` (what one area may see of another); `ArchitectureTest`
-applies the project's structural rules (`ArchitectureRules`): the area package shape; `domain`
-depends only on the JDK, jMolecules, `shared`, its own `domain` and other areas' `domain/id`;
-`port/in` and `domain/event` never depend on `domain/model`; services are package-private and
-`@UseCase` when they implement a `port/in` interface; adapter classes and `web` are package-private;
-adapters never use `application/service`; `adapter/in` never uses `domain/model` or `port/out`; only
-`domain/model` and `adapter/out` call a `rehydrate` factory on a `domain/model` class; `port/in` and
-`domain/event` types carry no behaviour; no JPA anywhere; no Spring beyond
-`org.springframework.modulith`, and no `java.sql`, in `application-core` — plus jMolecules' DDD and
-hexagonal rules; over the test classes, an area's tests are `@ApplicationModuleTest`, never
-`@SpringBootTest`. `ArchitectureRulesNegativeTest` proves each rule fails on a violating fixture. A
-new rule gets a negative fixture in the same change.
+`ModularityTests` checks what one area may see of another. `ArchitectureTest` applies
+`ArchitectureRules`: the package shape; `domain`'s imports; `port/in` and `domain/event` free of
+`domain/model` and data-only; adapters never using `service`; `adapter/in` never using
+`domain/model` or `port/out`; who may call `rehydrate`; package-private services (`@UseCase` when
+they implement `port/in`), adapter classes and `web`; no JPA anywhere; no Spring beyond Modulith
+and no `java.sql` / `javax.sql` in `application-core`; and, over the tests, area tests are
+`@ApplicationModuleTest`, never `@SpringBootTest`. It also applies jMolecules' DDD and hexagonal
+rules. No rule checks
+the raw-UUID, `adapter/out`-implements-`port/out` or `shared`-value-object points, and the `domain`
+import rule skips every `package-info.java`, not only those of `domain/id` and `domain/event`;
+review catches those. `ArchitectureRulesNegativeTest` proves each rule fails on a violating
+fixture; a new rule gets one in the same change.
