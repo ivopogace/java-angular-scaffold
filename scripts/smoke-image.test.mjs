@@ -3,13 +3,11 @@ import { globSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   appEndpoint,
-  buildStep,
   builtLocales,
   checkDockerfilePins,
   checkLocalePage,
   checkRootRedirect,
   defaultLocale,
-  imageName,
   isUp,
   parseArgs,
   plan,
@@ -23,18 +21,6 @@ const repoFile = (path) =>
 test("parseArgs takes no arguments", () => {
   assert.deepEqual(parseArgs([]), {});
   assert.match(parseArgs(["--keep"]).error, /Unknown argument: --keep/);
-});
-
-test("the image is built from the root Dockerfile under the project's tag", () => {
-  const step = buildStep("acme-orders:1.0.0");
-  assert.deepEqual(
-    [step.command, step.args, step.cwd],
-    [
-      "docker",
-      ["build", "--file", "Dockerfile", "--tag", "acme-orders:1.0.0", "."],
-      ".",
-    ],
-  );
 });
 
 test("the Dockerfile's base images follow .nvmrc and the Gradle toolchain", () => {
@@ -73,27 +59,6 @@ test("the Dockerfile's base images follow .nvmrc and the Gradle toolchain", () =
   );
 });
 
-test("the image name is the Gradle project name and version", () => {
-  assert.equal(
-    imageName(
-      "include 'core'\nrootProject.name = 'acme-orders'\n",
-      "allprojects {\n    group = 'com.acme'\n    version = '1.2.3'\n}\n",
-    ),
-    "acme-orders:1.2.3",
-  );
-  assert.throws(() => imageName("", "version = '1'"), /rootProject\.name/);
-});
-
-test("the image name is readable from this repository's build", () => {
-  assert.match(
-    imageName(
-      repoFile("backend/settings.gradle"),
-      repoFile("backend/build.gradle"),
-    ),
-    /^[a-z][a-z0-9-]*:[\w.-]+$/,
-  );
-});
-
 test("Postgres comes from compose.yaml, the image bootRun uses", () => {
   assert.equal(
     postgresImage("services:\n  postgres:\n    image: postgres:18-alpine\n"),
@@ -128,7 +93,6 @@ test("the published port is read from docker port output", () => {
 test("one run's containers share a network named after its id and pass config by environment", () => {
   const run = plan({
     id: "abc",
-    image: "acme-orders:1.0.0",
     postgres: "postgres:18-alpine",
     publish: "127.0.0.1::8080",
   });
@@ -136,7 +100,21 @@ test("one run's containers share a network named after its id and pass config by
   assert.equal(run.db, "smoke-abc-db");
   assert.equal(run.app, "smoke-abc-app");
   assert.equal(run.dbRun.at(-1), "postgres:18-alpine");
-  assert.equal(run.appRun.at(-1), "acme-orders:1.0.0");
+  assert.equal(run.image, "smoke-abc");
+  assert.deepEqual(run.build, [
+    "build",
+    "--file",
+    "Dockerfile",
+    "--tag",
+    "smoke-abc",
+    ".",
+  ]);
+  assert.equal(run.appRun.at(-1), "smoke-abc");
+  assert.deepEqual(run.teardown, [
+    ["rm", "--force", "--volumes", "smoke-abc-app", "smoke-abc-db"],
+    ["network", "rm", "smoke-abc"],
+    ["rmi", "--force", "smoke-abc"],
+  ]);
   for (const args of [run.dbRun, run.appRun]) {
     assert.equal(args[args.indexOf("--network") + 1], "smoke-abc");
   }

@@ -75,9 +75,10 @@ first one downloads npm packages, the Gradle distribution and every Maven depend
 image by hand, start Postgres and pass `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and
 `SPRING_DATASOURCE_PASSWORD` (the README lists every variable); the image has no Docker Compose
 support. `smoke-image.mjs` first checks that the Dockerfile's Node and Temurin tags match `.nvmrc`
-and the Gradle toolchain, tags the image `<project name>:<version>`, names its network and
-containers `smoke-<random>`, always removes them, and prints the app's last 200 log lines on
-failure; `docker ps -a --filter name=smoke-` shows leftovers of a killed run (`docker rm -f` them).
+and the Gradle toolchain, names the image, its network and containers `smoke-<random>` (so it
+never overwrites a real tag), always removes them, and prints the app's last 200 log lines on
+failure; `docker ps -a --filter name=smoke-` and `docker images 'smoke-*'` show leftovers of a
+killed run (`docker rm -f` and `docker rmi` them).
 
 ## Hooks and formatting
 

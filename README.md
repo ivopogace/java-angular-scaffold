@@ -118,7 +118,7 @@ baked in; set at runtime:
 | `SPRING_DATASOURCE_PASSWORD` | yes | its password, from your secret store |
 | `APP_BUSINESS_TIME_ZONE` | no | business time zone, default `UTC` |
 | `SERVER_PORT` | no | listen port, default `8080` |
-| `JAVA_TOOL_OPTIONS` | no | extra JVM flags; setting it replaces the image's heap setting |
+| `JAVA_TOOL_OPTIONS` | no | JVM flags, default `-XX:MaxRAMPercentage=75` (heap at 75 % of the container's memory); setting it replaces that default, so repeat the flag to keep it |
 
 ```bash
 docker run --rm -p 8080:8080 \

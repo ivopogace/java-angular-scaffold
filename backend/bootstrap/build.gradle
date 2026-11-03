@@ -58,3 +58,8 @@ def checkSpaPackaged = tasks.register('checkSpaPackaged') {
         }
     }
 }
+
+// Spring Boot's plugin registers this task; the root Dockerfile builds the only image (docs/adr/0006).
+tasks.named('bootBuildImage') {
+    enabled = false
+}

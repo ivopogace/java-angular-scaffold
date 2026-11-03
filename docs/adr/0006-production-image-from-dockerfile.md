@@ -12,9 +12,9 @@ memory (`-XX:MaxRAMPercentage=75`). Base images are pinned to exact tags that Re
 Node version and the Java major move by hand with `.nvmrc` and the toolchain. The Dockerfile names
 no project (it copies `frontend/dist` whole and the jar by pattern), so `init` rewrites nothing in
 it. `scripts/smoke-image.mjs` refuses to build when the base images disagree with `.nvmrc` or the
-toolchain, then builds the image as `<project name>:<version>`, runs it against the Postgres of
-`compose.yaml` on a throwaway network and checks health, the locale redirect and every locale
-build; the full `verify` runs it, so CI proves the image on every change (invariant #9), and
+toolchain, then builds the image under a throwaway `smoke-<id>` tag it removes afterwards, runs it
+against the Postgres of `compose.yaml` on a throwaway network and checks health, the locale
+redirect and every locale build; the full `verify` runs it, so CI proves the image on every change (invariant #9), and
 `--quick` skips it.
 
 ## Considered Options
