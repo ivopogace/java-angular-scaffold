@@ -52,7 +52,6 @@ const PRETTIER = join(
 );
 const TEMPLATE_ONLY = [
   ".github/workflows/template-ci.yml",
-  "CHANGELOG.md",
   "CONTRIBUTING.md",
   "README.project.md",
   "docs/superpowers",
@@ -228,9 +227,8 @@ async function initWithPackage(t, pkg) {
   return root;
 }
 
-test("TEMPLATE_VERSION equals the top CHANGELOG.md entry", () => {
-  const changelog = readFileSync(join(repoRoot, "CHANGELOG.md"), "utf8");
-  assert.equal(/^## (\S+)/m.exec(changelog)?.[1], TEMPLATE_VERSION);
+test("TEMPLATE_VERSION is X.Y.Z", () => {
+  assert.match(TEMPLATE_VERSION, /^\d+\.\d+\.\d+$/);
 });
 
 /**

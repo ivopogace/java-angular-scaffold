@@ -78,7 +78,7 @@ answers are rejected before any file is touched. Then it:
    `Scaffold Starter`) in the Gradle build, Spring config, `compose.yaml`, the Angular workspace,
    the specs and the agent docs, keeping each file's line endings, and moves the Java package folders;
 3. deletes the CI wrappers you did not choose and the template-only files — `template-ci.yml`,
-   `release-tag.yml` and its script, `CHANGELOG.md`, `CONTRIBUTING.md`, this README,
+   `release-tag.yml` and its script, `CONTRIBUTING.md`, this README,
    `docs/superpowers/` and `init` itself — and makes `README.project.md` the `README.md`;
 4. resets the *What this is* section of `AGENTS.md` to a TODO for you to fill in;
 5. replaces `.git` with a fresh repository on `main`, sets `core.hooksPath` to `.githooks` and makes
@@ -87,7 +87,7 @@ answers are rejected before any file is touched. Then it:
 
 The project keeps no remote, manifest, update script or build-time fetch pointing back here; it
 builds offline from then on. The template version in its initial commit message is the only trace:
-read `CHANGELOG.md` here from that version on to port an improvement by hand.
+read the template's history here after the tag `v<version>` to port an improvement by hand.
 
 ## Running it locally
 
@@ -159,5 +159,4 @@ their upstream authors, copied verbatim; their licence texts and copyright lines
 ## Maintaining the template
 
 `CONTRIBUTING.md`: hook setup, the template CI's three jobs, the rules for template content, how
-lessons from projects flow back, and how to release. `CHANGELOG.md`: what changed in each version
-and why.
+lessons from projects flow back, and how to release.

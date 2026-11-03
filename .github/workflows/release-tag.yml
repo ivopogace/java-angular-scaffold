@@ -1,5 +1,5 @@
 # The template's release automation, not a check wrapper: run by hand from the Actions tab once a
-# version is complete. Tags main's tip as v<CHANGELOG version> if ci and template-ci both succeeded
+# version is complete. Tags main's tip as v<TEMPLATE_VERSION> if ci and template-ci both succeeded
 # for its push. init deletes this file with scripts/release-tag*.mjs.
 name: release-tag
 
