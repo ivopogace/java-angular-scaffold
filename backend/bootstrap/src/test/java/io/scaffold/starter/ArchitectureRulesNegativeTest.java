@@ -27,13 +27,20 @@ class ArchitectureRulesNegativeTest {
                         "archfixture.orders.domain.model.SpringyOrder"),
                 violation("domainIsPure", ArchitectureRules::domainIsPure, "archfixture.orders.domain.model.SpringyOrder"),
                 violation("domainIsPure", ArchitectureRules::domainIsPure, "archfixture.orders.domain.model.JpaOrder"),
-                violation("noJpa", ArchitectureRules::noJpa, "archfixture.orders.domain.model.JpaOrder"),
+                violation("persistenceGoesThroughJooq", ArchitectureRules::persistenceGoesThroughJooq,
+                        "archfixture.orders.domain.model.JpaOrder"),
+                violation("persistenceGoesThroughJooq", ArchitectureRules::persistenceGoesThroughJooq,
+                        "archfixture.orders.adapter.out.persistence.JdbcClientOrderRepository"),
+                violation("noPlainSql", ArchitectureRules::noPlainSql,
+                        "archfixture.orders.adapter.out.persistence.PlainSqlOrderRepository"),
                 violation("servicesArePackagePrivateUseCases", ArchitectureRules::servicesArePackagePrivateUseCases,
                         "archfixture.orders.application.service.PublicOrderService"),
                 violation("servicesArePackagePrivateUseCases", ArchitectureRules::servicesArePackagePrivateUseCases,
                         "archfixture.orders.application.service.UnmarkedService"),
                 violation("areaPackageShape", ArchitectureRules::areaPackageShape, "archfixture.orders.misc.Stray"),
                 violation("areaPackageShape", ArchitectureRules::areaPackageShape, "archfixture.config.StrayWiring"),
+                violation("areaPackageShape", ArchitectureRules::areaPackageShape,
+                        "archfixture.orders.adapter.out.persistence.jooq.tables.NestedOrders"),
                 violation("adaptersDoNotUseServices", ArchitectureRules::adaptersDoNotUseServices,
                         "archfixture.orders.adapter.in.web.ServiceCaller"),
                 violation("adaptersArePackagePrivate", ArchitectureRules::adaptersArePackagePrivate,
@@ -54,6 +61,8 @@ class ArchitectureRulesNegativeTest {
                         "archfixture.orders.adapter.in.web.AggregateController"),
                 violation("drivingAdaptersGoThroughPortIn", ArchitectureRules::drivingAdaptersGoThroughPortIn,
                         "archfixture.orders.adapter.in.event.RepositoryListener"),
+                violation("drivingAdaptersGoThroughPortIn", ArchitectureRules::drivingAdaptersGoThroughPortIn,
+                        "archfixture.orders.adapter.in.web.TableController"),
                 violation("onlyDrivenAdaptersRehydrate", ArchitectureRules::onlyDrivenAdaptersRehydrate,
                         "archfixture.orders.application.service.RehydratingService"),
                 violation("onlyDrivenAdaptersRehydrate", ArchitectureRules::onlyDrivenAdaptersRehydrate,
@@ -89,7 +98,7 @@ class ArchitectureRulesNegativeTest {
 
     @Test
     void noRuleReportsTheCleanArea() {
-        assertThat(RULES.all()).hasSize(11);
+        assertThat(RULES.all()).hasSize(12);
         assertThat(RULES.testRules()).hasSize(1);
         for (ArchRule rule : everyRule()) {
             EvaluationResult result = rule.evaluate(FIXTURES);

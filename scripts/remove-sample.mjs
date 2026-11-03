@@ -42,16 +42,48 @@ export const SAMPLE_FILES = [
     sha256: "d799c1a56e5f375230941794949260f3d363df48b8192f9a11645630f6db6b1f",
   },
   {
-    path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepository.java",
-    sha256: "03b612e57ca1db1c28fe1237e579767ec9823a085f1fd69d77e823052898edaa",
+    path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/JooqProductRepository.java",
+    sha256: "752b91f5354f62f899045d8dd596f7d003d933a4045aea4d6586528a4658a978",
   },
   {
-    path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcPublicationLog.java",
-    sha256: "0e7666784dca9cb74253c2a96e7e00e499f3e9616f248f6011de9ffc14040e90",
+    path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/JooqPublicationLog.java",
+    sha256: "d41e653b086e17e40384e5396d95d0b5257a55c2a8b04d2c856d6c277e4c92e5",
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/package-info.java",
     sha256: "92a738af8f24fee26ed45abc6499d411b2321715b028ecd3138b1163d3c1fb47",
+  },
+  {
+    path: "backend/adapters/src/generated/jooq/io/scaffold/starter/catalog/adapter/out/persistence/jooq/CatalogProduct.java",
+    sha256: "175c8625e96643cb5e433753b38a7ed3182b3294d970153a077ff4dcd25fb501",
+  },
+  {
+    path: "backend/adapters/src/generated/jooq/io/scaffold/starter/catalog/adapter/out/persistence/jooq/CatalogProductRecord.java",
+    sha256: "f2b92532febcb9534f9c1ca0848d25c2b92b024137cea2b5b7ac873ffc788c44",
+  },
+  {
+    path: "backend/adapters/src/generated/jooq/io/scaffold/starter/catalog/adapter/out/persistence/jooq/CatalogPublicationLog.java",
+    sha256: "e593d2062eb86ed54ca9e85f8745ab4215e635b740857b38b4cee38f30360ca6",
+  },
+  {
+    path: "backend/adapters/src/generated/jooq/io/scaffold/starter/catalog/adapter/out/persistence/jooq/CatalogPublicationLogRecord.java",
+    sha256: "a3b58bf96ae3f0a3152f6940925a73208ef60fe6f3eb89c05408cb3bba7168bb",
+  },
+  {
+    path: "backend/adapters/src/generated/jooq/io/scaffold/starter/catalog/adapter/out/persistence/jooq/DefaultCatalog.java",
+    sha256: "65aa23e9c10aa41a74276e118e9696d02ef9f20b6e5ede952ae1623441ac5649",
+  },
+  {
+    path: "backend/adapters/src/generated/jooq/io/scaffold/starter/catalog/adapter/out/persistence/jooq/Keys.java",
+    sha256: "8568ef2e20d2d3d24bb59a3527d2505680a5f78c02ed93d2a3add12ed110e0b4",
+  },
+  {
+    path: "backend/adapters/src/generated/jooq/io/scaffold/starter/catalog/adapter/out/persistence/jooq/Public.java",
+    sha256: "e4a6be2ed1dbc029257587af801a73e66bb901585a3031ecbd45f71e4933b0cb",
+  },
+  {
+    path: "backend/adapters/src/generated/jooq/io/scaffold/starter/catalog/adapter/out/persistence/jooq/Tables.java",
+    sha256: "fac7ebd0227b0c53629182046320a4c1b567cb4e800b63288df916ef1f014dfb",
   },
   {
     path: "backend/adapters/src/main/resources/db/migration/V0_9__catalog_sample.sql",
@@ -59,19 +91,19 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/CatalogFlowIT.java",
-    sha256: "34c520862e3154a28b16c71cb763846d59a0536031b1e4daf067e807eca2426a",
+    sha256: "d5e9cc232b62a6ea80d0ef676d5f44890e4e4becef997b28ce3e1781cc8b5469",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/PublishRollbackIT.java",
-    sha256: "47ba81ad183d92f8af39ccfde5c85e54b8d4f5fc76d8010d7b081ef88087ead7",
+    sha256: "6f2b08a46841a092d03c2b34f3b1e17d8c48198125a2c16934ef998780e7e2e6",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/in/web/ProductControllerTest.java",
     sha256: "19d1e9ab41a2b86c3a4c4a4df090faefa79501fa855f702e8e5bd3a178cdfc1c",
   },
   {
-    path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepositoryIT.java",
-    sha256: "8d3e8b8155935e00652cee3385913aa1044cb4845f97a7459cb8b5303d5219c8",
+    path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/out/persistence/JooqProductRepositoryIT.java",
+    sha256: "9540b51e2cc3c651798578e9c54a53b667a76044f8588488374f60c8dae163ef",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProduct.java",

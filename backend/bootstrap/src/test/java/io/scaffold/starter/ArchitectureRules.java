@@ -10,6 +10,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaAccess;
+import com.tngtech.archunit.core.domain.JavaCall;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.jooq.PlainSQL;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.modulith.test.ApplicationModuleTest;
 
@@ -31,11 +33,13 @@ final class ArchitectureRules {
 
     private static final Set<String> NON_AREA_PACKAGES = Set.of("shared", "web");
     private static final String REHYDRATE = "rehydrate";
+    private static final String GENERATED_JOOQ = "adapter.out.persistence.jooq";
     private static final Pattern AREA_PACKAGE_SHAPE = Pattern.compile(
             "domain\\.(model|id|event)"
                     + "|application\\.(port\\.in|port\\.out|service)"
                     + "|adapter\\.in\\.(web|event)"
-                    + "|adapter\\.out\\.[^.]+");
+                    + "|adapter\\.out\\.[^.]+"
+                    + "|adapter\\.out\\.persistence\\.jooq");
 
     private final String basePackage;
 
@@ -53,7 +57,8 @@ final class ArchitectureRules {
                 domainIsPure(),
                 areaPackageShape(),
                 servicesArePackagePrivateUseCases(),
-                noJpa(),
+                persistenceGoesThroughJooq(),
+                noPlainSql(),
                 adaptersDoNotUseServices(),
                 adaptersArePackagePrivate(),
                 publishedSurfaceIsAggregateFree(),
@@ -111,7 +116,7 @@ final class ArchitectureRules {
                             events.add(violated(item, item.getName() + " is in area package '"
                                     + (relative.isEmpty() ? "<area root>" : relative)
                                     + "', which is not one of domain.{model,id,event}, application.{port.in,port.out,service}, "
-                                    + "adapter.in.{web,event} or adapter.out.<name>"));
+                                    + "adapter.in.{web,event}, adapter.out.<name> or the generated " + GENERATED_JOOQ));
                         }
                     }
                 })
@@ -142,11 +147,25 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    ArchRule noJpa() {
+    ArchRule persistenceGoesThroughJooq() {
         return noClasses()
                 .should().dependOnClassesThat().resideInAnyPackage(
-                        "jakarta.persistence..", "org.hibernate..", "org.springframework.data.jpa..")
-                .as("nothing depends on JPA, Hibernate or Spring Data JPA")
+                        "jakarta.persistence..", "org.hibernate..", "org.springframework.data..",
+                        "org.springframework.jdbc.core..")
+                .as("persistence goes through jOOQ: nothing depends on JPA, Hibernate, Spring Data, JdbcClient or JdbcTemplate")
+                .allowEmptyShould(true);
+    }
+
+    /** A plain-SQL string bypasses the generated schema, so a column change no longer fails the compile. */
+    ArchRule noPlainSql() {
+        DescribedPredicate<JavaCall<?>> plainSql = DescribedPredicate.describe("jOOQ's @PlainSQL API",
+                call -> call.getTarget().resolveMember()
+                        .map(member -> member.isAnnotatedWith(PlainSQL.class))
+                        .orElse(false));
+        return noClasses()
+                .that(not(inLayer(GENERATED_JOOQ)))
+                .should().callCodeUnitWhere(plainSql)
+                .as("queries use the generated jOOQ classes, not plain-SQL strings")
                 .allowEmptyShould(true);
     }
 
@@ -158,12 +177,13 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
+    /** jOOQ generates public classes; only the area's own adapters can reach them (Modulith keeps them internal). */
     ArchRule adaptersArePackagePrivate() {
         DescribedPredicate<JavaClass> adapterSide = isAreaClass().and(inLayer("adapter")).or(isWebEdge());
         return classes()
-                .that(adapterSide.and(topLevel()).and(not(isPackageInfo())))
+                .that(adapterSide.and(not(inLayer(GENERATED_JOOQ))).and(topLevel()).and(not(isPackageInfo())))
                 .should().notBePublic()
-                .as("adapter classes and the web edge are package-private")
+                .as("adapter classes and the web edge are package-private, generated jOOQ classes aside")
                 .allowEmptyShould(true);
     }
 
@@ -178,8 +198,9 @@ final class ArchitectureRules {
     ArchRule drivingAdaptersGoThroughPortIn() {
         return noClasses()
                 .that(isAreaClass().and(inLayer("adapter.in")))
-                .should().dependOnClassesThat(inDomainModel().or(inLayer("application.port.out")))
-                .as("driving adapters (adapter.in) do not depend on domain.model or application.port.out")
+                .should().dependOnClassesThat(
+                        inDomainModel().or(inLayer("application.port.out")).or(inLayer(GENERATED_JOOQ)))
+                .as("driving adapters (adapter.in) do not depend on domain.model, application.port.out or the generated jOOQ classes")
                 .allowEmptyShould(true);
     }
 

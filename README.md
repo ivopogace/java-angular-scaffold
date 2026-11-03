@@ -16,8 +16,9 @@ This README is the template's. `init` replaces it with `README.project.md`.
 
 - JDK 25
 - Node at the version in `.nvmrc`
-- Docker, for the full `verify` (Testcontainers ITs, e2e and the image smoke test), for local
-  Postgres and for building the production image
+- Docker, for the full `verify` (Testcontainers ITs, the jOOQ freshness check, e2e and the image
+  smoke test), for regenerating the jOOQ classes, for local Postgres and for building the
+  production image
 - git, with `user.name` and `user.email` set
 
 ## What's inside

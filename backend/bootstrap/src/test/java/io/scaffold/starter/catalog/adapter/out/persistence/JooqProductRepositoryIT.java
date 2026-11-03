@@ -1,5 +1,7 @@
 package io.scaffold.starter.catalog.adapter.out.persistence;
 
+import static io.scaffold.starter.catalog.adapter.out.persistence.jooq.Tables.CATALOG_PRODUCT;
+import static io.scaffold.starter.catalog.adapter.out.persistence.jooq.Tables.CATALOG_PUBLICATION_LOG;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.scaffold.starter.TestcontainersConfiguration;
@@ -8,26 +10,26 @@ import io.scaffold.starter.catalog.domain.model.Product;
 import io.scaffold.starter.catalog.domain.model.ProductStatus;
 import io.scaffold.starter.shared.Money;
 import java.time.Instant;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.test.ApplicationModuleTest;
 
 @ApplicationModuleTest
 @Import(TestcontainersConfiguration.class)
 @Tag("container")
-class JdbcProductRepositoryIT {
+class JooqProductRepositoryIT {
 
     @Autowired
-    JdbcProductRepository products;
+    JooqProductRepository products;
 
     @Autowired
-    JdbcPublicationLog publicationLog;
+    JooqPublicationLog publicationLog;
 
     @Autowired
-    JdbcClient jdbc;
+    DSLContext dsl;
 
     @Test
     void roundTripsAPricedPublishedProduct() {
@@ -93,17 +95,11 @@ class JdbcProductRepositoryIT {
         publicationLog.append(product.id(), publishedAt);
         publicationLog.append(product.id(), publishedAt.plusSeconds(60));
 
-        Long rows = jdbc.sql("select count(*) from catalog_publication_log where product_id = :id")
-                .param("id", product.id().value())
-                .query(Long.class)
-                .single();
-        assertThat(rows).isEqualTo(1);
+        assertThat(dsl.fetchCount(CATALOG_PUBLICATION_LOG, CATALOG_PUBLICATION_LOG.PRODUCT_ID.eq(product.id().value())))
+                .isEqualTo(1);
     }
 
-    private long rowCount(ProductId id) {
-        return jdbc.sql("select count(*) from catalog_product where id = :id")
-                .param("id", id.value())
-                .query(Long.class)
-                .single();
+    private int rowCount(ProductId id) {
+        return dsl.fetchCount(CATALOG_PRODUCT, CATALOG_PRODUCT.ID.eq(id.value()));
     }
 }

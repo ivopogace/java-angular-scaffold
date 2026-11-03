@@ -31,7 +31,8 @@ Full worked example: the `catalog` sample, while it exists.
 | use-case implementation | `application.service` | `application-core` |
 | controller, request / response DTO | `adapter.in.web` | `adapters` |
 | listener on an event | `adapter.in.event` | `adapters` |
-| `JdbcClient` adapter of a `port.out` repository | `adapter.out.persistence` | `adapters` |
+| jOOQ adapter of a `port.out` repository | `adapter.out.persistence` | `adapters` |
+| jOOQ classes of the area's tables (generated, never by hand) | `adapter.out.persistence.jooq` | `adapters` (`src/generated/jooq`) |
 | client of one external system | `adapter.out.<system>` | `adapters` |
 | value object several areas need, `@UseCase`, `DomainEventPublisher` | `<base>.shared` | `application-core` |
 | the one `@RestControllerAdvice` | `<base>.web` | `adapters` |
@@ -54,7 +55,7 @@ and fail.
   `event_publication` with the event's class name and the listener's id. A listener that fails
   leaves its publication incomplete; it is republished at the next startup
   (`spring.modulith.events.republish-outstanding-events-on-restart=true`), not retried in between.
-  Delivery is at-least-once, so listeners are idempotent (`JdbcPublicationLog` appends with
+  Delivery is at-least-once, so listeners are idempotent (`JooqPublicationLog` appends with
   `on conflict do nothing`). Renaming or moving an event class or listener method is a data
   change: a forward migration rewriting outstanding `event_publication` rows, or
   `@ApplicationModuleListener(id = …)` fixed before it ships.
@@ -101,7 +102,9 @@ class PublicationRecorder implements RecordProductPublication {
 4. Adapters: `adapter.in.*` packages carry `@PrimaryAdapter`, `adapter.out.*` `@SecondaryAdapter`;
    jMolecules' hexagonal rule checks only annotated packages. Adapter classes, like `web`'s,
    are package-private (`adaptersArePackagePrivate`).
-5. One forward migration in `backend/adapters/src/main/resources/db/migration/` (invariant #2).
+5. One forward migration in `backend/adapters/src/main/resources/db/migration/` (invariant #2),
+   tables named `<area>_<name>`; then `./gradlew :adapters:generateJooq` and commit
+   `src/generated/jooq/` with it.
 6. Tests: `application-core` unit tests sit in the service's package with in-memory `port.out`
    fakes; web slices and ITs go in `bootstrap`'s test sources in the package of the class under
    test.
@@ -122,6 +125,9 @@ its list's count in `noRuleReportsTheCleanArea` — a rule no fixture breaks pro
 
 | Mistake | Fix |
 |---|---|
+| Controller or listener queries a generated jOOQ table (`drivingAdaptersGoThroughPortIn` fails) | add a `port.in` use case backed by a `port.out` adapter |
+| `generateJooq` fails with `belong to no business area` | rename the table `<area>_<name>` in a forward migration |
+| `checkJooqGenerated` fails with `do not match the migrations` | `./gradlew :adapters:generateJooq`, commit `src/generated/jooq/` |
 | Public service, or `@Component` in `application-core` | package-private `@UseCase` |
 | Aggregate in a `port.in` record or event (`publishedSurfaceIsAggregateFree` fails), or in a REST response | map to a view record in the service, to a DTO in the controller |
 | Adapter imports `application.service` | inject the `port.in` interface |

@@ -2,7 +2,7 @@
 
 Aggregates and entities carry their own behaviour and invariants (annotated with jMolecules), value
 objects carry typed ids and money, and the persistence and web adapters each map to their own
-classes, so no domain type appears in a REST response or on a row mapper's public surface. We pay for
+classes, so no domain type appears in a REST response or a generated jOOQ record. We pay for
 two-way mapping because it lets the domain change shape without breaking the API or the schema and
 keeps it framework-free (ADR-0002).
 

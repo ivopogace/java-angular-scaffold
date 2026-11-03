@@ -2,7 +2,7 @@
 name: java-conventions
 description: >-
   Java idioms for backend/ (Java 25, Spring Boot 4, no Lombok): typed ids, sealed outcomes
-  instead of exceptions, the ProblemDetail error contract, JdbcClient SQL, money and time, named
+  instead of exceptions, the ProblemDetail error contract, jOOQ queries, money and time, named
   literals, comment and Javadoc budget, logging without secrets or PII, and which test kind
   proves what. Load BEFORE writing or refactoring any Java — class, record, port, service,
   adapter, event or test. Which package or module a class belongs in is
@@ -66,15 +66,23 @@ a breaking API change; `detail` wording is not.
 
 ## Persistence (invariant #1)
 
-`JdbcClient`, SQL in a text block next to the call, named parameters only — concatenate
-constants (`COLUMNS`), never input. Pass the SQL type for a nullable parameter and write instants
-as UTC offsets:
+Inject `DSLContext` and query through the generated table constants of your own area
+(`Tables.CATALOG_PRODUCT` in `catalog.adapter.out.persistence.jooq`); a column is a typed field,
+so a nullable one takes `null` and a `timestamptz` one an `Instant`:
 
 ```java
-.param("priceMinor", price.map(Money::amountMinor).orElse(null), Types.BIGINT)
-.param("publishedAt", product.publishedAt().map(at -> at.atOffset(ZoneOffset.UTC)).orElse(null),
-        Types.TIMESTAMP_WITH_TIMEZONE)
+dsl.insertInto(CATALOG_PRODUCT)
+        .set(CATALOG_PRODUCT.PRICE_MINOR, price.map(Money::amountMinor).orElse(null))
+        .set(CATALOG_PRODUCT.PUBLISHED_AT, product.publishedAt().orElse(null))
+        .onConflict(CATALOG_PRODUCT.ID)
+        .doUpdate()
+        .set(CATALOG_PRODUCT.PRICE_MINOR, excluded(CATALOG_PRODUCT.PRICE_MINOR))
+        .execute();
 ```
+
+No plain-SQL strings (`DSL.field("…")`, `dsl.execute("…")`; `noPlainSql` fails the build): they
+bypass the generated schema, so a column change no longer fails the compile. Generated records stay in the adapter: map them to
+the aggregate (`toProduct`) and never return one from a port.
 
 Rows rebuild aggregates through a factory that skips creation rules, named `rehydrate`
 (`Product.rehydrate`); only `adapter.out` and `domain.model` may call it

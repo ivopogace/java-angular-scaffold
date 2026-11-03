@@ -1,16 +1,17 @@
 package io.scaffold.starter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.jooq.impl.DSL.table;
 
 import java.time.Clock;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.jdbc.core.simple.JdbcClient;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -24,7 +25,7 @@ class ApplicationIT {
     ZoneId businessTimeZone;
 
     @Autowired
-    JdbcClient jdbc;
+    DSLContext dsl;
 
     @Test
     void bootsWithUtcClockAndConfiguredZone() {
@@ -34,6 +35,6 @@ class ApplicationIT {
 
     @Test
     void flywayCreatedTheEventPublicationTable() {
-        assertThat(jdbc.sql("select count(*) from event_publication").query(Long.class).single()).isZero();
+        assertThat(dsl.fetchCount(table("event_publication"))).isZero();
     }
 }

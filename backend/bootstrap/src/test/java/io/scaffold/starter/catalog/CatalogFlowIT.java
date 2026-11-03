@@ -1,5 +1,6 @@
 package io.scaffold.starter.catalog;
 
+import static io.scaffold.starter.catalog.adapter.out.persistence.jooq.Tables.CATALOG_PUBLICATION_LOG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -13,6 +14,7 @@ import java.net.URI;
 import io.scaffold.starter.catalog.domain.event.ProductPublished;
 import io.scaffold.starter.catalog.domain.id.ProductId;
 import java.util.UUID;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +22,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.modulith.test.ApplicationModuleTest;
 import org.springframework.modulith.test.Scenario;
@@ -36,7 +37,7 @@ class CatalogFlowIT {
     MockMvc mockMvc;
 
     @Autowired
-    JdbcClient jdbc;
+    DSLContext dsl;
 
     @Test
     void createPublishRetireThroughTheRestApiRecordsThePublication(Scenario scenario) throws Exception {
@@ -70,11 +71,8 @@ class CatalogFlowIT {
                 .andExpect(jsonPath("$[?(@.id == '%s')].state".formatted(id)).value("RETIRED"));
     }
 
-    private long loggedPublications(String productId) {
-        return jdbc.sql("select count(*) from catalog_publication_log where product_id = :id")
-                .param("id", UUID.fromString(productId))
-                .query(Long.class)
-                .single();
+    private int loggedPublications(String productId) {
+        return dsl.fetchCount(CATALOG_PUBLICATION_LOG, CATALOG_PUBLICATION_LOG.PRODUCT_ID.eq(UUID.fromString(productId)));
     }
 
     private void publish(String id) {

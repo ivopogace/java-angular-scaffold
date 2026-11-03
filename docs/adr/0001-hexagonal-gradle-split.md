@@ -4,7 +4,7 @@ The backend is three Gradle modules with dependencies pointing inward — `appli
 application), `adapters` (web, event listeners, persistence, gateways) and `bootstrap` (main class,
 wiring, configuration) — and each business area is a Spring Modulith module whose package spans
 `application-core` and `adapters`. Two independent boundaries mean a layer leak (domain code
-reaching for JDBC) fails to compile and an area leak (one area using another's internals) fails
+reaching for jOOQ) fails to compile and an area leak (one area using another's internals) fails
 `ApplicationModules.verify()`, instead of either depending on review.
 
 ## Considered Options

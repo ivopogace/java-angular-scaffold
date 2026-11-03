@@ -25,6 +25,7 @@ node scripts/verify.mjs --quick    # inner loop: skips Testcontainers ITs, npm a
 ./gradlew build -PexcludeTags=container      # same without Docker
 ./gradlew test --tests "*ClassName*"         # one test class
 ./gradlew :bootstrap:bootRun                 # API + SPA (/de/, /en/) on :8080, Postgres via compose
+./gradlew :adapters:generateJooq             # after changing a migration: regenerate jOOQ classes; needs Docker
 ```
 
 **Frontend** (from `frontend/`):
@@ -60,7 +61,8 @@ One row per business area: a Spring Modulith module `<base>.<area>` spanning `ap
 
 Cited by number — **never renumber**; append new ones at the end.
 
-1. Persistence through `JdbcClient` only; no JPA.
+1. Persistence through jOOQ over classes generated from the migrations; no JPA, Spring Data or
+   `JdbcClient`.
 2. Schema changes only via forward Flyway migrations.
 3. Money is integer minor units + ISO currency.
 4. Store UTC `Instant`; the business time zone is named in config, never the JVM default.

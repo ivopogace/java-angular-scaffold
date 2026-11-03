@@ -9,8 +9,9 @@ enforces, and an Angular Material frontend (`frontend/`) the backend serves same
 
 - JDK 25
 - Node at the version in `.nvmrc`
-- Docker, for the full `verify` (Testcontainers ITs, e2e and the image smoke test), for local
-  Postgres and for building the production image
+- Docker, for the full `verify` (Testcontainers ITs, the jOOQ freshness check, e2e and the image
+  smoke test), for regenerating the jOOQ classes, for local Postgres and for building the
+  production image
 
 After cloning, run `git config core.hooksPath .githooks` once so the pre-commit hook runs.
 

@@ -1,3 +1,4 @@
 * text=auto eol=lf
 *.bat text eol=crlf
 *.jar binary
+backend/adapters/src/generated/** linguist-generated=true
