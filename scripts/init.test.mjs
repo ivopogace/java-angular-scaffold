@@ -463,7 +463,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
     async (t) => {
       const root = await copyRepo(t);
       const product =
-        "backend/core/src/main/java/io/scaffold/starter/catalog/domain/model/Product.java";
+        "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/model/Product.java";
       writeFileSync(
         join(root, product),
         `${readFileSync(join(root, product), "utf8")}\n`,
@@ -532,7 +532,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       existsSync(
         join(
           root,
-          "backend/core/src/main/java/com/acme/orders/shared/UseCase.java",
+          "backend/application-core/src/main/java/com/acme/orders/shared/UseCase.java",
         ),
       ),
     );
@@ -540,7 +540,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       existsSync(
         join(
           root,
-          "backend/core/src/main/java/com/acme/orders/catalog/domain/model/Product.java",
+          "backend/application-core/src/main/java/com/acme/orders/catalog/domain/model/Product.java",
         ),
       ),
       sampleShipped,
@@ -620,7 +620,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
   test("a package that is a prefix of the placeholder moves the tree up", async (t) => {
     const root = await initWithPackage(t, "io.scaffold");
     const useCase =
-      "backend/core/src/main/java/io/scaffold/shared/UseCase.java";
+      "backend/application-core/src/main/java/io/scaffold/shared/UseCase.java";
     assert.ok(existsSync(join(root, useCase)));
     assert.match(
       readFileSync(join(root, useCase), "utf8"),
@@ -630,7 +630,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       existsSync(
         join(
           root,
-          "backend/core/src/main/java/io/scaffold/catalog/domain/model/Product.java",
+          "backend/application-core/src/main/java/io/scaffold/catalog/domain/model/Product.java",
         ),
       ),
       sampleShipped,
@@ -672,7 +672,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
       existsSync(
         join(
           root,
-          "backend/core/src/main/java/com/acme/orders/shared/UseCase.java",
+          "backend/application-core/src/main/java/com/acme/orders/shared/UseCase.java",
         ),
       ),
     );
@@ -770,7 +770,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
     for (const file of [
       "AGENTS.md",
       "compose.yaml",
-      "backend/core/src/main/java/com/acme/orders/shared/UseCase.java",
+      "backend/application-core/src/main/java/com/acme/orders/shared/UseCase.java",
       "frontend/src/app/shared/app-name/app-name.ts",
       "scripts/remove-sample.mjs",
     ]) {

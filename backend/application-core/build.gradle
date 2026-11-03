@@ -20,9 +20,9 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
-tasks.register('checkCoreClasspath') {
+tasks.register('checkApplicationCoreClasspath') {
     group = 'verification'
-    description = "Fails if core's runtime classpath carries Spring (beyond spring-modulith-api) or JPA."
+    description = "Fails if application-core's runtime classpath carries Spring (beyond spring-modulith-api) or JPA."
     def resolvedJars = configurations.runtimeClasspath.incoming.artifacts.resolvedArtifacts
     doLast {
         def allowed = 'org.springframework.modulith:spring-modulith-api'
@@ -39,7 +39,7 @@ tasks.register('checkCoreClasspath') {
             .sort()
         if (!offenders.isEmpty()) {
             throw new GradleException(
-                "core must stay free of Spring and JPA, but its runtime classpath contains:\n  " +
+                "application-core must stay free of Spring and JPA, but its runtime classpath contains:\n  " +
                     offenders.join('\n  ')
             )
         }
@@ -47,5 +47,5 @@ tasks.register('checkCoreClasspath') {
 }
 
 tasks.named('check') {
-    dependsOn 'checkCoreClasspath'
+    dependsOn 'checkApplicationCoreClasspath'
 }

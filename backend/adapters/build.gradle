@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    api project(':core')
+    api project(':application-core')
     implementation platform(libs.spring.boot.bom)
     implementation platform(libs.spring.modulith.bom)
 

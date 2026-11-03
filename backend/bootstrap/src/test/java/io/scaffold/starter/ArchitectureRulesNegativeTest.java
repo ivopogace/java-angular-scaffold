@@ -23,7 +23,8 @@ class ArchitectureRulesNegativeTest {
 
     static Stream<Arguments> violations() {
         return Stream.of(
-                violation("coreIsSpringFree", ArchitectureRules::coreIsSpringFree, "archfixture.orders.domain.model.SpringyOrder"),
+                violation("applicationCoreIsSpringFree", ArchitectureRules::applicationCoreIsSpringFree,
+                        "archfixture.orders.domain.model.SpringyOrder"),
                 violation("domainIsPure", ArchitectureRules::domainIsPure, "archfixture.orders.domain.model.SpringyOrder"),
                 violation("domainIsPure", ArchitectureRules::domainIsPure, "archfixture.orders.domain.model.JpaOrder"),
                 violation("noJpa", ArchitectureRules::noJpa, "archfixture.orders.domain.model.JpaOrder"),

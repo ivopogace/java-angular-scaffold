@@ -10,4 +10,4 @@ dependencyResolutionManagement {
 
 rootProject.name = 'scaffold-starter'
 
-include 'core', 'adapters', 'bootstrap'
+include 'application-core', 'adapters', 'bootstrap'

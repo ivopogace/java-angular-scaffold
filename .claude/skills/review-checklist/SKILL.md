@@ -19,8 +19,8 @@ RC-DOC. Invariant numbers cite the root `AGENTS.md`. Full worked example of conf
 crossing rules between areas, an aggregate in a `port.in` or `domain.event` type, package-private
 `@UseCase` services, package-private adapters, an aggregate or `port.out` in a controller or
 listener, a `rehydrate` call outside `adapter.out` and `domain.model`, behaviour on a `port.in` or
-`domain.event` type, `@SpringBootTest` in an area, Spring or JPA in `core`, JPA anywhere,
-cross-feature imports, inline templates, decorator inputs and outputs, `@HostBinding` /
+`domain.event` type, `@SpringBootTest` in an area, Spring or JPA in `application-core`, JPA
+anywhere, cross-feature imports, inline templates, decorator inputs and outputs, `@HostBinding` /
 `@HostListener`, a root `@Injectable`, constructor injection, `*ngIf` / `*ngFor`, `ngClass` /
 `ngStyle`, `::ng-deep` / MDC selectors / colour literals in declarations and in `*-overrides` mixin
 arguments, formatting under `frontend/` and `scripts/` (Prettier). Review what no test can see; a
@@ -83,9 +83,9 @@ change that *loosens* one of those checks is an item (RC-FE-6, RC-TEST-7).
 - **RC-TEST-2 Does the regression test go red on the old code?** — Major. A bug fix's test must
   fail with the fix reverted; ask for that run when it is not shown. A test written after the fix
   that passes on the broken code proves nothing.
-- **RC-TEST-3 Right kind of test** — Minor. Core logic in plain unit tests with in-memory fakes,
-  not a Spring context; database behaviour in a Testcontainers IT; a fake that behaves like the
-  real adapter (returns copies, enforces uniqueness the table enforces).
+- **RC-TEST-3 Right kind of test** — Minor. `application-core` logic in plain unit tests with
+  in-memory fakes, not a Spring context; database behaviour in a Testcontainers IT; a fake that
+  behaves like the real adapter (returns copies, enforces uniqueness the table enforces).
 - **RC-TEST-4 Docker tag** — Major. A test needing Docker carries `@Tag("container")`, or
   `verify --quick` breaks on a machine without Docker.
 - **RC-TEST-5 Clocks** — Minor. Backend: `Clock.fixed(...)`, not the wall clock. Frontend:
