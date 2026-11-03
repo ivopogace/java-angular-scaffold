@@ -1,9 +1,7 @@
 # AGENTS.md
 
-Project instructions for coding agents; Claude Code reads them through `CLAUDE.md`, opencode
-natively. Canonical for the commands, the business areas and the numbered invariants the skills cite
-("invariant #5" means the list below). Side-specific rules: `backend/AGENTS.md`,
-`frontend/AGENTS.md`. Keep this file to rules and pointers, never history.
+Rules and pointers for coding agents, never history. Side-specific rules: `backend/AGENTS.md`,
+`frontend/AGENTS.md`.
 
 ## What this is
 
@@ -15,17 +13,12 @@ It ships one removable sample business area (see *Business areas*).
 
 ## Commands
 
-Needs JDK 25, Node per `.nvmrc`, and Docker for the full verify and the Testcontainers ITs.
-
 ```bash
-node scripts/verify.mjs            # everything CI runs; fails up front without Docker
+node scripts/verify.mjs            # everything CI runs (CI calls nothing else); needs Docker
 node scripts/verify.mjs --quick    # inner loop: skips Testcontainers ITs, npm audit, e2e, image smoke
-node scripts/check-agent-docs.mjs  # AGENTS.md / skills / MCP config consistency (part of verify)
-node scripts/smoke-image.mjs       # docker build + Postgres; health, / → /de/ (part of verify)
-docker build --tag <name> .        # the production image; runtime config: README
 ```
 
-**Backend** (from `backend/`):
+**Backend** (from `backend/`; structural-net command in `backend/AGENTS.md`):
 
 ```bash
 ./gradlew build                              # compile + all tests + structural net
@@ -33,8 +26,6 @@ docker build --tag <name> .        # the production image; runtime config: READM
 ./gradlew test --tests "*ClassName*"         # one test class
 ./gradlew :bootstrap:bootRun                 # API + SPA (/de/, /en/) on :8080, Postgres via compose
 ```
-
-Structural-net command: `backend/AGENTS.md`.
 
 **Frontend** (from `frontend/`):
 
@@ -44,39 +35,17 @@ npm start                    # dev server on :4200, source locale en only; proxi
 npm run lint                 # ESLint (incl. folder boundaries) + Stylelint
 npm run format:check         # Prettier (`npm run format` applies)
 npm test -- --watch=false    # Vitest in jsdom, incl. axe specs
-npm run test:coverage        # same, once, with a v8 coverage report in coverage/ (no threshold)
 npm run test:eslint-rules    # the repo's own ESLint rules, ESLint and Stylelint configs
 npm run build                # de + en builds; fails on a missing de translation
-npm run extract-i18n         # source strings → src/locale/messages.xlf (not committed)
 npm run typecheck:e2e        # tsc over e2e/ (Playwright transpiles without checking)
 npm run test:e2e             # Playwright, mocked API (CI-safe)
 REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (local only)
 ```
 
-## Repo map
+## Tool config
 
-- `backend/` — Gradle build: `application-core` (domain + application, Spring-free), `adapters`
-  (web, event listeners, persistence, gateways), `bootstrap` (`Application`, wiring, config,
-  structural net). Flyway migrations: `backend/adapters/src/main/resources/db/migration/`.
-- `frontend/` — Angular workspace; the build output is served by `bootstrap`, one build per locale
-  (`de` default, `en` source); translations in `frontend/src/locale/`.
-- `scripts/` — `verify.mjs` (the one check entry point; CI wrappers call it and nothing else),
-  `smoke-image.mjs` (the production image's smoke test), `check-agent-docs.mjs`, `pre-commit.mjs` (run by `.githooks/pre-commit`), `mcp/` (MCP launchers).
-- CI wrappers: `ci.yml` in `.github/workflows/`, `.gitlab-ci.yml`, `Jenkinsfile`; `init` keeps the
-  chosen ones. Any other workflow there is the template's own (its CI, and release automation that
-  tags versions rather than checking anything), with its script; `init` deletes them.
-- `docs/adr/` — decisions; `docs/agents/workflow.md` — tracker, CLI, branches, merge rules.
-- Skills: `.claude/skills/<name>/SKILL.md`, read by both tools.
-- Tool config, the only duplication — change both sides together: `.mcp.json` +
-  `.claude/settings.json` (Claude Code) and `opencode.json` (opencode) declare the same MCP servers
-  (`angular-cli`, `playwright`) and the same allow-list; `check-agent-docs.mjs` compares them.
-- `renovate.json` — weekly dependency-update PRs (Angular, and the Postgres image of `compose.yaml`
-  and `TestcontainersConfiguration`, each move as one PR; README version rows move with their pin;
-  Actions keep their major tag; a TypeScript major comes only with an Angular major's `ng update`).
-- `Dockerfile`, `.dockerignore` — the production image
-  (`docs/adr/0006-production-image-from-dockerfile.md`).
-- `compose.yaml` — local Postgres for `bootRun`. Glossary: `GLOSSARY.md` (`domain-modeling` creates
-  it lazily when absent).
+`.mcp.json` + `.claude/settings.json` (Claude Code) and `opencode.json` (opencode) declare the same
+MCP servers and allow-list; change both sides together (`check-agent-docs.mjs` compares them).
 
 ## Business areas
 
@@ -104,9 +73,8 @@ Cited by number — **never renumber**; append new ones at the end.
 
 ## Skills
 
-Load a skill when its row's condition holds. Vendored rows are pinned in `skills-lock.json` and
-stay verbatim: files may be left out, never edited.
-Their licence notices and left-out files are in `THIRD_PARTY_LICENSES.md`.
+Load a skill when its row's condition holds. Vendored skills are pinned in `skills-lock.json`:
+never edit their files.
 
 | skill | load when |
 |---|---|
@@ -123,10 +91,7 @@ Their licence notices and left-out files are in `THIRD_PARTY_LICENSES.md`.
 
 ## Way of working
 
-- Process (brainstorming, plans, TDD, review, finishing a branch) belongs to the Superpowers plugin;
-  this repo adds only project knowledge.
 - Tracker, VCS CLI, branch naming and merge rules: `docs/agents/workflow.md`.
-- Check your work with `node scripts/verify.mjs` (`--quick` while iterating) before calling it done;
-  CI runs the same command.
-- A decision gets an ADR in `docs/adr/` only when it is hard to reverse, surprising without context
-  and the result of a real trade-off (`domain-modeling` format); number it after the highest.
+- Run `node scripts/verify.mjs` (`--quick` while iterating) before calling a change done.
+- An ADR in `docs/adr/` only for a decision that is hard to reverse, surprising without context and
+  the result of a real trade-off.

@@ -58,7 +58,7 @@ relative to `backend/bootstrap`, `bootRun`'s working directory; change it if you
 to `/de/…`, or to `/en/…` when the browser's `Accept-Language` prefers English. `npm start` (from
 `frontend/`) serves the English source locale only on `:4200`, proxying `/api` to `:8080`.
 
-`AGENTS.md` lists every command and the project's rules; `docs/adr/` holds its decisions.
+`AGENTS.md` lists the everyday commands and the project's rules; `docs/adr/` holds its decisions.
 
 ## Production image
 

@@ -101,7 +101,7 @@ relative to `backend/bootstrap`, `bootRun`'s working directory; change it if you
 `/de/` and `/en/`; a page request no controller answers, outside `/api` and `/actuator`, redirects
 to `/de/…`, or to `/en/…` when the browser's `Accept-Language` prefers English. `npm start` (from
 `frontend/`) serves the English source locale only on `:4200`, proxying `/api` to `:8080`.
-`AGENTS.md` lists every command.
+`AGENTS.md` lists the everyday commands.
 
 ### Production image
 
