@@ -18,7 +18,7 @@ const sample = existsSync(new URL("./remove-sample.mjs", import.meta.url))
   ? await import("./remove-sample.mjs")
   : null;
 
-/** The template release this script ships with; equals the top `CHANGELOG.md` entry. */
+/** The template release this script ships with; release-tag.mjs tags it as v<version>. */
 export const TEMPLATE_VERSION = "0.2.0";
 
 const COMMIT_MESSAGE = `Initial commit from scaffold v${TEMPLATE_VERSION}`;
@@ -50,7 +50,6 @@ const CI_WRAPPERS = {
 const DEFAULT_CI = ["github"];
 const TEMPLATE_ONLY = [
   MARKER_FILE,
-  "CHANGELOG.md",
   "CONTRIBUTING.md",
   "README.md",
   "docs/superpowers",

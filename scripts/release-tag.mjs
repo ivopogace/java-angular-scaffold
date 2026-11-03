@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 // Template-only release automation: init deletes this file, its test and .github/workflows/release-tag.yml.
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { TEMPLATE_VERSION } from "./init.mjs";
 
@@ -17,7 +16,7 @@ const BOT = {
 
 export const USAGE = `Usage: node scripts/release-tag.mjs --sha <commit>
 
-Tags <commit> as v<version> (the top CHANGELOG.md heading) if ${REQUIRED_WORKFLOWS.join(" and ")}
+Tags <commit> as v<TEMPLATE_VERSION> (scripts/init.mjs) if ${REQUIRED_WORKFLOWS.join(" and ")}
 have both succeeded for a push of it to main, and pushes the tag. Needs gh with
 GH_TOKEN (the workflow passes GITHUB_TOKEN) and GITHUB_REPOSITORY; never moves an
 existing tag.`;
@@ -44,26 +43,6 @@ export function parseArgs(argv) {
   return { sha: options.sha };
 }
 
-/**
- * The version of the top `## X.Y.Z — YYYY-MM-DD` heading, or null when the
- * first `## ` heading has another shape.
- */
-export function changelogVersion(changelog) {
-  const top = /^## (.*)$/m.exec(changelog)?.[1];
-  return /^(\d+\.\d+\.\d+) — \d{4}-\d{2}-\d{2}$/.exec(top ?? "")?.[1] ?? null;
-}
-
-/** A problem when the changelog and TEMPLATE_VERSION disagree, else null. */
-export function versionProblem(fromChangelog, templateVersion) {
-  if (fromChangelog === null) {
-    return "the top CHANGELOG.md heading is not `## X.Y.Z — YYYY-MM-DD`";
-  }
-  if (fromChangelog !== templateVersion) {
-    return `CHANGELOG.md is at ${fromChangelog} but TEMPLATE_VERSION in scripts/init.mjs is ${templateVersion}`;
-  }
-  return null;
-}
-
 /** "success" when any run succeeded, "pending" while none did and one is unfinished or none exists, else "failed". */
 export function workflowState(runs) {
   if (runs.some((run) => run.conclusion === "success")) return "success";
@@ -77,21 +56,13 @@ export function workflowState(runs) {
  * What to do for one commit. Pure: every input is read by {@link main}.
  *
  * @param {object} input
- * @param {string|null} input.changelogVersion see {@link changelogVersion}
- * @param {string} input.templateVersion TEMPLATE_VERSION
+ * @param {string} input.version TEMPLATE_VERSION
  * @param {Record<string, {status: string, conclusion: string|null}[]>} input.runs
  *   push runs on main for the commit, by workflow file name
  * @param {string|null} input.remoteTagSha the commit the tag names on the remote, null when absent
  * @returns {{ action: "tag"|"skip"|"fail", tag?: string, reason: string }}
  */
-export function decide({
-  changelogVersion: version,
-  templateVersion,
-  runs,
-  remoteTagSha,
-}) {
-  const problem = versionProblem(version, templateVersion);
-  if (problem) return { action: "fail", reason: problem };
+export function decide({ version, runs, remoteTagSha }) {
   const tag = `v${version}`;
   const notGreen = REQUIRED_WORKFLOWS.map((workflow) => [
     workflow,
@@ -160,17 +131,14 @@ export async function main(argv) {
     console.error("GITHUB_REPOSITORY is not set");
     return 2;
   }
-  const version = changelogVersion(
-    readFileSync(join(root, "CHANGELOG.md"), "utf8"),
-  );
+  const version = TEMPLATE_VERSION;
   const runs = Object.fromEntries(
     REQUIRED_WORKFLOWS.map((w) => [w, pushRuns(repository, w, args.sha)]),
   );
   const decision = decide({
-    changelogVersion: version,
-    templateVersion: TEMPLATE_VERSION,
+    version,
     runs,
-    remoteTagSha: version ? remoteTagSha(`v${version}`) : null,
+    remoteTagSha: remoteTagSha(`v${version}`),
   });
   if (decision.action === "fail") {
     console.error(`✘ release tag: ${decision.reason}`);

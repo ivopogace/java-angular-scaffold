@@ -21,7 +21,7 @@ Check every change with `node scripts/verify.mjs` (`--quick` while iterating). T
   `io/scaffold/starter`), `scaffold-starter`, `scaffold_starter` and `Scaffold Starter`. Any other
   spelling of the template's name must stay out of every file that survives `init`, vendored skill
   folders excepted; `scripts/init.test.mjs` fails otherwise. Files `init` deletes (this one,
-  `README.md`, `CHANGELOG.md`, `docs/superpowers/`, `scripts/init*.mjs`, `scripts/release-tag*.mjs`,
+  `README.md`, `docs/superpowers/`, `scripts/init*.mjs`, `scripts/release-tag*.mjs`,
   `template-ci.yml`, `release-tag.yml`) are free to use it.
 - **Placeholder lines must survive the longest names.** `init` rewrites without reformatting, and
   a display name may be 60 characters. In the frontend, reference `APP_NAME`
@@ -48,26 +48,22 @@ Check every change with `node scripts/verify.mjs` (`--quick` while iterating). T
 When a project built from the template teaches something, the template learns it as a fresh change
 written here: never copied code, domain names, data or history from the project. Restate the lesson
 in the template's own terms (the `catalog` sample, the placeholder names), with a test where the
-template can carry one, and record it in `CHANGELOG.md` under the next version, with why.
+template can carry one, and say why in the commit message.
 
 Projects never pull from the template; there is no link back. A project porting an improvement
-reads the changelog entries after the version in its initial commit message and applies them by
+reads the template's commits after the tag named in its initial commit message and applies them by
 hand.
 
 ## Releasing
 
-1. Add the new version's entry at the top of `CHANGELOG.md`: `## X.Y.Z — YYYY-MM-DD`, what changed
-   and why.
-2. Set `TEMPLATE_VERSION` in `scripts/init.mjs` to the same version; `init.test.mjs` checks they
-   match.
-3. Once the version is complete and CI is green on `main`, run the release-tag workflow from the
-   Actions tab (**Run workflow** on `main`). It never runs on its own, because a version's heading
-   lands on `main` before its last entries do. `.github/workflows/release-tag.yml` checks that `ci`
-   and `template-ci` both succeeded for the push of `main`'s tip, then
-   `scripts/release-tag.mjs` creates the annotated tag `vX.Y.Z` (message `vX.Y.Z`) on it as
-   `github-actions[bot]` and pushes it. It fails when either workflow has not succeeded for that
-   commit or the top `CHANGELOG.md` heading and `TEMPLATE_VERSION` differ, and leaves an existing
-   `vX.Y.Z` alone. Fallback, if the workflow cannot run: tag the commit and push the tag yourself,
+1. Set `TEMPLATE_VERSION` in `scripts/init.mjs` to the new version.
+2. Once the version is complete and CI is green on `main`, run the release-tag workflow from the
+   Actions tab (**Run workflow** on `main`). It never runs on its own, because the version bump
+   lands on `main` before the version's last changes do. `.github/workflows/release-tag.yml` checks
+   that `ci` and `template-ci` both succeeded for the push of `main`'s tip, then
+   `scripts/release-tag.mjs` creates the annotated tag `vX.Y.Z` (from `TEMPLATE_VERSION`, message
+   `vX.Y.Z`) on it as `github-actions[bot]` and pushes it. It fails when either workflow has not
+   succeeded for that commit, and leaves an existing `vX.Y.Z` alone. Fallback, if the workflow cannot run: tag the commit and push the tag yourself,
    `git tag -a vX.Y.Z -m "vX.Y.Z" <commit>` and `git push origin vX.Y.Z`.
 
 This workflow is release automation, not a CI wrapper: wrappers run `verify` and nothing else,
