@@ -80,8 +80,9 @@ dependencies or annotations:
 `domain/model` and data-only; adapters never using `service`; `adapter/in` never using
 `domain/model` or `port/out`; who may call `rehydrate`; package-private services (`@UseCase` when
 they implement `port/in`), adapter classes and `web`; no JPA anywhere; no Spring beyond Modulith
-and no `java.sql` / `javax.sql` in `application-core`; jMolecules' DDD and hexagonal rules; and,
-over the tests, area tests are `@ApplicationModuleTest`, never `@SpringBootTest`. No rule checks
+and no `java.sql` / `javax.sql` in `application-core`; and, over the tests, area tests are
+`@ApplicationModuleTest`, never `@SpringBootTest`. It also applies jMolecules' DDD and hexagonal
+rules. No rule checks
 the raw-UUID, `adapter/out`-implements-`port/out` or `shared`-value-object points, and the `domain`
 import rule skips every `package-info.java`, not only those of `domain/id` and `domain/event`;
 review catches those. `ArchitectureRulesNegativeTest` proves each rule fails on a violating
