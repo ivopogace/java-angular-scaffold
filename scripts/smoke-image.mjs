@@ -9,18 +9,11 @@ import { runCommand } from "./verify.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-export const BUILDERS = ["buildpacks", "dockerfile"];
+export const USAGE = `Usage: node scripts/smoke-image.mjs
 
-export const USAGE = `Usage: node scripts/smoke-image.mjs [--builder buildpacks|dockerfile] [--skip-frontend-build]
-
-Builds the production image, starts it with Postgres on a throwaway Docker
-network, checks health and the localized SPA, and removes everything it started.
-
-  --builder buildpacks    (default) build the frontend, then bootBuildImage
-  --builder dockerfile    docker build the repository's Dockerfile, which builds
-                          the frontend and the jar itself
-  --skip-frontend-build   buildpacks only: use the existing frontend/dist (verify
-                          builds it first)`;
+Builds the production image from the repository's Dockerfile, starts it with
+Postgres on a throwaway Docker network, checks health and the localized SPA,
+and removes everything it started.`;
 
 const APP_PORT = 8080;
 const SPA_WEB_CONFIG = "backend/bootstrap/src/main/java/**/SpaWebConfig.java";
@@ -30,27 +23,12 @@ const DB_TIMEOUT_MS = 60_000;
 const POLL_MS = 1_000;
 
 export function parseArgs(argv) {
-  const options = { skipFrontendBuild: false, builder: "buildpacks" };
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === "--skip-frontend-build") {
-      options.skipFrontendBuild = true;
-    } else if (arg === "--builder" || arg.startsWith("--builder=")) {
-      const value = arg === "--builder" ? argv[++i] : arg.slice(10);
-      if (!BUILDERS.includes(value)) {
-        return {
-          error: `--builder takes ${BUILDERS.join(" or ")}, not ${value ?? "nothing"}\n${USAGE}`,
-        };
-      }
-      options.builder = value;
-    } else {
-      return { error: `Unknown argument: ${arg}\n${USAGE}` };
-    }
-  }
-  return options;
+  return argv.length === 0
+    ? {}
+    : { error: `Unknown argument: ${argv[0]}\n${USAGE}` };
 }
 
-/** `rootProject.name:version`, as `bootstrap/build.gradle` tags it. */
+/** `rootProject.name:version`, the tag the smoke test builds. */
 export function imageName(settingsGradle, buildGradle) {
   const name = settingsGradle.match(/rootProject\.name\s*=\s*['"]([^'"]+)['"]/);
   const version = buildGradle.match(/^\s*version\s*=\s*['"]([^'"]+)['"]/m);
@@ -62,42 +40,12 @@ export function imageName(settingsGradle, buildGradle) {
   return `${name[1]}:${version[1]}`;
 }
 
-/** The Dockerfile build gets its own tag, so neither builder's run replaces the other's image. */
-export function buildPlan({ builder, image, skipFrontendBuild, platform }) {
-  if (builder === "dockerfile") {
-    const tag = `${image}-dockerfile`;
-    return {
-      image: tag,
-      steps: [
-        {
-          name: "image build",
-          command: "docker",
-          args: ["build", "--file", "Dockerfile", "--tag", tag, "."],
-          cwd: ".",
-        },
-      ],
-    };
-  }
+export function buildStep(image) {
   return {
-    image,
-    steps: [
-      ...(skipFrontendBuild
-        ? []
-        : [
-            {
-              name: "frontend build",
-              command: "npm",
-              args: ["run", "build"],
-              cwd: "frontend",
-            },
-          ]),
-      {
-        name: "image build",
-        command: platform === "win32" ? "gradlew.bat" : "./gradlew",
-        args: [":bootstrap:bootBuildImage"],
-        cwd: "backend",
-      },
-    ],
+    name: "image build",
+    command: "docker",
+    args: ["build", "--file", "Dockerfile", "--tag", image, "."],
+    cwd: ".",
   };
 }
 
@@ -346,31 +294,22 @@ async function main(argv) {
     return 2;
   }
   const read = (file) => readFileSync(join(root, file), "utf8");
-  if (args.builder === "dockerfile") {
-    const problems = checkDockerfilePins(read("Dockerfile"), {
-      nvmrc: read(".nvmrc"),
-      javaConventions: read(
-        "backend/build-logic/src/main/groovy/java-conventions.gradle",
-      ),
-    });
-    if (problems.length > 0) {
-      console.error(`✘ image smoke test: ${problems.join("\n")}`);
-      return 1;
-    }
-  }
-  const build = buildPlan({
-    builder: args.builder,
-    image: imageName(
-      read("backend/settings.gradle"),
-      read("backend/build.gradle"),
+  const problems = checkDockerfilePins(read("Dockerfile"), {
+    nvmrc: read(".nvmrc"),
+    javaConventions: read(
+      "backend/build-logic/src/main/groovy/java-conventions.gradle",
     ),
-    skipFrontendBuild: args.skipFrontendBuild,
-    platform: process.platform,
   });
-  const { image } = build;
-  for (const { name, command, args: commandArgs, cwd } of build.steps) {
-    if (!(await step(name, command, commandArgs, cwd))) return 1;
+  if (problems.length > 0) {
+    console.error(`✘ image smoke test: ${problems.join("\n")}`);
+    return 1;
   }
+  const image = imageName(
+    read("backend/settings.gradle"),
+    read("backend/build.gradle"),
+  );
+  const { name, command, args: commandArgs, cwd } = buildStep(image);
+  if (!(await step(name, command, commandArgs, cwd))) return 1;
   const [spaWebConfig] = globSync(SPA_WEB_CONFIG, { cwd: root });
   if (!spaWebConfig) {
     console.error(`✘ image smoke test: no ${SPA_WEB_CONFIG}`);
@@ -396,7 +335,7 @@ async function main(argv) {
     docker(names.dbRun, { quiet: true });
     await smoke(names, `http://${endpoint.host}`, { locales, fallback });
     console.log(
-      `✔ ${image} (${args.builder}) is healthy and serves ${locales.map((locale) => `/${locale}/`).join(", ")}`,
+      `✔ ${image} is healthy and serves ${locales.map((locale) => `/${locale}/`).join(", ")}`,
     );
     return 0;
   } catch (error) {

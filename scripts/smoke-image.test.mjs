@@ -3,7 +3,7 @@ import { globSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   appEndpoint,
-  buildPlan,
+  buildStep,
   builtLocales,
   checkDockerfilePins,
   checkLocalePage,
@@ -20,88 +20,21 @@ import {
 const repoFile = (path) =>
   readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("parseArgs takes --builder and --skip-frontend-build, buildpacks by default", () => {
-  assert.deepEqual(parseArgs([]), {
-    skipFrontendBuild: false,
-    builder: "buildpacks",
-  });
-  assert.deepEqual(parseArgs(["--skip-frontend-build"]), {
-    skipFrontendBuild: true,
-    builder: "buildpacks",
-  });
-  assert.deepEqual(parseArgs(["--builder", "dockerfile"]), {
-    skipFrontendBuild: false,
-    builder: "dockerfile",
-  });
-  assert.deepEqual(
-    parseArgs(["--builder=buildpacks", "--skip-frontend-build"]),
-    {
-      skipFrontendBuild: true,
-      builder: "buildpacks",
-    },
-  );
+test("parseArgs takes no arguments", () => {
+  assert.deepEqual(parseArgs([]), {});
   assert.match(parseArgs(["--keep"]).error, /Unknown argument: --keep/);
-  assert.match(
-    parseArgs(["--builder", "jib"]).error,
-    /--builder takes buildpacks or dockerfile, not jib/,
-  );
-  assert.match(parseArgs(["--builder"]).error, /not nothing/);
 });
 
-test("buildpacks builds the frontend, unless skipped, then bootBuildImage", () => {
-  const options = {
-    builder: "buildpacks",
-    image: "acme-orders:1.0.0",
-    skipFrontendBuild: false,
-    platform: "linux",
-  };
-  const full = buildPlan(options);
-  assert.equal(full.image, "acme-orders:1.0.0");
+test("the image is built from the root Dockerfile under the project's tag", () => {
+  const step = buildStep("acme-orders:1.0.0");
   assert.deepEqual(
-    full.steps.map((s) => [s.command, s.args, s.cwd]),
+    [step.command, step.args, step.cwd],
     [
-      ["npm", ["run", "build"], "frontend"],
-      ["./gradlew", [":bootstrap:bootBuildImage"], "backend"],
+      "docker",
+      ["build", "--file", "Dockerfile", "--tag", "acme-orders:1.0.0", "."],
+      ".",
     ],
   );
-  const skipped = buildPlan({ ...options, skipFrontendBuild: true });
-  assert.deepEqual(
-    skipped.steps.map((s) => s.name),
-    ["image build"],
-  );
-  assert.equal(
-    buildPlan({ ...options, platform: "win32" }).steps.at(-1).command,
-    "gradlew.bat",
-  );
-});
-
-test("the Dockerfile builds from the root under its own tag, frontend included", () => {
-  for (const skipFrontendBuild of [false, true]) {
-    const build = buildPlan({
-      builder: "dockerfile",
-      image: "acme-orders:1.0.0",
-      skipFrontendBuild,
-      platform: "linux",
-    });
-    assert.equal(build.image, "acme-orders:1.0.0-dockerfile");
-    assert.deepEqual(
-      build.steps.map((s) => [s.command, s.args, s.cwd]),
-      [
-        [
-          "docker",
-          [
-            "build",
-            "--file",
-            "Dockerfile",
-            "--tag",
-            "acme-orders:1.0.0-dockerfile",
-            ".",
-          ],
-          ".",
-        ],
-      ],
-    );
-  }
 });
 
 test("the Dockerfile's base images follow .nvmrc and the Gradle toolchain", () => {

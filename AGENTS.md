@@ -21,9 +21,8 @@ Needs JDK 25, Node per `.nvmrc`, and Docker for the full verify and the Testcont
 node scripts/verify.mjs            # everything CI runs; fails up front without Docker
 node scripts/verify.mjs --quick    # inner loop: skips Testcontainers ITs, npm audit, e2e, image smoke
 node scripts/check-agent-docs.mjs  # AGENTS.md / skills / MCP config consistency (part of verify)
-node scripts/smoke-image.mjs       # frontend build + image + Postgres; health, / → /de/ (part of verify)
-node scripts/smoke-image.mjs --builder dockerfile  # same for the root Dockerfile's image (part of verify)
-docker build --tag <name> .        # the Dockerfile image, for hosts that build from source (Render)
+node scripts/smoke-image.mjs       # docker build + Postgres; health, / → /de/ (part of verify)
+docker build --tag <name> .        # the production image; runtime config: README
 ```
 
 **Backend** (from `backend/`):
@@ -33,8 +32,6 @@ docker build --tag <name> .        # the Dockerfile image, for hosts that build 
 ./gradlew build -PexcludeTags=container      # same without Docker
 ./gradlew test --tests "*ClassName*"         # one test class
 ./gradlew :bootstrap:bootRun                 # API + SPA (/de/, /en/) on :8080, Postgres via compose
-./gradlew :bootstrap:bootBuildImage          # production image <project name>:<version>; needs the
-                                             # frontend build first; runtime config: README
 ```
 
 Structural-net command: `backend/AGENTS.md`.
@@ -76,8 +73,8 @@ REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (l
 - `renovate.json` — weekly dependency-update PRs (Angular, and the Postgres image of `compose.yaml`
   and `TestcontainersConfiguration`, each move as one PR; README version rows move with their pin;
   Actions keep their major tag; a TypeScript major comes only with an Angular major's `ng update`).
-- `Dockerfile`, `.dockerignore` — the production image built from source, for hosts that only
-  build a Dockerfile; `bootBuildImage` stays primary (ADR 0007).
+- `Dockerfile`, `.dockerignore` — the production image
+  (`docs/adr/0006-production-image-from-dockerfile.md`).
 - `compose.yaml` — local Postgres for `bootRun`. Glossary: `GLOSSARY.md` (`domain-modeling` creates
   it lazily when absent).
 

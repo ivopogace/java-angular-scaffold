@@ -1,4 +1,4 @@
-# For hosts that only build a Dockerfile; bootBuildImage stays primary (docs/adr/0007).
+# The production image (docs/adr/0006-production-image-from-dockerfile.md).
 
 # The Node version of .nvmrc; smoke-image.mjs refuses to build when the two differ.
 FROM node:26.13.0-trixie-slim AS frontend

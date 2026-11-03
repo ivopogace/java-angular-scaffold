@@ -9,7 +9,7 @@ enforces, and an Angular Material frontend (`frontend/`) the backend serves same
 
 - JDK 25
 - Node at the version in `.nvmrc`
-- Docker, for the full `verify` (Testcontainers ITs, e2e and the image smoke tests), for local
+- Docker, for the full `verify` (Testcontainers ITs, e2e and the image smoke test), for local
   Postgres and for building the production image
 
 After cloning, run `git config core.hooksPath .githooks` once so the pre-commit hook runs.
@@ -62,19 +62,8 @@ to `/de/…`, or to `/en/…` when the browser's `Accept-Language` prefers Engli
 
 ## Production image
 
-Two ways to build the same image; both listen on `8080`, run as a non-root user and serve both
-locale builds, and both fail unless those builds were packaged:
-
-- **Buildpacks, the primary one.** `./gradlew :bootstrap:bootBuildImage` (from `backend/`, after
-  `npm run build` in `frontend/`) builds `scaffold-starter:<version>` with Cloud Native Buildpacks
-  (Paketo `builder-noble-java-tiny`, Java 25 through `BP_JVM_VERSION`)
-  (`docs/adr/0006-container-image-with-buildpacks.md`). The image has no shell, and the buildpack
-  sizes the heap from the container's memory limit.
-- **Dockerfile, for hosts that build from source** such as Render. `docker build --tag
-  scaffold-starter .` from the repository root builds the frontend (Node of `.nvmrc`) and the boot
-  jar (`./gradlew :bootstrap:bootJar`, after `checkSpaPackaged`) in build stages and runs the
-  layered jar on an Eclipse Temurin 25 JRE (`docs/adr/0007-dockerfile-for-source-builds.md`). The
-  heap is 75 % of the container's memory (`JAVA_TOOL_OPTIONS`).
+`docker build --tag scaffold-starter .` from the repository root builds the image, frontend and
+jar included; it listens on `8080` (`docs/adr/0006-production-image-from-dockerfile.md`).
 
 Flyway migrates on start, so the database user needs DDL rights. Nothing deployment-specific is
 baked in; set at runtime:
@@ -86,23 +75,20 @@ baked in; set at runtime:
 | `SPRING_DATASOURCE_PASSWORD` | yes | its password, from your secret store |
 | `APP_BUSINESS_TIME_ZONE` | no | business time zone, default `UTC` |
 | `SERVER_PORT` | no | listen port, default `8080` |
-| `JAVA_TOOL_OPTIONS`, `BPL_JVM_*` | no | extra JVM flags; `BPL_JVM_*` applies to the buildpack image only, and setting `JAVA_TOOL_OPTIONS` on the Dockerfile image replaces its heap setting |
+| `JAVA_TOOL_OPTIONS` | no | extra JVM flags; setting it replaces the image's heap setting |
 
 ```bash
 docker run --rm -p 8080:8080 \
   -e SPRING_DATASOURCE_URL=jdbc:postgresql://db.example:5432/scaffold_starter \
   -e SPRING_DATASOURCE_USERNAME=scaffold_starter -e SPRING_DATASOURCE_PASSWORD=… \
-  scaffold-starter:0.0.1-SNAPSHOT
+  scaffold-starter
 ```
 
 Spring Boot's Docker Compose support is a `developmentOnly` dependency, so it is not in the image.
 `/actuator/health` reports `UP` once the database answers. `node scripts/smoke-image.mjs` builds
 the image, runs it against `compose.yaml`'s Postgres on a throwaway Docker network, checks health,
-the `/` → `/de/` redirect and both locale builds, and removes what it started: `--builder
-buildpacks` (the default) builds the frontend and runs `bootBuildImage`, `--builder dockerfile`
-runs `docker build` (tagged `<version>-dockerfile`) after checking that the Dockerfile's base
-images match `.nvmrc` and the Gradle toolchain. The full `verify` runs both (buildpacks with
-`--skip-frontend-build`), `--quick` neither.
+the `/` → `/de/` redirect and both locale builds, and removes what it started. The full `verify`
+runs it, `--quick` does not.
 
 ### Deploy to Render
 
