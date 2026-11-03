@@ -35,7 +35,7 @@ tasks.named('processResources') {
     }
 }
 
-// Buildpacks image (ADR 0006); the root Dockerfile runs checkSpaPackaged and bootJar instead (ADR 0007).
+// The root Dockerfile runs checkSpaPackaged before bootJar (docs/adr/0006).
 def angularJson = layout.projectDirectory.file('../../frontend/angular.json')
 def staticRoot = layout.buildDirectory.dir('resources/main/static')
 
@@ -59,10 +59,7 @@ def checkSpaPackaged = tasks.register('checkSpaPackaged') {
     }
 }
 
+// Spring Boot's plugin registers this task; the root Dockerfile builds the only image (docs/adr/0006).
 tasks.named('bootBuildImage') {
-    dependsOn checkSpaPackaged
-    imageName = "${rootProject.name}:${project.version}"
-    // Boot's default builder, named so a Boot upgrade cannot swap it silently.
-    builder = 'paketobuildpacks/builder-noble-java-tiny'
-    environment = ['BP_JVM_VERSION': java.toolchain.languageVersion.get().toString()]
+    enabled = false
 }

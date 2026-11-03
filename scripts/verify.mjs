@@ -81,23 +81,11 @@ export function planSteps({
             ],
           },
           npm("frontend e2e", "run", "test:e2e"),
-          // Buildpacks packages the frontend build above; the Dockerfile builds its own.
           {
-            name: "image smoke test (buildpacks)",
+            name: "image smoke test",
             cwd: ".",
             command: "node",
-            args: [
-              "scripts/smoke-image.mjs",
-              "--builder",
-              "buildpacks",
-              "--skip-frontend-build",
-            ],
-          },
-          {
-            name: "image smoke test (dockerfile)",
-            cwd: ".",
-            command: "node",
-            args: ["scripts/smoke-image.mjs", "--builder", "dockerfile"],
+            args: ["scripts/smoke-image.mjs"],
           },
         ]),
     ...(scriptTests

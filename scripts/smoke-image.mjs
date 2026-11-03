@@ -9,18 +9,11 @@ import { runCommand } from "./verify.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-export const BUILDERS = ["buildpacks", "dockerfile"];
+export const USAGE = `Usage: node scripts/smoke-image.mjs
 
-export const USAGE = `Usage: node scripts/smoke-image.mjs [--builder buildpacks|dockerfile] [--skip-frontend-build]
-
-Builds the production image, starts it with Postgres on a throwaway Docker
-network, checks health and the localized SPA, and removes everything it started.
-
-  --builder buildpacks    (default) build the frontend, then bootBuildImage
-  --builder dockerfile    docker build the repository's Dockerfile, which builds
-                          the frontend and the jar itself
-  --skip-frontend-build   buildpacks only: use the existing frontend/dist (verify
-                          builds it first)`;
+Builds the production image from the repository's Dockerfile, starts it with
+Postgres on a throwaway Docker network, checks health and the localized SPA,
+and removes everything it started.`;
 
 const APP_PORT = 8080;
 const SPA_WEB_CONFIG = "backend/bootstrap/src/main/java/**/SpaWebConfig.java";
@@ -30,75 +23,9 @@ const DB_TIMEOUT_MS = 60_000;
 const POLL_MS = 1_000;
 
 export function parseArgs(argv) {
-  const options = { skipFrontendBuild: false, builder: "buildpacks" };
-  for (let i = 0; i < argv.length; i++) {
-    const arg = argv[i];
-    if (arg === "--skip-frontend-build") {
-      options.skipFrontendBuild = true;
-    } else if (arg === "--builder" || arg.startsWith("--builder=")) {
-      const value = arg === "--builder" ? argv[++i] : arg.slice(10);
-      if (!BUILDERS.includes(value)) {
-        return {
-          error: `--builder takes ${BUILDERS.join(" or ")}, not ${value ?? "nothing"}\n${USAGE}`,
-        };
-      }
-      options.builder = value;
-    } else {
-      return { error: `Unknown argument: ${arg}\n${USAGE}` };
-    }
-  }
-  return options;
-}
-
-/** `rootProject.name:version`, as `bootstrap/build.gradle` tags it. */
-export function imageName(settingsGradle, buildGradle) {
-  const name = settingsGradle.match(/rootProject\.name\s*=\s*['"]([^'"]+)['"]/);
-  const version = buildGradle.match(/^\s*version\s*=\s*['"]([^'"]+)['"]/m);
-  if (!name || !version) {
-    throw new Error(
-      "Cannot read rootProject.name from backend/settings.gradle or version from backend/build.gradle",
-    );
-  }
-  return `${name[1]}:${version[1]}`;
-}
-
-/** The Dockerfile build gets its own tag, so neither builder's run replaces the other's image. */
-export function buildPlan({ builder, image, skipFrontendBuild, platform }) {
-  if (builder === "dockerfile") {
-    const tag = `${image}-dockerfile`;
-    return {
-      image: tag,
-      steps: [
-        {
-          name: "image build",
-          command: "docker",
-          args: ["build", "--file", "Dockerfile", "--tag", tag, "."],
-          cwd: ".",
-        },
-      ],
-    };
-  }
-  return {
-    image,
-    steps: [
-      ...(skipFrontendBuild
-        ? []
-        : [
-            {
-              name: "frontend build",
-              command: "npm",
-              args: ["run", "build"],
-              cwd: "frontend",
-            },
-          ]),
-      {
-        name: "image build",
-        command: platform === "win32" ? "gradlew.bat" : "./gradlew",
-        args: [":bootstrap:bootBuildImage"],
-        cwd: "backend",
-      },
-    ],
-  };
+  return argv.length === 0
+    ? {}
+    : { error: `Unknown argument: ${argv[0]}\n${USAGE}` };
 }
 
 /** Renovate bumps the base images' patch versions; the Node version and the Java major move by hand. */
@@ -155,15 +82,18 @@ export function publishedPort(dockerPortOutput) {
   return Number(port[1]);
 }
 
-/** Named after `id`, so parallel runs never collide. */
-export function plan({ id, image, postgres, publish }) {
+/** Named after `id`, so parallel runs never collide and no real image tag is overwritten. */
+export function plan({ id, postgres, publish }) {
   const network = `smoke-${id}`;
+  const image = network;
   const db = `${network}-db`;
   const app = `${network}-app`;
   return {
     network,
+    image,
     db,
     app,
+    build: ["build", "--file", "Dockerfile", "--tag", image, "."],
     dbRun: [
       "run",
       "--detach",
@@ -207,6 +137,11 @@ export function plan({ id, image, postgres, publish }) {
       "--env",
       `SPRING_DATASOURCE_PASSWORD=${DB.password}`,
       image,
+    ],
+    teardown: [
+      ["rm", "--force", "--volumes", app, db],
+      ["network", "rm", network],
+      ["rmi", "--force", image],
     ],
   };
 }
@@ -327,10 +262,7 @@ async function smoke(names, baseUrl, { locales, fallback }) {
 }
 
 function teardown(names) {
-  for (const args of [
-    ["rm", "--force", "--volumes", names.app, names.db],
-    ["network", "rm", names.network],
-  ]) {
+  for (const args of names.teardown) {
     try {
       docker(args, { quiet: true });
     } catch {
@@ -346,30 +278,15 @@ async function main(argv) {
     return 2;
   }
   const read = (file) => readFileSync(join(root, file), "utf8");
-  if (args.builder === "dockerfile") {
-    const problems = checkDockerfilePins(read("Dockerfile"), {
-      nvmrc: read(".nvmrc"),
-      javaConventions: read(
-        "backend/build-logic/src/main/groovy/java-conventions.gradle",
-      ),
-    });
-    if (problems.length > 0) {
-      console.error(`✘ image smoke test: ${problems.join("\n")}`);
-      return 1;
-    }
-  }
-  const build = buildPlan({
-    builder: args.builder,
-    image: imageName(
-      read("backend/settings.gradle"),
-      read("backend/build.gradle"),
+  const problems = checkDockerfilePins(read("Dockerfile"), {
+    nvmrc: read(".nvmrc"),
+    javaConventions: read(
+      "backend/build-logic/src/main/groovy/java-conventions.gradle",
     ),
-    skipFrontendBuild: args.skipFrontendBuild,
-    platform: process.platform,
   });
-  const { image } = build;
-  for (const { name, command, args: commandArgs, cwd } of build.steps) {
-    if (!(await step(name, command, commandArgs, cwd))) return 1;
+  if (problems.length > 0) {
+    console.error(`✘ image smoke test: ${problems.join("\n")}`);
+    return 1;
   }
   const [spaWebConfig] = globSync(SPA_WEB_CONFIG, { cwd: root });
   if (!spaWebConfig) {
@@ -381,7 +298,6 @@ async function main(argv) {
   const endpoint = appEndpoint(process.env.DOCKER_HOST);
   const names = plan({
     id: randomBytes(4).toString("hex"),
-    image,
     postgres: postgresImage(read("compose.yaml")),
     publish: endpoint.publish,
   });
@@ -392,11 +308,12 @@ async function main(argv) {
   process.once("SIGINT", interrupted);
   process.once("SIGTERM", interrupted);
   try {
+    if (!(await step("image build", "docker", names.build, "."))) return 1;
     docker(["network", "create", names.network], { quiet: true });
     docker(names.dbRun, { quiet: true });
     await smoke(names, `http://${endpoint.host}`, { locales, fallback });
     console.log(
-      `✔ ${image} (${args.builder}) is healthy and serves ${locales.map((locale) => `/${locale}/`).join(", ")}`,
+      `✔ the image is healthy and serves ${locales.map((locale) => `/${locale}/`).join(", ")}`,
     );
     return 0;
   } catch (error) {

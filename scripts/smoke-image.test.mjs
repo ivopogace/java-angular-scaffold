@@ -3,13 +3,11 @@ import { globSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   appEndpoint,
-  buildPlan,
   builtLocales,
   checkDockerfilePins,
   checkLocalePage,
   checkRootRedirect,
   defaultLocale,
-  imageName,
   isUp,
   parseArgs,
   plan,
@@ -20,88 +18,9 @@ import {
 const repoFile = (path) =>
   readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("parseArgs takes --builder and --skip-frontend-build, buildpacks by default", () => {
-  assert.deepEqual(parseArgs([]), {
-    skipFrontendBuild: false,
-    builder: "buildpacks",
-  });
-  assert.deepEqual(parseArgs(["--skip-frontend-build"]), {
-    skipFrontendBuild: true,
-    builder: "buildpacks",
-  });
-  assert.deepEqual(parseArgs(["--builder", "dockerfile"]), {
-    skipFrontendBuild: false,
-    builder: "dockerfile",
-  });
-  assert.deepEqual(
-    parseArgs(["--builder=buildpacks", "--skip-frontend-build"]),
-    {
-      skipFrontendBuild: true,
-      builder: "buildpacks",
-    },
-  );
+test("parseArgs takes no arguments", () => {
+  assert.deepEqual(parseArgs([]), {});
   assert.match(parseArgs(["--keep"]).error, /Unknown argument: --keep/);
-  assert.match(
-    parseArgs(["--builder", "jib"]).error,
-    /--builder takes buildpacks or dockerfile, not jib/,
-  );
-  assert.match(parseArgs(["--builder"]).error, /not nothing/);
-});
-
-test("buildpacks builds the frontend, unless skipped, then bootBuildImage", () => {
-  const options = {
-    builder: "buildpacks",
-    image: "acme-orders:1.0.0",
-    skipFrontendBuild: false,
-    platform: "linux",
-  };
-  const full = buildPlan(options);
-  assert.equal(full.image, "acme-orders:1.0.0");
-  assert.deepEqual(
-    full.steps.map((s) => [s.command, s.args, s.cwd]),
-    [
-      ["npm", ["run", "build"], "frontend"],
-      ["./gradlew", [":bootstrap:bootBuildImage"], "backend"],
-    ],
-  );
-  const skipped = buildPlan({ ...options, skipFrontendBuild: true });
-  assert.deepEqual(
-    skipped.steps.map((s) => s.name),
-    ["image build"],
-  );
-  assert.equal(
-    buildPlan({ ...options, platform: "win32" }).steps.at(-1).command,
-    "gradlew.bat",
-  );
-});
-
-test("the Dockerfile builds from the root under its own tag, frontend included", () => {
-  for (const skipFrontendBuild of [false, true]) {
-    const build = buildPlan({
-      builder: "dockerfile",
-      image: "acme-orders:1.0.0",
-      skipFrontendBuild,
-      platform: "linux",
-    });
-    assert.equal(build.image, "acme-orders:1.0.0-dockerfile");
-    assert.deepEqual(
-      build.steps.map((s) => [s.command, s.args, s.cwd]),
-      [
-        [
-          "docker",
-          [
-            "build",
-            "--file",
-            "Dockerfile",
-            "--tag",
-            "acme-orders:1.0.0-dockerfile",
-            ".",
-          ],
-          ".",
-        ],
-      ],
-    );
-  }
 });
 
 test("the Dockerfile's base images follow .nvmrc and the Gradle toolchain", () => {
@@ -140,27 +59,6 @@ test("the Dockerfile's base images follow .nvmrc and the Gradle toolchain", () =
   );
 });
 
-test("the image name is the Gradle project name and version", () => {
-  assert.equal(
-    imageName(
-      "include 'core'\nrootProject.name = 'acme-orders'\n",
-      "allprojects {\n    group = 'com.acme'\n    version = '1.2.3'\n}\n",
-    ),
-    "acme-orders:1.2.3",
-  );
-  assert.throws(() => imageName("", "version = '1'"), /rootProject\.name/);
-});
-
-test("the image name is readable from this repository's build", () => {
-  assert.match(
-    imageName(
-      repoFile("backend/settings.gradle"),
-      repoFile("backend/build.gradle"),
-    ),
-    /^[a-z][a-z0-9-]*:[\w.-]+$/,
-  );
-});
-
 test("Postgres comes from compose.yaml, the image bootRun uses", () => {
   assert.equal(
     postgresImage("services:\n  postgres:\n    image: postgres:18-alpine\n"),
@@ -195,7 +93,6 @@ test("the published port is read from docker port output", () => {
 test("one run's containers share a network named after its id and pass config by environment", () => {
   const run = plan({
     id: "abc",
-    image: "acme-orders:1.0.0",
     postgres: "postgres:18-alpine",
     publish: "127.0.0.1::8080",
   });
@@ -203,7 +100,21 @@ test("one run's containers share a network named after its id and pass config by
   assert.equal(run.db, "smoke-abc-db");
   assert.equal(run.app, "smoke-abc-app");
   assert.equal(run.dbRun.at(-1), "postgres:18-alpine");
-  assert.equal(run.appRun.at(-1), "acme-orders:1.0.0");
+  assert.equal(run.image, "smoke-abc");
+  assert.deepEqual(run.build, [
+    "build",
+    "--file",
+    "Dockerfile",
+    "--tag",
+    "smoke-abc",
+    ".",
+  ]);
+  assert.equal(run.appRun.at(-1), "smoke-abc");
+  assert.deepEqual(run.teardown, [
+    ["rm", "--force", "--volumes", "smoke-abc-app", "smoke-abc-db"],
+    ["network", "rm", "smoke-abc"],
+    ["rmi", "--force", "smoke-abc"],
+  ]);
   for (const args of [run.dbRun, run.appRun]) {
     assert.equal(args[args.indexOf("--network") + 1], "smoke-abc");
   }
