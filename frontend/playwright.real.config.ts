@@ -1,18 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-/**
- * Real-backend e2e suite (`e2e/real-backend/`): drives a browser against a running full stack
- * (Spring Boot on :8080 and its database). Local only, not part of CI. Specs skip unless
- * `REAL_BACKEND=1`. Two projects:
- *
- * - `dev-server`: the `npm start` dev server on :4200, which proxies `/api` to the backend. It
- *   serves only the source locale (`en`), not the `de` build users get by default, so its specs
- *   assert English text with the browser locale pinned to `en-US` (browser-side defaults such as
- *   `navigator.language` and `Intl` without a locale then match on every machine).
- * - `localized` (`*.localized.real.e2e.ts`): Spring Boot itself on :8080, serving the production
- *   build (`de` and `en`) that `bootstrap` packaged; run `npm run build` before `bootRun`. Its
- *   browser locale is pinned to `de-DE`, the default users get.
- */
+// `localized` needs `npm run build` before `bootRun`, so :8080 serves the packaged `de` and `en` builds.
 const LOCALIZED = '*.localized.real.e2e.ts';
 
 export default defineConfig({

@@ -28,10 +28,6 @@ const HEALTH_TIMEOUT_MS = 180_000;
 const DB_TIMEOUT_MS = 60_000;
 const POLL_MS = 1_000;
 
-/**
- * @param {string[]} argv the arguments after the script name
- * @returns {{ skipFrontendBuild: boolean, builder: string } | { error: string }}
- */
 export function parseArgs(argv) {
   const options = { skipFrontendBuild: false, builder: "buildpacks" };
   for (let i = 0; i < argv.length; i++) {
@@ -53,13 +49,7 @@ export function parseArgs(argv) {
   return options;
 }
 
-/**
- * The image `bootBuildImage` tags: `rootProject.name:version`, as `bootstrap/build.gradle`
- * configures it, read from the files `init` rewrites.
- *
- * @param {string} settingsGradle `backend/settings.gradle`
- * @param {string} buildGradle `backend/build.gradle`
- */
+/** `rootProject.name:version`, as `bootstrap/build.gradle` tags it. */
 export function imageName(settingsGradle, buildGradle) {
   const name = settingsGradle.match(/rootProject\.name\s*=\s*['"]([^'"]+)['"]/);
   const version = buildGradle.match(/^\s*version\s*=\s*['"]([^'"]+)['"]/m);
@@ -71,15 +61,7 @@ export function imageName(settingsGradle, buildGradle) {
   return `${name[1]}:${version[1]}`;
 }
 
-/**
- * How to build the image under test. `bootBuildImage` tags `image`; the Dockerfile build gets
- * its own tag, so neither run replaces the other's image.
- *
- * @param {{ builder: string, image: string, skipFrontendBuild: boolean,
- *           platform: NodeJS.Platform }} options `image` as {@link imageName} returns it
- * @returns {{ image: string, steps: { name: string, command: string, args: string[],
- *            cwd: string }[] }} the tag to run and the build steps, `cwd` relative to the root
- */
+/** The Dockerfile build gets its own tag, so neither builder's run replaces the other's image. */
 export function buildPlan({ builder, image, skipFrontendBuild, platform }) {
   if (builder === "dockerfile") {
     const tag = `${image}-dockerfile`;
@@ -118,16 +100,7 @@ export function buildPlan({ builder, image, skipFrontendBuild, platform }) {
   };
 }
 
-/**
- * The Dockerfile's base images against the versions the rest of the build pins: Node from
- * `.nvmrc`, the JDK and JRE from the Gradle toolchain. Renovate bumps the images' patch
- * versions; the Node version and the Java major move by hand, together.
- *
- * @param {string} dockerfile the `Dockerfile`
- * @param {{ nvmrc: string, javaConventions: string }} pins `.nvmrc` and
- *        `backend/build-logic/src/main/groovy/java-conventions.gradle`
- * @returns {string[]} what disagrees, empty when nothing does
- */
+/** Renovate bumps the base images' patch versions; the Node version and the Java major move by hand. */
 export function checkDockerfilePins(dockerfile, { nvmrc, javaConventions }) {
   const from = [...dockerfile.matchAll(/^FROM\s+(\S+)/gm)].map((m) => m[1]);
   const node = nvmrc.trim().replace(/^v/, "");
@@ -166,13 +139,7 @@ export function postgresImage(composeYaml) {
   return image[1];
 }
 
-/**
- * Where a published port is reachable: the daemon's host when `DOCKER_HOST` points at a TCP
- * daemon (Docker-in-Docker in CI), else loopback, where the port is then published only.
- *
- * @param {string | undefined} dockerHost the `DOCKER_HOST` environment variable
- * @returns {{ host: string, publish: string }} the host to call and the `docker run -p` value
- */
+/** The daemon's host for a TCP `DOCKER_HOST` (Docker-in-Docker in CI), else loopback. */
 export function appEndpoint(dockerHost) {
   const tcp = dockerHost?.match(/^tcp:\/\/([^:/]+)/);
   return tcp
@@ -187,12 +154,7 @@ export function publishedPort(dockerPortOutput) {
   return Number(port[1]);
 }
 
-/**
- * The containers and network of one run, named after `id` so parallel runs never collide.
- *
- * @returns {{ network: string, db: string, app: string,
- *            dbRun: string[], appRun: string[], dbReady: string[] }} the `docker` arguments
- */
+/** Named after `id`, so parallel runs never collide. */
 export function plan({ id, image, postgres, publish }) {
   const network = `smoke-${id}`;
   const db = `${network}-db`;
@@ -257,10 +219,6 @@ export function isUp(body) {
   }
 }
 
-/**
- * @param {{ status: number, location: string | null }} response `GET /` without `Accept-Language`
- * @returns {string | null} what is wrong, or null
- */
 export function checkRootRedirect({ status, location }) {
   const path = location && new URL(location, "http://app").pathname;
   return status === 302 && path === "/de/"
@@ -268,11 +226,6 @@ export function checkRootRedirect({ status, location }) {
     : `GET / answered ${status} to ${location ?? "nowhere"}; expected 302 to /de/`;
 }
 
-/**
- * @param {string} locale the build under test
- * @param {{ status: number, contentType: string | null, body: string }} response `GET /<locale>/`
- * @returns {string | null} what is wrong, or null
- */
 export function checkLocalePage(locale, { status, contentType, body }) {
   if (status !== 200 || !contentType?.startsWith("text/html")) {
     return `GET /${locale}/ answered ${status} ${contentType ?? ""}; expected 200 text/html`;
@@ -304,7 +257,6 @@ function running(container) {
   }).trim();
 }
 
-/** @returns {Promise<boolean>} whether the command succeeded */
 async function step(name, command, args, cwd) {
   console.log(`\n> ${name}: ${command} ${args.join(" ")}  (${cwd})`);
   if ((await runCommand({ command, args, cwd })) === 0) return true;

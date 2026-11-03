@@ -1,11 +1,8 @@
-# The template's release automation, not a check wrapper: run by hand from the Actions tab once a
-# version is complete. Tags main's tip as v<TEMPLATE_VERSION> if ci and template-ci both succeeded
-# for its push. init deletes this file with scripts/release-tag*.mjs.
+# Template-only release automation, not a check wrapper; init deletes it.
 name: release-tag
 
 on:
-  # By hand only: a version's heading lands on main before its last entries do, so an automatic
-  # trigger would tag the version too early.
+  # By hand only: TEMPLATE_VERSION lands on main before the version's last changes do.
   workflow_dispatch:
 
 permissions: {}

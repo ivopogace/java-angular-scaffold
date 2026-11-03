@@ -1,13 +1,7 @@
 import axe from 'axe-core';
 import { expect } from 'vitest';
 
-/**
- * Runs axe-core over a rendered element and fails on any violation, whatever its impact.
- *
- * `color-contrast` is disabled because jsdom has no layout, so axe can never decide it; the
- * Playwright suite checks contrast in a real browser. `region` is disabled because a component
- * rendered alone is a fragment, not a page.
- */
+// jsdom has no layout for `color-contrast` (Playwright checks it); a lone component is no page for `region`.
 const AUDIT_CONFIG: axe.RunOptions = {
   rules: {
     'color-contrast': { enabled: false },

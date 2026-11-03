@@ -20,10 +20,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.test.ApplicationModuleTest;
 
-/**
- * Proves that {@code jakarta.transaction.Transactional} on a {@code @UseCase} bean rolls back: the
- * event publisher fails after the product was saved as published, and the stored row is still a draft.
- */
+/** {@code jakarta.transaction.Transactional} on a {@code @UseCase} bean rolls back when publishing fails. */
 @ApplicationModuleTest
 @Import({TestcontainersConfiguration.class, PublishRollbackIT.FailingPublisherConfiguration.class})
 @Tag("container")

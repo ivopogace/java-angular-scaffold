@@ -5,8 +5,6 @@ import io.scaffold.starter.shared.Money;
 import java.time.Instant;
 
 /**
- * Read-only snapshot of a product.
- *
  * @param price null while no price is set
  * @param publishedAt null until the product is published
  */

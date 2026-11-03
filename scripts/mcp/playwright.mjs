@@ -1,16 +1,4 @@
-/**
- * Launches the `playwright` MCP server for Claude Code (`.mcp.json`) and opencode (`opencode.json`).
- *
- * `PACKAGE` is an exact version, so npx can start it from its cache; bump it by hand. It is not a
- * frontend dependency: it pins its own `playwright-core` beside the one `@playwright/test` brings.
- *
- * A `chromium` entry under `PLAYWRIGHT_BROWSERS_PATH` (or `/opt/pw-browsers`) is passed as
- * `--executable-path`, since the server's `playwright-core` may expect a revision not installed there.
- *
- * `--no-sandbox` is passed only where Chromium's sandbox cannot run: as root on Linux, or inside a
- * container (`/.dockerenv`, `/run/.containerenv`). `PLAYWRIGHT_MCP_NO_SANDBOX=1` (or `true`) forces
- * it on, `=0` (or `false`) off; any other value is reported on stderr and ignored.
- */
+// `PACKAGE` is exact so npx starts it from its cache; bump it by hand. Not a frontend dependency.
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -21,10 +9,7 @@ export const PACKAGE = "@playwright/mcp@0.0.84";
 const DEFAULT_BROWSERS_ROOT = "/opt/pw-browsers";
 const CONTAINER_MARKERS = ["/.dockerenv", "/run/.containerenv"];
 
-/**
- * The chromium to drive, or null to let Playwright resolve its own. Pure: `env` and `exists` are
- * injected.
- */
+/** Passed as `--executable-path`: the server's `playwright-core` may expect a revision not installed there. */
 export function resolveChromium(env, exists = existsSync) {
   const root = env.PLAYWRIGHT_BROWSERS_PATH;
   // `0` is Playwright's sentinel for "browsers live inside the package": there is no root to join.
@@ -33,10 +18,7 @@ export function resolveChromium(env, exists = existsSync) {
   return exists(chromium) ? chromium : null;
 }
 
-/**
- * Whether Chromium needs `--no-sandbox` here (the header names the cases). Pure: `env`,
- * `platform`, `uid` and `exists` are injected; `uid` is undefined where the OS has none.
- */
+/** As root on Linux or in a container; `PLAYWRIGHT_MCP_NO_SANDBOX` forces it on (1/true) or off (0/false). */
 export function needsNoSandbox(
   env,
   {
@@ -58,10 +40,6 @@ export function needsNoSandbox(
   return uid === 0 || CONTAINER_MARKERS.some((marker) => exists(marker));
 }
 
-/**
- * The full npx argument list: `--no-sandbox` only where {@link needsNoSandbox}, `--executable-path`
- * only where a chromium resolves. Pure: the same dependencies as the two resolvers are injected.
- */
 export function resolveArgs(
   env,
   {

@@ -42,12 +42,7 @@ const SKIPPED_DIRS = new Set([
   "playwright-report",
 ]);
 
-/**
- * Checks the agent instructions and tool config under `root` for consistency.
- *
- * @returns {string[]} one `<file>: <problem>` line per problem (root-relative,
- *   forward slashes); empty when everything holds.
- */
+/** One `<file>: <problem>` line per problem, root-relative; empty when everything holds. */
 export function checkAgentDocs(root) {
   const lock = readLock(root);
   const skills = skillFolders(root);
@@ -98,15 +93,7 @@ function readLock(root) {
 
 const lockEntryFolder = (name) => `${SKILLS_DIR}/${name}`;
 
-/**
- * Re-records `computedHash` for every entry of `skills-lock.json` from the
- * files under its skill folder, leaving the other keys and their order alone.
- *
- * @returns {{ refreshed: string[], unchanged: string[] }} the entries whose
- *   hash changed, and the rest
- * @throws {Error} when the lock file is unreadable or an entry has no folder;
- *   nothing is written then
- */
+/** @throws {Error} when the lock file is unreadable or an entry has no folder; nothing is written then */
 export function refreshSkillsLock(root) {
   const lock = readLock(root);
   if (lock.problems.length > 0 || !lock.json) {
@@ -188,13 +175,7 @@ function checkSkill(root, folder, isVendored) {
   return problems;
 }
 
-/**
- * Reads the top-level `key: value` pairs of a leading `---` block. Block
- * scalars (`>-`, `>`, `|`, …) and indented continuation lines are folded into
- * one line; `style` is the block indicator, or `plain` for an inline value.
- *
- * @returns {Record<string, { style: string, text: string }> | null}
- */
+/** Block scalars and continuation lines fold into one line; `style` is the block indicator or `plain`. */
 function parseFrontmatter(text) {
   const lines = text.split("\n");
   if (lines[0] !== "---") return null;
@@ -300,14 +281,7 @@ function checkClaudeMd(root, file) {
   return problems;
 }
 
-/**
- * A backticked span counts as a repository path when it contains a `/` but
- * does not start with one (`/api` is a URL path), has no whitespace or
- * placeholder characters, and its first segment names an entry in the
- * AGENTS.md's own directory or the repository root. That keeps package paths
- * such as `port/in` and commands such as `./gradlew build` out. The path
- * resolves against the AGENTS.md's directory first, then the root.
- */
+/** A path only if its first segment names an entry beside the AGENTS.md or at the root, so `port/in` is none. */
 function checkPaths(root, file) {
   const base = dirname(join(root, file));
   const seen = new Set();
@@ -369,13 +343,7 @@ function checkMcpServers(root) {
   ];
 }
 
-/**
- * Claude Code and opencode must grant the same allows. A Claude Code entry `Tool` or `Tool(spec)`
- * (`permissions.allow` in `.claude/settings.json`) and an opencode rule `{ action, resource,
- * effect: "allow" }` (`permissions` in `opencode.json`) are both read as `<tool> <spec>`
- * (`read *`, `bash git status*`) and the two sets compared. A rule with another effect has no
- * Claude Code counterpart (Claude Code asks unless allowed) and is not compared.
- */
+/** Only `effect: "allow"` rules are compared: Claude Code has no counterpart for the others. */
 function checkPermissions(root) {
   if (![SETTINGS, OPENCODE].every((f) => existsSync(join(root, f)))) return [];
   const settings = readJson(root, SETTINGS);
@@ -424,10 +392,7 @@ function checkPermissions(root) {
   return problems;
 }
 
-/**
- * opencode applies the last matching rule, so an action's catch-all `*` must come before its
- * narrower rules; placed after them it would silently override every allow it covers.
- */
+/** opencode applies the last matching rule, so a catch-all `*` after narrower rules overrides them. */
 function catchAllOrderProblems(rules) {
   const narrowerSeen = new Set();
   const problems = [];

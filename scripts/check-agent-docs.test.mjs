@@ -39,12 +39,7 @@ const VENDORED_NOTES = "# Notes\n\nMore beta, also from upstream.\n";
 
 const sha256 = (text) => createHash("sha256").update(text).digest("hex");
 
-/**
- * The lock hash of a skill folder, as `skills-lock.json` records it: the
- * SHA-256 of the `sha256sum`-style manifest of every file (one line
- * `<sha256 of the LF text>  <relative path>\n`, sorted by path), so a change
- * to any file in the folder changes it.
- */
+/** As `skills-lock.json` records it: SHA-256 of the sorted `sha256sum`-style manifest of the folder. */
 const folderHash = (files) =>
   sha256(
     Object.keys(files)

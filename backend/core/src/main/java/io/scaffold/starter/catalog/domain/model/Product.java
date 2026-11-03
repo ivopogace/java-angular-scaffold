@@ -9,10 +9,6 @@ import java.util.Optional;
 import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.jmolecules.ddd.annotation.Identity;
 
-/**
- * A catalog product. It starts as a draft, can be published once it has a price, and a published
- * product can be retired.
- */
 @AggregateRoot
 public class Product {
 
@@ -34,7 +30,7 @@ public class Product {
     }
 
     /**
-     * @param price the price, or {@code null} while undecided
+     * @param price {@code null} while undecided
      * @throws IllegalArgumentException if the stripped name is empty or longer than 120 characters
      */
     public static Product draft(ProductId id, String name, Money price) {

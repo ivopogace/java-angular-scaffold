@@ -11,10 +11,6 @@ export const NO_DOCKER_MESSAGE =
 
 export const USAGE = "Usage: node scripts/verify.mjs [--quick]";
 
-/**
- * @param {string[]} argv the arguments after the script name
- * @returns {{ quick: boolean } | { error: string }} the options, or why the arguments are rejected.
- */
 export function parseArgs(argv) {
   const unknown = argv.filter((arg) => arg !== "--quick");
   if (unknown.length > 0) {
@@ -22,11 +18,6 @@ export function parseArgs(argv) {
   }
   return { quick: argv.includes("--quick") };
 }
-
-/**
- * @typedef {{ name: string, cwd: string, command: string, args: string[] }} Step
- * `cwd` is relative to the repository root.
- */
 
 const SCRIPT_TESTS = "scripts/**/*.test.mjs";
 
@@ -38,14 +29,7 @@ function hasAgentDocsCheck() {
   return existsSync(join(root, "scripts", "check-agent-docs.mjs"));
 }
 
-/**
- * The ordered verification steps. Pure data: spawning is {@link runCommand}'s concern.
- *
- * @param {{ quick: boolean, platform: NodeJS.Platform, hasNodeModules: boolean,
- *           hasScriptTests?: boolean, hasAgentDocsCheck?: boolean, ci?: boolean }} options
- *        `hasScriptTests` and `hasAgentDocsCheck` default to what is on disk, `ci` to the CI environment variable.
- * @returns {Step[]}
- */
+/** Each step's `cwd` is relative to the repository root. */
 export function planSteps({
   quick,
   platform,
@@ -62,9 +46,7 @@ export function planSteps({
   });
   return [
     ...(hasNodeModules ? [] : [npm("npm ci", "ci")]),
-    // First, as it needs only the lockfile. npm audit asks the registry, whose advisories change
-    // under an unchanged lockfile, so --quick leaves it out; the full verify, which CI runs, fails on
-    // a high or critical advisory.
+    // The registry's advisories change under an unchanged lockfile, so --quick leaves npm audit out.
     ...(quick ? [] : [npm("frontend audit", "audit", "--audit-level=high")]),
     {
       name: "backend build",
@@ -99,10 +81,7 @@ export function planSteps({
             ],
           },
           npm("frontend e2e", "run", "test:e2e"),
-          // The production image both ways, against Postgres: health, the locale redirect and
-          // both builds. Buildpacks (bootBuildImage) packages the frontend build above; the
-          // Dockerfile, which source-building hosts such as Render use, builds its own. Both need
-          // Docker and registry access, so --quick leaves them out.
+          // Buildpacks packages the frontend build above; the Dockerfile builds its own.
           {
             name: "image smoke test (buildpacks)",
             cwd: ".",
@@ -144,21 +123,12 @@ export function planSteps({
   ];
 }
 
-/**
- * @param {{ quick: boolean, dockerAvailable: () => Promise<boolean> }} options
- * @returns {Promise<string | null>} the reason the run cannot start, or null.
- */
 export async function preflight({ quick, dockerAvailable }) {
   if (quick) return null;
   return (await dockerAvailable()) ? null : NO_DOCKER_MESSAGE;
 }
 
-/**
- * Runs a command with inherited stdio. On Windows everything except `node` goes through the shell, since
- * `npm`, `npx` and `gradlew.bat` are batch shims that cannot be spawned directly.
- *
- * @returns {Promise<number>} the exit code (1 when the process could not start).
- */
+/** On Windows all but `node` go through the shell: `npm`, `npx` and `gradlew.bat` are batch shims. */
 export function runCommand(
   { command, args, cwd },
   { platform = process.platform, stdio = "inherit" } = {},

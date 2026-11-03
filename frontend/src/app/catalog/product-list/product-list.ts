@@ -37,7 +37,6 @@ export class ProductList {
   private readonly snackBar = inject(MatSnackBar);
   private readonly formatMoney = injectFormatMoney();
 
-  /** Ids whose publish or retire request is in flight. */
   private readonly inFlight = signal<ReadonlySet<string>>(new Set());
 
   protected readonly products = this.catalog.loadProducts();

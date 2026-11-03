@@ -4,10 +4,7 @@ import java.util.Currency;
 import java.util.Objects;
 import org.jmolecules.ddd.annotation.ValueObject;
 
-/**
- * An amount in the currency's minor units (cents for EUR); never a floating-point value. Arithmetic
- * fails with {@link ArithmeticException} instead of wrapping.
- */
+/** Arithmetic fails with {@link ArithmeticException} instead of wrapping. */
 @ValueObject
 public record Money(long amountMinor, Currency currency) {
 

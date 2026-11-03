@@ -25,21 +25,7 @@ import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 import org.springframework.web.util.UrlPathHelper;
 
-/**
- * Serves the built Angular app from the same origin, one build per locale: {@code /de/…} from
- * {@code static/de/}, {@code /en/…} from {@code static/en/} (the locales of the {@code i18n}
- * block in {@code angular.json}; {@code SpaWebConfigTest} fails when the two differ). Inside a
- * locale, a GET for a path that is not a file (no {@code .}) answers with that locale's
- * {@code index.html}, so client-side routes survive a reload. A GET or HEAD that no controller,
- * resource or locale build answers, outside {@code /api} and {@code /actuator}, is redirected to
- * the same path under the locale {@code Accept-Language} prefers: {@code de} unless it prefers
- * {@code en}. Everything else unmatched, unknown API paths included, ends in a 404 problem body.
- * Spring Boot's own static mappings are off ({@code spring.web.resources.add-mappings}), so these
- * are the only ones. The shell ({@code index.html}, the fallback, anything unhashed) is served
- * with {@code Cache-Control: no-cache}, so a deploy is picked up on the next load; scripts,
- * styles and media whose name carries a content hash ({@code main-ABC123.js}, as Angular's
- * production {@code outputHashing} names them) are cached for a year as immutable.
- */
+/** Serves each locale's SPA build same-origin and redirects unmatched pages to the preferred locale. */
 @Configuration(proxyBeanMethods = false)
 class SpaWebConfig implements WebMvcConfigurer {
 
@@ -77,10 +63,7 @@ class SpaWebConfig implements WebMvcConfigurer {
         }
     }
 
-    /**
-     * A resource handler never resolves the empty path below its prefix: a locale's root forwards
-     * to its shell, and the bare prefix redirects to the root, its base href.
-     */
+    // A resource handler never resolves the empty path below its prefix, so the roots are mapped here.
     @Override
     public void addViewControllers(ViewControllerRegistry registry) {
         for (String locale : LOCALES) {
@@ -128,12 +111,7 @@ class SpaWebConfig implements WebMvcConfigurer {
         }
     }
 
-    /**
-     * Consulted after every other mapping, so only a request nothing else answers reaches it. It
-     * takes a GET or HEAD outside {@code /api} and {@code /actuator} (judged on the decoded path
-     * without path parameters, as the other mappings judge it) and leaves everything else
-     * unhandled, which ends in a 404 problem body.
-     */
+    /** Last mapping: redirects an unanswered GET or HEAD outside /api and /actuator; the rest ends in a 404. */
     private static final class LocaleRedirectMapping extends AbstractHandlerMapping {
 
         private static final HttpRequestHandler REDIRECT = LocaleRedirectMapping::redirect;
@@ -150,7 +128,6 @@ class SpaWebConfig implements WebMvcConfigurer {
             return page && !RESERVED.matcher(lookupPath).matches() ? REDIRECT : null;
         }
 
-        /** Sends the request to the preferred locale's build, with its path and query. */
         private static void redirect(HttpServletRequest request, HttpServletResponse response) {
             String path = request.getRequestURI().substring(request.getContextPath().length());
             String query = request.getQueryString();

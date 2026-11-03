@@ -12,12 +12,7 @@ const LINTED = /\.(ts|html)$/;
 export const NO_NODE_MODULES_MESSAGE =
   "frontend/node_modules is missing or incomplete: run npm ci in frontend/ first.";
 
-/**
- * The staged frontend files the hook checks, and the subset ESLint also lints, as paths relative to `frontend/`.
- *
- * @param {string[]} stagedFiles repository-relative paths
- * @returns {{ checked: string[], linted: string[] }}
- */
+/** Paths come in repository-relative and go out relative to `frontend/`. */
 export function selectFiles(stagedFiles) {
   const checked = stagedFiles
     .filter((file) => file.startsWith("frontend/") && CHECKED.test(file))
@@ -53,16 +48,7 @@ async function unformattedFiles(prettier, frontendDir, files, readStaged) {
   return unformatted;
 }
 
-/**
- * Checks the staged content of the staged frontend files with the frontend's own Prettier and ESLint
- * (loaded from `frontend/node_modules`, never downloaded), so a partially staged file is judged on
- * what the commit will contain.
- *
- * @param {{ stagedFiles: string[], repoRoot?: string, readStaged?: (path: string) => string,
- *           log?: (text: string) => void, error?: (text: string) => void }} options
- *        `readStaged` returns the index content of a repository-relative path.
- * @returns {Promise<number>} the exit code
- */
+/** Judges the staged content, so a partially staged file is checked as the commit will hold it. */
 export async function runHook({
   stagedFiles,
   repoRoot = root,

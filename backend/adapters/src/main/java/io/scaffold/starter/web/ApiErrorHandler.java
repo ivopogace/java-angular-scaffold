@@ -9,10 +9,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-/**
- * Translates every failure into an RFC 9457 problem body. Framework errors keep Spring's own
- * problem details; anything else becomes a generic 500 that never exposes the exception.
- */
+/** Framework errors keep Spring's problem details; anything else is a 500 that never exposes the exception. */
 @RestControllerAdvice
 class ApiErrorHandler extends ResponseEntityExceptionHandler {
 

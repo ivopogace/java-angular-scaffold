@@ -1,14 +1,6 @@
 import stylelint from 'stylelint';
 
-/**
- * Rejects colour literals in the arguments of a Material `*-overrides` mixin (invariant #8).
- *
- * `color-no-hex`, `color-named` and `function-disallowed-list` check declarations only. This rule
- * looks at every `@include` whose mixin name ends in `-overrides` (with or without a module prefix)
- * and flags a hex colour, one of the banned colour functions or a CSS named colour anywhere in the
- * argument text; `var(--mat-sys-*)`, `transparent`, `currentcolor`, Sass variables, module
- * functions such as `color.adjust()` and quoted strings pass.
- */
+// Invariant #8 for `*-overrides` mixin arguments, which `color-no-hex` and friends never see.
 const ruleName = 'local/overrides-no-color-literal';
 
 const messages = stylelint.utils.ruleMessages(ruleName, {
@@ -24,7 +16,6 @@ const INERT_TEXT = /"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|\/\*[\s\S]*?\*\/|\/\/[^\
 
 const HEX_COLOR = /#[0-9a-f]{3,8}(?![\w-])/gi;
 
-/** A Sass/CSS word: identifier characters plus `$` (variables) and `.` (module members). */
 const WORD = /[\w$.-]+/g;
 
 /** The same functions `.stylelintrc.json` bans in declarations; `stylelint-config.test.mjs` keeps the two in step. */
@@ -196,10 +187,7 @@ const NAMED_COLORS = new Set([
 /** Replaces every inert span with spaces of the same length, so offsets into `text` stay valid. */
 const blankInert = (text) => text.replace(INERT_TEXT, (span) => ' '.repeat(span.length));
 
-/**
- * The colour literals in a mixin's argument text, as `{ literal, index, length }` in source
- * order; `index` is the offset into `text`.
- */
+/** `{ literal, index, length }` per colour literal, in source order; `index` is the offset into `text`. */
 export function colorLiterals(text) {
   const found = [];
   let scan = blankInert(text);

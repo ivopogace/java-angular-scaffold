@@ -21,10 +21,6 @@ have both succeeded for a push of it to main, and pushes the tag. Needs gh with
 GH_TOKEN (the workflow passes GITHUB_TOKEN) and GITHUB_REPOSITORY; never moves an
 existing tag.`;
 
-/**
- * @param {string[]} argv the arguments after the script name
- * @returns {{ sha: string } | { error: string }}
- */
 export function parseArgs(argv) {
   const options = {};
   for (let i = 0; i < argv.length; i += 2) {
@@ -52,16 +48,7 @@ export function workflowState(runs) {
   return "failed";
 }
 
-/**
- * What to do for one commit. Pure: every input is read by {@link main}.
- *
- * @param {object} input
- * @param {string} input.version TEMPLATE_VERSION
- * @param {Record<string, {status: string, conclusion: string|null}[]>} input.runs
- *   push runs on main for the commit, by workflow file name
- * @param {string|null} input.remoteTagSha the commit the tag names on the remote, null when absent
- * @returns {{ action: "tag"|"skip"|"fail", tag?: string, reason: string }}
- */
+/** `runs` are the commit's push runs on main by workflow file; `remoteTagSha` is null when no tag exists. */
 export function decide({ version, runs, remoteTagSha }) {
   const tag = `v${version}`;
   const notGreen = REQUIRED_WORKFLOWS.map((workflow) => [

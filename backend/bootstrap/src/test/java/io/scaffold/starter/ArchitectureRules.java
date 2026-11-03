@@ -26,11 +26,7 @@ import java.util.stream.Stream;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.modulith.test.ApplicationModuleTest;
 
-/**
- * The project's structural rules for one base package. An <em>area</em> is a direct sub-package of
- * the base package other than the shared kernel and the web edge, laid out as
- * {@code <area>.domain|application|adapter...}.
- */
+/** An area is a direct sub-package of the base package other than {@code shared} and {@code web}. */
 final class ArchitectureRules {
 
     private static final Set<String> NON_AREA_PACKAGES = Set.of("shared", "web");
@@ -66,7 +62,6 @@ final class ArchitectureRules {
                 publishedTypesAreDataOnly());
     }
 
-    /** Rules over test classes: an area's integration tests start only that area. */
     List<ArchRule> testRules() {
         return List.of(areaTestsAreModuleTests());
     }
@@ -188,10 +183,6 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    /**
-     * A {@code rehydrate} factory on a {@code domain.model} class rebuilds stored state without the
-     * creation rules, so only {@code domain.model} and the driven adapters may call or reference it.
-     */
     ArchRule onlyDrivenAdaptersRehydrate() {
         DescribedPredicate<JavaClass> mayRehydrate = inLayer("domain.model").or(inLayer("adapter.out"));
         return classes()
@@ -210,12 +201,7 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    /**
-     * What a driving adapter receives carries no business rule it could call instead of a use case:
-     * {@code port.in} and {@code domain.event} hold interfaces without default methods, and records
-     * and enums whose only methods are accessors, {@code equals} / {@code hashCode} / {@code toString}
-     * and static factories returning their own type.
-     */
+    /** What a driving adapter receives carries no business rule it could call instead of a use case. */
     ArchRule publishedTypesAreDataOnly() {
         return classes()
                 .that(isAreaClass()
@@ -339,7 +325,6 @@ final class ArchitectureRules {
                 .orElse(false));
     }
 
-    /** Annotated with {@code annotation} directly, through a composed annotation, or on a superclass. */
     private static boolean carries(JavaClass item, Class<? extends Annotation> annotation) {
         return Stream.concat(Stream.of(item), item.getAllRawSuperclasses().stream())
                 .anyMatch(type -> type.isAnnotatedWith(annotation) || type.isMetaAnnotatedWith(annotation));

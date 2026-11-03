@@ -34,17 +34,12 @@ tasks.named('processResources') {
     }
 }
 
-// The production image: Cloud Native Buildpacks through Spring Boot's own task
-// (docs/adr/0006-container-image-with-buildpacks.md); the root Dockerfile, for hosts that build
-// from source, runs checkSpaPackaged and bootJar instead (ADR 0007). Everything
-// environment-specific (database, credentials, business time zone) comes from environment
-// variables at runtime; nothing here names a secret. developmentOnly dependencies (the Docker Compose support) are not in the jar.
+// Buildpacks image (ADR 0006); the root Dockerfile runs checkSpaPackaged and bootJar instead (ADR 0007).
 def frontendBrowser = layout.projectDirectory.dir('../../frontend/dist/scaffold-starter/browser')
 def angularJson = layout.projectDirectory.file('../../frontend/angular.json')
 def staticRoot = layout.buildDirectory.dir('resources/main/static')
 
-// An image without the SPA would start and pass its health check while serving no page, so
-// building one fails unless every locale of angular.json's i18n block was packaged.
+// Without the SPA an image would pass its health check while serving no page.
 def checkSpaPackaged = tasks.register('checkSpaPackaged') {
     description = 'Fails unless processResources packaged every locale build of the frontend.'
     dependsOn tasks.named('processResources')
@@ -67,8 +62,7 @@ def checkSpaPackaged = tasks.register('checkSpaPackaged') {
 tasks.named('bootBuildImage') {
     dependsOn checkSpaPackaged
     imageName = "${rootProject.name}:${project.version}"
-    // Spring Boot's default builder, named so a Boot upgrade cannot swap it silently. Its
-    // BellSoft Liberica buildpack provides Java 25; BP_JVM_VERSION picks the toolchain's version.
+    // Boot's default builder, named so a Boot upgrade cannot swap it silently.
     builder = 'paketobuildpacks/builder-noble-java-tiny'
     environment = ['BP_JVM_VERSION': java.toolchain.languageVersion.get().toString()]
 }

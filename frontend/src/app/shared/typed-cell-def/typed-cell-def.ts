@@ -1,10 +1,6 @@
 import { Directive, input } from '@angular/core';
 
-/**
- * Types the row of a `*matCellDef` template: `*matCellDef="let product; typedBy: products"`
- * makes `product` a `Product` for the template type checker instead of `any`. Material's own
- * cell definition carries no type, so a typo in a row expression would otherwise compile.
- */
+/** `*matCellDef="let product; typedBy: products"` types the row, which Material's own leaves `any`. */
 @Directive({
   // The input must share matCellDef's microsyntax prefix to be settable from `*matCellDef="…; typedBy: …"`.
   // eslint-disable-next-line @angular-eslint/directive-selector
