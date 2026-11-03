@@ -25,17 +25,17 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+def frontendBrowser = layout.projectDirectory.dir('../../frontend/dist/scaffold-starter/browser')
+
 tasks.named('processResources') {
-    def frontendDist = layout.projectDirectory.dir('../../frontend/dist/scaffold-starter/browser')
-    if (frontendDist.asFile.isDirectory()) {
-        from(frontendDist) {
+    if (frontendBrowser.asFile.isDirectory()) {
+        from(frontendBrowser) {
             into 'static'
         }
     }
 }
 
 // Buildpacks image (ADR 0006); the root Dockerfile runs checkSpaPackaged and bootJar instead (ADR 0007).
-def frontendBrowser = layout.projectDirectory.dir('../../frontend/dist/scaffold-starter/browser')
 def angularJson = layout.projectDirectory.file('../../frontend/angular.json')
 def staticRoot = layout.buildDirectory.dir('resources/main/static')
 

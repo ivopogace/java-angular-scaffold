@@ -1,12 +1,14 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { globSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   appEndpoint,
   buildPlan,
+  builtLocales,
   checkDockerfilePins,
   checkLocalePage,
   checkRootRedirect,
+  defaultLocale,
   imageName,
   isUp,
   parseArgs,
@@ -230,18 +232,57 @@ test("health is UP only for a status UP body", () => {
   assert.ok(!isUp("<html>"));
 });
 
-test("GET / must redirect with a 302 to /de/", () => {
-  assert.equal(checkRootRedirect({ status: 302, location: "/de/" }), null);
+test("builtLocales lists the source locale and every translation", () => {
+  const angular = (i18n) => JSON.stringify({ projects: { app: { i18n } } });
+  assert.deepEqual(
+    builtLocales(angular({ sourceLocale: "en", locales: { de: {}, fr: {} } })),
+    ["en", "de", "fr"],
+  );
+  assert.deepEqual(builtLocales(angular({ sourceLocale: { code: "de" } })), [
+    "de",
+  ]);
+  assert.deepEqual(builtLocales(repoFile("frontend/angular.json")).sort(), [
+    "de",
+    "en",
+  ]);
+});
+
+test("defaultLocale reads SpaWebConfig's DEFAULT_LOCALE", () => {
   assert.equal(
-    checkRootRedirect({ status: 302, location: "http://localhost:8080/de/" }),
+    defaultLocale('static final String DEFAULT_LOCALE = "fr";'),
+    "fr",
+  );
+  assert.throws(() => defaultLocale("class SpaWebConfig {}"), /DEFAULT_LOCALE/);
+  const [config] = globSync(
+    "backend/bootstrap/src/main/java/**/SpaWebConfig.java",
+    { cwd: new URL("..", import.meta.url) },
+  );
+  assert.ok(config, "no SpaWebConfig.java");
+  assert.equal(defaultLocale(repoFile(config)), "de");
+});
+
+test("GET / must redirect with a 302 to the default locale", () => {
+  assert.equal(
+    checkRootRedirect({ status: 302, location: "/de/" }, "de"),
+    null,
+  );
+  assert.equal(
+    checkRootRedirect(
+      { status: 302, location: "http://localhost:8080/de/" },
+      "de",
+    ),
     null,
   );
   assert.match(
-    checkRootRedirect({ status: 302, location: "/en/" }),
+    checkRootRedirect({ status: 302, location: "/en/" }, "de"),
     /expected 302 to \/de\//,
   );
+  assert.equal(
+    checkRootRedirect({ status: 302, location: "/fr/" }, "fr"),
+    null,
+  );
   assert.match(
-    checkRootRedirect({ status: 404, location: null }),
+    checkRootRedirect({ status: 404, location: null }, "de"),
     /answered 404 to nowhere/,
   );
 });
