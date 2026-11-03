@@ -9,8 +9,8 @@ visible in the adapter.
 ## Considered Options
 
 - Spring Data JPA: less code for plain CRUD, but its entities would either be the domain (framework
-  annotations in `core`, against ADR-0002) or a second mapped model on top of the mapping we write
-  anyway.
+  annotations in `application-core`, against ADR-0002) or a second mapped model on top of the
+  mapping we write anyway.
 - Spring Data JDBC: lighter than JPA, but its aggregate conventions want to own the table layout,
   and its repositories are still an abstraction to work around once queries get specific.
 

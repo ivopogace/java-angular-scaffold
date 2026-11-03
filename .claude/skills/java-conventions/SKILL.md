@@ -115,7 +115,7 @@ every layer it passes.
 
 | Behaviour | Test | Where |
 |---|---|---|
-| domain rule, use case | plain JUnit + AssertJ; `port.out` faked in memory, `Clock.fixed(...)` | `backend/core/src/test/java`, same package |
+| domain rule, use case | plain JUnit + AssertJ; `port.out` faked in memory, `Clock.fixed(...)` | `backend/application-core/src/test/java`, same package |
 | controller mapping, validation, status codes | `@WebMvcTest(Controller.class)` + `@MockitoBean` per `port.in` | `bootstrap` tests, controller's package |
 | SQL, constraints, round-trips | `@ApplicationModuleTest` + `@Import(TestcontainersConfiguration.class)` + `@Tag("container")` | `bootstrap` tests, adapter's package |
 | event flow, rollback | `@ApplicationModuleTest` (a `Scenario` parameter needs nothing more), tagged `container` | `bootstrap` tests, area package |

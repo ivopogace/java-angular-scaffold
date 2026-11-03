@@ -6,24 +6,26 @@ Run commands from here; the general list is in the root `AGENTS.md`. Decisions b
 
 ## Layers: Gradle modules, dependencies point inward
 
-- `core/` — domain + application. Runtime classpath: JDK, jMolecules, `jakarta.transaction-api`,
-  `spring-modulith-api` (annotation-only). Spring is not on `core`'s compile classpath, so a
-  Spring import there does not compile; `checkCoreClasspath` fails the build if a dependency drags
-  anything else onto the runtime classpath (invariant #5).
-- `adapters/` — driving (`adapter/in/web`, `adapter/in/event`) and driven (`adapter/out/persistence`,
-  `adapter/out/<gateway>`) adapters; depends on `core` and Spring. Flyway migrations live in
-  `adapters/src/main/resources/db/migration/`.
+- `application-core/` — domain + application. Runtime classpath: JDK, jMolecules,
+  `jakarta.transaction-api`, `spring-modulith-api` (annotation-only). Spring is not on
+  `application-core`'s compile classpath, so a Spring import there does not compile;
+  `checkApplicationCoreClasspath` fails the build if a dependency drags anything else onto the
+  runtime classpath (invariant #5).
+- `adapters/` — driving (`adapter/in/web`, `adapter/in/event`) and driven
+  (`adapter/out/persistence`, `adapter/out/<gateway>`) adapters; depends on `application-core` and
+  Spring. Flyway migrations live in `adapters/src/main/resources/db/migration/`.
 - `bootstrap/` — `Application` (`@SpringBootApplication @Modulithic`), wiring that names no area
   (in the root package, next to `Application`), `application.properties`, and every architecture
   test (the only place all classes are visible).
 
 ## Business area packages
 
-An area is a Spring Modulith module, package `io.scaffold.starter.<area>`, split across `core` and
-`adapters`:
+An area is a Spring Modulith module, package `io.scaffold.starter.<area>`, split across
+`application-core` and `adapters`:
 
 ```
-core:      <area>/package-info.java          @ApplicationModule(allowedDependencies = …)
+application-core:
+           <area>/package-info.java          @ApplicationModule(allowedDependencies = …)
            <area>/domain/model/              INTERNAL  aggregates, entities, value objects (jMolecules)
            <area>/domain/id/                 PUBLISHED typed ids other areas may hold (@NamedInterface)
            <area>/domain/event/              PUBLISHED domain events: records of ids + immutable facts
@@ -49,9 +51,9 @@ The listed packages are the whole shape; no sub-packages beneath them.
   (hold their typed ids, never a raw UUID). Only the `package-info.java` of `domain/id` and
   `domain/event` may import more (Modulith's `@NamedInterface`).
 - `port/in` records use `domain/id`, `shared` and JDK types, never aggregates; services map
-  aggregates to them — the one mapping inside `core`. `port/in` and `domain/event` types carry
-  data, not behaviour: interfaces without default methods, records and enums with only accessors,
-  `equals` / `hashCode` / `toString` and static factories returning their own type.
+  aggregates to them — the one mapping inside `application-core`. `port/in` and `domain/event` types
+  carry data, not behaviour: interfaces without default methods, records and enums with only
+  accessors, `equals` / `hashCode` / `toString` and static factories returning their own type.
 - An area's adapters never use `service`. Driving adapters (`adapter/in`) go through `port/in`:
   never `domain/model` or `port/out`, so no aggregate reaches a REST response. Driven adapters
   (`adapter/out`) implement `port/out` and map aggregates to rows; only they and `domain/model`
@@ -59,9 +61,9 @@ The listed packages are the whole shape; no sub-packages beneath them.
 - A value object several areas need goes to `shared`; one only an area needs stays in its
   `domain/model`.
 
-## Spring-free core: the three replacements
+## Spring-free application-core: the three replacements
 
-| Concern | In `core` | Wired by |
+| Concern | In `application-core` | Wired by |
 |---|---|---|
 | Beans | `@UseCase` on package-private services | `UseCaseConfiguration` scans for it |
 | Transactions | `jakarta.transaction.Transactional` on use-case methods | Spring's transaction support |
@@ -78,9 +80,9 @@ The listed packages are the whole shape; no sub-packages beneath them.
   (invariant #4).
 - Migrations: infrastructure is `V1…`; project migrations continue after it; never edit an applied
   one (invariant #2).
-- Tests: `core` — plain unit tests with in-memory fakes of `port/out`; web — slice tests;
-  persistence and an area's flows — `@ApplicationModuleTest` Testcontainers ITs, which start only
-  that area; the whole app — `@SpringBootTest` in the base package. ITs are tagged `container`
+- Tests: `application-core` — plain unit tests with in-memory fakes of `port/out`; web — slice
+  tests; persistence and an area's flows — `@ApplicationModuleTest` Testcontainers ITs, which start
+  only that area; the whole app — `@SpringBootTest` in the base package. ITs are tagged `container`
   (`-PexcludeTags=container` skips them).
 
 ## The structural net
@@ -89,19 +91,20 @@ All in `bootstrap/src/test/java/`, passing with zero areas. Run after any change
 dependencies or annotations:
 
 ```bash
-./gradlew :core:checkCoreClasspath :bootstrap:test --tests "*ModularityTests*" \
-  --tests "*ArchitectureTest*" --tests "*ArchitectureRulesNegativeTest*"
+./gradlew :application-core:checkApplicationCoreClasspath \
+  :bootstrap:test --tests "*ModularityTests*" --tests "*ArchitectureTest*" \
+  --tests "*ArchitectureRulesNegativeTest*"
 ```
 
-`ModularityTests` runs Modulith's `verify()` (what one area may see of another);
-`ArchitectureTest` applies the project's structural rules (`ArchitectureRules`): the area package
-shape; `domain` depends only on the JDK, jMolecules, `shared`, its own `domain` and other areas'
-`domain/id`; `port/in` and `domain/event` never depend on `domain/model`; services are
-package-private and `@UseCase` when they implement a `port/in` interface; adapter classes and
-`web` are package-private; adapters never use `application/service`; `adapter/in` never uses
-`domain/model` or `port/out`; only `domain/model` and `adapter/out` call a `rehydrate` factory on a
-`domain/model` class; `port/in` and `domain/event` types carry no behaviour; no JPA anywhere; no
-Spring beyond `org.springframework.modulith`, and no `java.sql`, in `core` — plus jMolecules' DDD
-and hexagonal rules; over the test classes, an area's tests are `@ApplicationModuleTest`, never
-`@SpringBootTest`. `ArchitectureRulesNegativeTest` proves each rule fails on a violating fixture.
-A new rule gets a negative fixture in the same change.
+`ModularityTests` runs Modulith's `verify()` (what one area may see of another); `ArchitectureTest`
+applies the project's structural rules (`ArchitectureRules`): the area package shape; `domain`
+depends only on the JDK, jMolecules, `shared`, its own `domain` and other areas' `domain/id`;
+`port/in` and `domain/event` never depend on `domain/model`; services are package-private and
+`@UseCase` when they implement a `port/in` interface; adapter classes and `web` are package-private;
+adapters never use `application/service`; `adapter/in` never uses `domain/model` or `port/out`; only
+`domain/model` and `adapter/out` call a `rehydrate` factory on a `domain/model` class; `port/in` and
+`domain/event` types carry no behaviour; no JPA anywhere; no Spring beyond
+`org.springframework.modulith`, and no `java.sql`, in `application-core` — plus jMolecules' DDD and
+hexagonal rules; over the test classes, an area's tests are `@ApplicationModuleTest`, never
+`@SpringBootTest`. `ArchitectureRulesNegativeTest` proves each rule fails on a violating fixture. A
+new rule gets a negative fixture in the same change.

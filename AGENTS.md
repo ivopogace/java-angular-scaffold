@@ -55,9 +55,9 @@ REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (l
 
 ## Repo map
 
-- `backend/` — Gradle build: `core` (domain + application, Spring-free), `adapters` (web, event
-  listeners, persistence, gateways), `bootstrap` (`Application`, wiring, config, structural net).
-  Flyway migrations: `backend/adapters/src/main/resources/db/migration/`.
+- `backend/` — Gradle build: `application-core` (domain + application, Spring-free), `adapters`
+  (web, event listeners, persistence, gateways), `bootstrap` (`Application`, wiring, config,
+  structural net). Flyway migrations: `backend/adapters/src/main/resources/db/migration/`.
 - `frontend/` — Angular workspace; the build output is served by `bootstrap`, one build per locale
   (`de` default, `en` source); translations in `frontend/src/locale/`.
 - `scripts/` — `verify.mjs` (the one check entry point; CI wrappers call it and nothing else),
@@ -80,12 +80,12 @@ REAL_BACKEND=1 npm run test:e2e:real   # Playwright against the running stack (l
 
 ## Business areas
 
-One row per business area: a Spring Modulith module `<base>.<area>` spanning `core` and `adapters`,
-plus its frontend feature folder. Add the row in the change that adds the area.
+One row per business area: a Spring Modulith module `<base>.<area>` spanning `application-core` and
+`adapters`, plus its frontend feature folder. Add the row in the change that adds the area.
 
 | Area | Owns | Backend | Frontend |
 |---|---|---|---|
-| `catalog` | sample: products and their draft → published → retired lifecycle; the full worked example of an area; delete with `node scripts/remove-sample.mjs` before a shared database applies its migration | `backend/core/src/main/java/io/scaffold/starter/catalog/` | `frontend/src/app/catalog/` | <!-- sample:catalog -->
+| `catalog` | sample: products and their draft → published → retired lifecycle; the full worked example of an area; delete with `node scripts/remove-sample.mjs` before a shared database applies its migration | `backend/application-core/src/main/java/io/scaffold/starter/catalog/` | `frontend/src/app/catalog/` | <!-- sample:catalog -->
 
 ## Invariants
 
@@ -95,7 +95,8 @@ Cited by number — **never renumber**; append new ones at the end.
 2. Schema changes only via forward Flyway migrations.
 3. Money is integer minor units + ISO currency.
 4. Store UTC `Instant`; the business time zone is named in config, never the JVM default.
-5. `core` has no Spring beyond Modulith's annotations; no `domain` class imports any framework.
+5. `application-core` has no Spring beyond Modulith's annotations; no `domain` class imports any
+   framework.
 6. Business areas talk only through `port/in`, `domain/id` and `domain/event`.
 7. Frontend features never import each other.
 8. Styling uses Material tokens and override mixins; no `::ng-deep`, no MDC internals.

@@ -74,123 +74,123 @@ export const SAMPLE_FILES = [
     sha256: "8d3e8b8155935e00652cee3385913aa1044cb4845f97a7459cb8b5303d5219c8",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProduct.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProduct.java",
     sha256: "4269c8bcaba7d5f0e2838d3414b1db0c2dd4ca3f40970683d97c01eb6f0d05c3",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProductCommand.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProductCommand.java",
     sha256: "2bd0dab6d0c8eda68d8b1ed53383464b6d885ef96d77514f5f9731d06b96bacc",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/FindProduct.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/FindProduct.java",
     sha256: "5d3fffb950dd639f39740d911294c21b3aadfe7a3bbdb7da3aa8ded10e89c419",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/ListProducts.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/ListProducts.java",
     sha256: "63580d001b4d1d7cfa3161c72af54b1ebbc778f032ba1fdf8f0ae31006b46a23",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/ProductState.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/ProductState.java",
     sha256: "c32489a87d66bed84ce4fab58760a717427d3294e834f5c870cc9a5a691a9096",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/ProductView.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/ProductView.java",
     sha256: "bd4db1305377d6ab100cadd40384b741787becf76dff0bb97cae6341d8f8d76e",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/PublishOutcome.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/PublishOutcome.java",
     sha256: "5a1b0bf1e2c2bba1f0ba8e89c29e574b97c4c037c77f0d404ab076ba598ac293",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/PublishProduct.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/PublishProduct.java",
     sha256: "84b1660810502a624f54574188773dbaf3888325e03da7d2eabc26a634397ee9",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/RecordProductPublication.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/RecordProductPublication.java",
     sha256: "75e7c4ee30f36110505753e326161103babdd7541d8482fffd9b823d47bef2a5",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/RetireOutcome.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/RetireOutcome.java",
     sha256: "390cce92b6141bbd1bac46b512b43af1690deb56f64d89e7178f9a31e5199f69",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/RetireProduct.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/RetireProduct.java",
     sha256: "3f237b73fdfc043d1801ae1a797b2cf6595457233312e8e07cc98f93086766f0",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/in/package-info.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/package-info.java",
     sha256: "e58b06be0f7a42b6a88df5e5b2ae3e2260e031d6a410bb2ad4a444093068a8d9",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/out/ProductRepository.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/out/ProductRepository.java",
     sha256: "37e55bda9e195bb5e1e5c9d5994d9aeb4d5964a79be05a05873b0a59f9c2b272",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/out/PublicationLog.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/out/PublicationLog.java",
     sha256: "eaa143c14b4f9f88b98e575b2dd5278a1b738d22157234e4c2afcfcd712c1286",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/port/out/package-info.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/out/package-info.java",
     sha256: "834bccbdf338224c574fc082dd153e73fadd910047a48017fcb62837b8c78ce1",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/service/CatalogService.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/service/CatalogService.java",
     sha256: "e92adfa8fd36bba03cd206d754a7a1587b33ad427cc318254fd1dddfc36585f7",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/application/service/PublicationRecorder.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/service/PublicationRecorder.java",
     sha256: "a2a837403684bd4f3a1fc79fcf386d49f8f1b98494f33177d54e8128f468a828",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/domain/event/ProductPublished.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/event/ProductPublished.java",
     sha256: "203bca9b392e547654c1a2500c64070826decba046cc948e27c594fbe545049f",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/domain/event/package-info.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/event/package-info.java",
     sha256: "c839c7c3de7c11c7ab31048dab55144310a6d3bece24a72685bf08bdf5b2e2c1",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/domain/id/ProductId.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/id/ProductId.java",
     sha256: "10ade7510419a3998a9f95e268ffefd7d372609fc2e84be51548537bf2b45905",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/domain/id/package-info.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/id/package-info.java",
     sha256: "e2cb30e9aa3a7ec5f1537f28e07084a3a965cc852fc5607f2a9c7a737b70560f",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/domain/model/Product.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/model/Product.java",
     sha256: "516510f37f42e0fd81117bdbc2c4e906434b5383a82da31d00e04884c71eae66",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/domain/model/ProductStatus.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/model/ProductStatus.java",
     sha256: "649532412c6dbacda3bab5d5e9d96cef5f368ee13f96ca24f28dfb3ad64ec794",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/domain/model/PublishCheck.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/model/PublishCheck.java",
     sha256: "ed498b347d78392d392a479da4717ed42086003c154242f7e39614289eedc3d1",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/domain/model/package-info.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/model/package-info.java",
     sha256: "1f25fba6b7154787c406d43607962b4b95146d7a5f3d454350cb2acd68424061",
   },
   {
-    path: "backend/core/src/main/java/io/scaffold/starter/catalog/package-info.java",
+    path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/package-info.java",
     sha256: "5beeff8e32026103af71cfd1d6f5f7be49e9af2f160355052f89d08c4b30cd58",
   },
   {
-    path: "backend/core/src/test/java/io/scaffold/starter/catalog/application/service/CatalogServiceTest.java",
+    path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/application/service/CatalogServiceTest.java",
     sha256: "43db1b076bc027b04f0128db0c4c1b3e18a1b08ed30e51ef8df98ad7bf577373",
   },
   {
-    path: "backend/core/src/test/java/io/scaffold/starter/catalog/application/service/InMemoryProductRepository.java",
+    path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/application/service/InMemoryProductRepository.java",
     sha256: "7cd8e9759f0b1427f5c38deacc61e37f095a2231874891c3b8564aba3cc018a0",
   },
   {
-    path: "backend/core/src/test/java/io/scaffold/starter/catalog/application/service/RecordingEventPublisher.java",
+    path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/application/service/RecordingEventPublisher.java",
     sha256: "0c7dbde1b9a58e40c42c17b6104572d3af684efb3a372ecd631a7fe0bc1c930e",
   },
   {
-    path: "backend/core/src/test/java/io/scaffold/starter/catalog/domain/model/ProductTest.java",
+    path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/domain/model/ProductTest.java",
     sha256: "357f994d1ad0e0a8cdbbd632002b9f85e91729e932b3d6ab2fc37ea3bdc3b4e5",
   },
   {

@@ -16,7 +16,7 @@ keeps it framework-free (ADR-0002).
 - Other areas see an area only through `application/port/in` (use-case interfaces whose command and
   result records use typed ids, `shared` and JDK types, never aggregates), `domain/id` and
   `domain/event`. `domain/model`, `port/out`, `service` and the adapters stay internal. Services map
-  aggregates to `port/in` records, the one mapping inside `core`.
+  aggregates to `port/in` records, the one mapping inside `application-core`.
 - Ids and events are domain concepts, so they live under `domain`; they get their own sub-packages
   only because Spring Modulith publishes or hides whole packages (`@NamedInterface` on their
   `package-info.java`), which leaves `domain/model` the one hidden domain package. A domain class may

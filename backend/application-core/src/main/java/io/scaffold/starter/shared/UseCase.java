@@ -6,7 +6,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Bootstrap registers every type carrying this as a bean, so {@code core} needs no Spring stereotype. */
+/** Bootstrap registers every type carrying this as a bean, so {@code application-core} needs no Spring stereotype. */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented

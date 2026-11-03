@@ -49,7 +49,7 @@ final class ArchitectureRules {
 
     List<ArchRule> all() {
         return List.of(
-                coreIsSpringFree(),
+                applicationCoreIsSpringFree(),
                 domainIsPure(),
                 areaPackageShape(),
                 servicesArePackagePrivateUseCases(),
@@ -77,15 +77,15 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    ArchRule coreIsSpringFree() {
+    ArchRule applicationCoreIsSpringFree() {
         DescribedPredicate<JavaClass> forbidden = resideInAnyPackage("org.springframework..")
                 .and(not(resideInAnyPackage("org.springframework.modulith..")))
                 .or(resideInAnyPackage("java.sql..", "javax.sql.."))
                 .as("Spring (other than Spring Modulith) or SQL types");
         return noClasses()
-                .that(isCore())
+                .that(isApplicationCore())
                 .should().dependOnClassesThat(forbidden)
-                .as("core (domain, application, shared) is free of Spring and SQL")
+                .as("application-core (domain, application, shared) is free of Spring and SQL")
                 .allowEmptyShould(true);
     }
 
@@ -294,8 +294,8 @@ final class ArchitectureRules {
         return DescribedPredicate.describe("area classes", item -> areaOf(item).isPresent());
     }
 
-    private DescribedPredicate<JavaClass> isCore() {
-        return DescribedPredicate.describe("core classes", item -> {
+    private DescribedPredicate<JavaClass> isApplicationCore() {
+        return DescribedPredicate.describe("application-core classes", item -> {
             String pkg = item.getPackageName();
             if (pkg.equals(basePackage + ".shared") || pkg.startsWith(basePackage + ".shared.")) {
                 return true;
