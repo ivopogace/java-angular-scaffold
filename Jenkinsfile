@@ -1,6 +1,4 @@
-// Unverified example: not run against a real Jenkins instance.
-// Agent label: 'docker-jdk25-node' must name an agent with JDK 25, the Node version in .nvmrc and a Docker
-// daemon (Testcontainers and the image smoke tests need it). Rename the label to match yours.
+// Unverified example. 'docker-jdk25-node' must name an agent with JDK 25, the .nvmrc Node and Docker.
 pipeline {
   agent { label 'docker-jdk25-node' }
   stages {

@@ -20,11 +20,7 @@ const FORM_PATH = '/catalog/new';
 @Component({ template: '' })
 class ListStub {}
 
-/*
- * Under `provideHttpClientTesting()` an open `HttpClient` request is no pending task, so harness
- * calls do not wait for the POST. Nor is a Signal Forms submission: what follows the answer
- * (re-enabling the button, the snackbar, the navigation) is polled for.
- */
+// Neither the POST nor a Signal Forms submission is a pending task, so what follows the answer is polled for.
 describe('ProductForm', () => {
   let http: HttpTestingController;
   let router: RouterTestingHarness;

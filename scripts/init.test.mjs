@@ -66,8 +66,7 @@ const vendoredSkillDirs = Object.keys(
   JSON.parse(readFileSync(join(repoRoot, "skills-lock.json"), "utf8")).skills,
 ).map((name) => `.claude/skills/${name}/`);
 
-// After remove-sample (the template CI skeleton job) the sample-specific
-// assertions have nothing to work on; the rest still run.
+// After remove-sample (the template CI skeleton job) the sample-specific assertions are skipped.
 const sampleShipped = SAMPLE_FILES.some((f) =>
   existsSync(join(repoRoot, f.path)),
 );
@@ -80,10 +79,6 @@ const git = (root, args, env = {}) =>
     stdio: ["ignore", "pipe", "pipe"],
   });
 
-/**
- * A committed throwaway repository holding the template's tracked and
- * untracked-not-ignored files, optionally with CRLF text.
- */
 async function copyRepo(t, { crlf = false } = {}) {
   const listed = execFileSync(
     "git",
@@ -124,11 +119,7 @@ async function copyRepo(t, { crlf = false } = {}) {
   return root;
 }
 
-/**
- * Spawns without blocking, so the copy-based tests can run in parallel.
- *
- * @returns {Promise<{ status: number | null, stdout: string, stderr: string }>}
- */
+/** Non-blocking, so the copy-based tests can run in parallel. */
 function run(
   command,
   args,
@@ -231,10 +222,7 @@ test("TEMPLATE_VERSION is X.Y.Z", () => {
   assert.match(TEMPLATE_VERSION, /^\d+\.\d+\.\d+$/);
 });
 
-/**
- * A copy whose `.git` is saved aside, plus an `afterInit` that writes it back over the fresh one,
- * as a git process still running in the clone would: `times` attempts get the old history back.
- */
+/** `afterInit` writes the saved `.git` back over the fresh one `times` times, as a lingering git process would. */
 async function copyWithReturningHistory(t, times) {
   const root = await copyRepo(t);
   const saved = mkdtempSync(join(tmpdir(), "init-git-"));
@@ -831,10 +819,7 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
 
   test("a failing git commit prints the state and the commands that finish the history", async (t) => {
     const root = await copyRepo(t);
-    // The commit is made to fail by signing it with a gpg that does not exist. The developer's
-    // global and system config are shut out, or a `gpg.format=ssh` there (with its own working
-    // `gpg.ssh.program`) would sign through that program and ignore `gpg.program`; the format is
-    // pinned to openpgp for the same reason.
+    // A missing gpg fails the commit; outside config is shut out so a `gpg.format=ssh` cannot sign instead.
     const emptyConfig = `${root}-gitconfig`;
     writeFileSync(emptyConfig, "");
     t.after(() => rmSync(emptyConfig, { force: true }));

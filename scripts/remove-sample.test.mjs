@@ -25,8 +25,7 @@ import {
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const MARKER = "sample:catalog";
 
-// Once the sample is removed there is nothing to copy and remove; the helper
-// tests below still run. Partial presence stays loud via the hash test.
+// Once the sample is removed only the helper tests run; partial presence stays loud via the hash test.
 const sampleShipped = SAMPLE_FILES.some((f) =>
   existsSync(join(repoRoot, f.path)),
 );

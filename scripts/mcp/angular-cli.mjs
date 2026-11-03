@@ -1,13 +1,4 @@
-/**
- * Launches the `angular-cli` MCP server for Claude Code (`.mcp.json`) and opencode (`opencode.json`).
- *
- * Prefers the repo-local CLI: spawning the installed binary needs no network, whereas `npx` resolves
- * the package against the registry on every start and can miss the tool's connect timeout. Before
- * `npm ci` has run it falls back to `npx` (run as `launch.mjs` describes) with the exact
- * `@angular/cli` version `frontend/package.json` pins. The install counts as complete only once npm
- * has written `node_modules/.package-lock.json`, so a half-finished install is not mistaken for a
- * usable one.
- */
+// Prefers the installed CLI: npx resolves against the registry on every start and can miss the connect timeout.
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -15,12 +6,6 @@ import { launch, resolveNpx } from "./launch.mjs";
 
 const projectDir = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-/**
- * How to start the server. Pure: `exists`, `cliVersion`, `execPath` and `platform` are injected so
- * tests need no filesystem.
- *
- * @returns {{ command: string, args: string[], shell: boolean, local: boolean }}
- */
 export function resolveLauncher(
   root,
   {

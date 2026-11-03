@@ -6,15 +6,11 @@ import { CreateProductRequest, Product } from './catalog.model';
 
 const PRODUCTS_URL = '/api/catalog/products';
 
-/** The catalog REST API. Nothing is requested until a component asks. */
 @Service()
 export class CatalogService {
   private readonly http = inject(HttpClient);
 
-  /**
-   * A resource over the product list. Call it from a component's field initializer, so the
-   * request starts with that component and ends with it; reload it after a change.
-   */
+  /** Call from a component's field initializer, so the request lives and ends with it; reload after a change. */
   loadProducts(): HttpResourceRef<Product[] | undefined> {
     assertInInjectionContext(this.loadProducts);
     return httpResource<Product[]>(() => PRODUCTS_URL);

@@ -8,11 +8,7 @@ const ALLOWED_TARGETS = {
   pages: ['core', 'shared'],
 };
 
-/**
- * The top-level folder of `src/app/` that `file` lives in or names (`../orders` and `../orders/x`
- * are both `orders`); `APP_ROOT` for a loose file in `src/app/` itself, told apart from a folder by
- * its dot (`app.routes`; folder names are kebab-case); null outside `src/app/`.
- */
+/** `APP_ROOT` for a loose file in `src/app/`, told from a kebab-case folder by its dot; null outside `src/app/`. */
 function topFolder(file) {
   const segments = path.resolve(file).split(/[\\/]/);
   for (let i = segments.length - 2; i >= 0; i--) {
@@ -27,7 +23,6 @@ function topFolder(file) {
   return null;
 }
 
-/** Whether a file in top folder `from` may import from top folder `to` (the two differ). */
 function mayImport(from, to) {
   if (SHARED_KERNEL.includes(from)) {
     return ALLOWED_TARGETS[from].includes(to);
@@ -36,12 +31,7 @@ function mayImport(from, to) {
   return to === 'core' || to === 'shared' || to === APP_ROOT;
 }
 
-/**
- * Enforces the `src/app/` import direction: `shared` imports nothing app-internal, `core`
- * only `shared`, `pages` only `core` and `shared`, and a feature folder only `core` and `shared`,
- * never another feature. Covers `import`, `export … from` and `import()` with a relative literal
- * specifier, resolved against the importing file; package imports are not app-internal and are ignored.
- */
+/** Covers `import`, `export … from` and `import()` with a relative literal specifier; package imports pass. */
 export default {
   meta: {
     type: 'problem',

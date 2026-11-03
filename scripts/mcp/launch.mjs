@@ -1,10 +1,4 @@
-/**
- * Shared by the MCP launchers: how to run `npx`, and how to tie a launcher to the server it starts.
- *
- * npm's `npx-cli.js` is started with the running node, so no shell is needed. Only a node without npm
- * beside it falls back to the name `npx`; on Windows that needs cmd.exe, so the command is one quoted
- * string with empty `args` (a shell spawn with an args array is unescaped, Node DEP0190).
- */
+// Without npm beside node, Windows spawns `npx` via cmd.exe as one quoted string: shell args are unescaped (DEP0190).
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -20,11 +14,6 @@ export function npxCliCandidates(execPath) {
   ];
 }
 
-/**
- * How to run `npx <npxArgs>`. Pure: `execPath`, `exists` and `platform` are injected.
- *
- * @returns {{ command: string, args: string[], shell: boolean }} the `spawn` arguments.
- */
 export function resolveNpx(
   npxArgs,
   {
@@ -45,10 +34,7 @@ export function resolveNpx(
   };
 }
 
-/**
- * Starts the server with inherited stdio and ties this launcher to it: the MCP client stops the
- * launcher by pid, so signals are forwarded and the launcher exits with the server's code.
- */
+/** The MCP client stops the launcher by pid, so signals are forwarded and the server's exit code passed on. */
 export function launch({ command, args, shell }, label) {
   const child = spawn(command, args, { stdio: "inherit", shell });
   for (const signal of ["SIGTERM", "SIGINT", "SIGHUP"]) {

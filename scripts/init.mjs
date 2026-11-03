@@ -101,17 +101,7 @@ template-only files, replaces .git with a fresh history of one commit and runs
 verify. It refuses on a working tree with uncommitted changes.
 `;
 
-/**
- * @typedef {{ name?: string, package?: string, display?: string,
- *   sample?: string, ci?: string[], skipVerify: boolean, yes: boolean,
- *   help: boolean }} Answers
- * Absent answers are `undefined`; `ci` is `[]` when given empty.
- */
-
-/**
- * @returns {Answers}
- * @throws {Error} on an unknown option or an option without its value
- */
+/** @throws {Error} on an unknown option or an option without its value */
 export function parseArgs(argv) {
   const answers = { skipVerify: false, yes: false, help: false };
   const valued = {
@@ -156,7 +146,6 @@ const splitList = (value) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-/** @returns {string[]} one message per invalid or missing answer; empty when all are valid. */
 export function validate(answers) {
   const errors = [];
   const {
@@ -240,27 +229,7 @@ function packageErrors(pkg) {
   });
 }
 
-/**
- * @typedef {{ type: "removeSample" }
- *   | { type: "rewrite", path: string, replacements: [string, string][] }
- *   | { type: "move", from: string, to: string }
- *   | { type: "refreshSampleHashes" }
- *   | { type: "delete", path: string }
- *   | { type: "rename", from: string, to: string }
- *   | { type: "fillIn", path: string, body: string }} Change
- * Paths are root-relative with forward slashes. Order matters: sample removal
- * comes first, since its drift check hashes the files as shipped, and is the
- * one step that can refuse; rewrites name files at their original paths,
- * before the moves.
- */
-
-/**
- * The changes that turn the template under `root` into the project `answers`
- * describe. Reads the tree and writes nothing.
- *
- * @param {Answers} answers valid answers (see {@link validate})
- * @returns {Change[]}
- */
+/** Writes nothing. Sample removal comes first: its drift check hashes the files as shipped, and it can refuse. */
 export function planChanges(root, answers) {
   const removing = answers.sample === "remove";
   const ci = answers.ci ?? DEFAULT_CI;
@@ -335,11 +304,7 @@ function vendoredSkillDirs(root) {
   );
 }
 
-/**
- * Applies `changes` (from {@link planChanges}) under `root`, in order.
- *
- * @throws {Error} when the sample cannot be removed or a fill-in section is missing
- */
+/** @throws {Error} when the sample cannot be removed or a fill-in section is missing */
 export async function applyChanges(root, changes) {
   for (const change of changes) {
     const at = (path) => join(root, path);
@@ -390,12 +355,7 @@ export async function applyChanges(root, changes) {
   }
 }
 
-/**
- * Replaces every token in one pass, so a replacement's output is never rescanned for another
- * token; where tokens overlap, the longest match wins.
- *
- * @param {[string, string][]} replacements token → replacement
- */
+/** One pass, so a replacement's output is never rescanned; where tokens overlap, the longest wins. */
 export function replaceTokens(text, replacements) {
   const byToken = new Map(replacements);
   if (byToken.size === 0) return text;
@@ -471,7 +431,6 @@ const git = (root, args) =>
 const gitSucceeds = (root, args) =>
   spawnSync("git", args, { cwd: root, stdio: "ignore" }).status === 0;
 
-/** @returns {string | null} why Node `running` is older than the major `required` names, or null. */
 export function nodeVersionProblem(running, required) {
   const major = (version) => Number(version.replace(/^v/, "").split(".")[0]);
   return major(running) < major(required)
@@ -479,7 +438,6 @@ export function nodeVersionProblem(running, required) {
     : null;
 }
 
-/** @returns {string | null} why init cannot run under `root`, or null. */
 function refusal(root) {
   if (!existsSync(join(root, MARKER_FILE))) return "Already initialized.";
   const nvmrc = join(root, ".nvmrc");
@@ -501,10 +459,7 @@ function refusal(root) {
     : null;
 }
 
-/**
- * Line-by-line questions on stdin. The line iterator buffers, so piped input
- * is not lost between questions; once stdin ends every answer is `fallback`.
- */
+/** One line iterator for all questions, so piped input survives; after EOF every answer is `fallback`. */
 async function prompter() {
   const { createInterface } = await import("node:readline");
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -564,17 +519,7 @@ const HISTORY_RETRY_PAUSE_MS = 2000;
 const pause = (ms) =>
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 
-/**
- * Replaces `.git` with a fresh repository holding one commit on `main`. A git process still running
- * in the clone (maintenance detached after the clone) can write the old history back while `.git`
- * is replaced, so the result is checked after the commit and rebuilt, after a pause, until the
- * repository holds that one commit alone.
- *
- * @param {{ pauseMs?: number, afterInit?: () => void }} [options] `afterInit` runs after each
- *   `git init`; tests use it to bring the old history back
- * @returns {boolean} false when git has no identity
- * @throws {Error} when a git command fails, or the old history is still there after the last attempt
- */
+/** Retries while a lingering git process writes the old history back; false when git has no identity. */
 export function freshHistory(
   root,
   { pauseMs = HISTORY_RETRY_PAUSE_MS, afterInit = () => {} } = {},

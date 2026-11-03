@@ -39,13 +39,7 @@ const SHIRT: Product = {
   publishedAt: '2030-01-14T12:00:00Z',
 };
 
-/*
- * The list is an `httpResource`, whose load is a pending task: `whenStable()`, and so every
- * harness call, waits until the list request is flushed. While it is open the specs render with
- * `TestBed.tick()` and drive harnesses inside `manualChangeDetection`. The publish and retire
- * POSTs are plain `HttpClient` requests, which `provideHttpClientTesting()` keeps out of
- * stability, so clicks that send them need neither.
- */
+// The list `httpResource` is a pending task that holds every harness call until flushed; the POSTs are not.
 describe('ProductList', () => {
   let http: HttpTestingController;
   let fixture: ComponentFixture<ProductList>;
@@ -129,8 +123,7 @@ describe('ProductList', () => {
     await render([POSTER]);
     const publish = await button('Publish Poster');
 
-    // Without a render between the clicks the button is still enabled, so the second click reaches
-    // the component's guard instead of being skipped by the harness as a click on a disabled button.
+    // Without a render between the clicks the second one reaches the component's guard, not a disabled button.
     await manualChangeDetection(async () => {
       await publish.click();
       await publish.click();

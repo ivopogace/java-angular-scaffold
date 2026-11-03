@@ -14,12 +14,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-/**
- * Proves {@link ArchitectureRules} can fail: each deliberately mis-shaped class under
- * {@code archfixture} must be reported by the rule meant to catch it, and the conforming
- * {@code archfixture.clean} area by none. The fixtures sit outside the application's base
- * package, so the production scan never sees them.
- */
+/** Each mis-shaped {@code archfixture} class must trip its rule, {@code archfixture.clean} none. */
 class ArchitectureRulesNegativeTest {
 
     private static final String FIXTURE_BASE = "archfixture";
