@@ -3,14 +3,13 @@ import { execFileSync, spawnSync } from "node:child_process";
 import {
   existsSync,
   mkdirSync,
-  readdirSync,
   readFileSync,
   renameSync,
-  rmdirSync,
   rmSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { pruneEmptyParents } from "./lib/fs.mjs";
 import { normalizeEol, rewritePreservingEol } from "./lib/text.mjs";
 
 // Loaded only when present, so a stray copy of this script still refuses cleanly in an initialized project.
@@ -404,19 +403,6 @@ async function refreshSampleHashes(root) {
     console.warn(
       `remove-sample.mjs hashes not refreshed; missing:\n  ${result.missing.join("\n  ")}`,
     );
-  }
-}
-
-/** Removes `dir` and its ancestors below `root` while they are empty. */
-function pruneEmptyParents(root, dir) {
-  const stop = resolve(root);
-  let current = resolve(dir);
-  while (current !== stop && current.startsWith(stop)) {
-    if (existsSync(current)) {
-      if (readdirSync(current).length > 0) return;
-      rmdirSync(current);
-    }
-    current = dirname(current);
   }
 }
 

@@ -7,37 +7,23 @@ on:
   pull_request:
 
 jobs:
-  as-shipped:
+  verify:
+    # The variant alone, so each check keeps its name (as-shipped, skeleton, initialized).
+    name: ${{ matrix.variant }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '25'
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-      - run: node scripts/verify.mjs
-
-  skeleton:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-java@v6
-        with:
-          distribution: temurin
-          java-version: '25'
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-      - run: node scripts/remove-sample.mjs && node scripts/verify.mjs
-
-  initialized:
-    runs-on: ubuntu-latest
-    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - variant: as-shipped
+            run: node scripts/verify.mjs
+          - variant: skeleton
+            run: node scripts/remove-sample.mjs && node scripts/verify.mjs
+          - variant: initialized
+            run: >-
+              node scripts/init.mjs --yes --name acme-orders --package com.acme.orders
+              --display "Acme Orders" --sample keep --ci github
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v6
@@ -48,9 +34,8 @@ jobs:
         with:
           node-version-file: .nvmrc
       # Global, because init replaces .git and with it any repository-local identity.
-      - run: |
+      - if: matrix.variant == 'initialized'
+        run: |
           git config --global user.name "Template CI"
           git config --global user.email "template-ci@example.invalid"
-      - run: >-
-          node scripts/init.mjs --yes --name acme-orders --package com.acme.orders
-          --display "Acme Orders" --sample keep --ci github
+      - run: ${{ matrix.run }}

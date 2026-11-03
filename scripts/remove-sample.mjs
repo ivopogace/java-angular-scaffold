@@ -1,11 +1,5 @@
 #!/usr/bin/env node
-import {
-  existsSync,
-  readdirSync,
-  readFileSync,
-  rmdirSync,
-  rmSync,
-} from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -13,6 +7,7 @@ import {
   rewritePreservingEol,
   sha256Normalized,
 } from "./lib/text.mjs";
+import { pruneEmptyParents } from "./lib/fs.mjs";
 
 const MARKER = "sample:catalog";
 
@@ -344,21 +339,6 @@ function markerLines(file) {
     .split("\n")
     .filter((line) => line.includes(MARKER)).length;
 }
-
-/** Removes `dir` and its ancestors below `root` while they are empty or already gone. */
-function pruneEmptyParents(root, dir) {
-  const stop = resolve(root);
-  let current = resolve(dir);
-  while (current !== stop && current.startsWith(stop)) {
-    if (existsSync(current)) {
-      if (!isEmpty(current)) return;
-      rmdirSync(current);
-    }
-    current = dirname(current);
-  }
-}
-
-const isEmpty = (dir) => readdirSync(dir).length === 0;
 
 /** Rewrites the recorded hashes in this script from the files on disk. */
 export function refreshHashes(root, scriptPath) {

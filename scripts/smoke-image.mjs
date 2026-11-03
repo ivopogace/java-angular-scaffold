@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { execFileSync, spawnSync } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { readFileSync } from "node:fs";
+import { globSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
@@ -23,6 +23,7 @@ network, checks health and the localized SPA, and removes everything it started.
                           builds it first)`;
 
 const APP_PORT = 8080;
+const SPA_WEB_CONFIG = "backend/bootstrap/src/main/java/**/SpaWebConfig.java";
 const DB = { name: "smoke", user: "smoke", password: "smoke" };
 const HEALTH_TIMEOUT_MS = 180_000;
 const DB_TIMEOUT_MS = 60_000;
@@ -219,11 +220,28 @@ export function isUp(body) {
   }
 }
 
-export function checkRootRedirect({ status, location }) {
+/** The locales `angular.json` builds: the source locale, then each translation. */
+export function builtLocales(angularJson) {
+  const { i18n } = Object.values(JSON.parse(angularJson).projects)[0];
+  const source =
+    typeof i18n.sourceLocale === "object"
+      ? i18n.sourceLocale.code
+      : i18n.sourceLocale;
+  return [source, ...Object.keys(i18n.locales ?? {})];
+}
+
+/** `SpaWebConfig.DEFAULT_LOCALE`, where `/` sends a request without a language preference. */
+export function defaultLocale(spaWebConfig) {
+  const locale = spaWebConfig.match(/DEFAULT_LOCALE\s*=\s*"([^"]+)"/);
+  if (!locale) throw new Error("SpaWebConfig.java declares no DEFAULT_LOCALE");
+  return locale[1];
+}
+
+export function checkRootRedirect({ status, location }, locale) {
   const path = location && new URL(location, "http://app").pathname;
-  return status === 302 && path === "/de/"
+  return status === 302 && path === `/${locale}/`
     ? null
-    : `GET / answered ${status} to ${location ?? "nowhere"}; expected 302 to /de/`;
+    : `GET / answered ${status} to ${location ?? "nowhere"}; expected 302 to /${locale}/`;
 }
 
 export function checkLocalePage(locale, { status, contentType, body }) {
@@ -264,7 +282,7 @@ async function step(name, command, args, cwd) {
   return false;
 }
 
-async function smoke(names, baseUrl) {
+async function smoke(names, baseUrl, { locales, fallback }) {
   await waitFor("Postgres", DB_TIMEOUT_MS, () => {
     try {
       docker(names.dbReady, { quiet: true });
@@ -289,12 +307,12 @@ async function smoke(names, baseUrl) {
   });
   const root = await fetch(`${url}/`, { redirect: "manual" });
   const problems = [
-    checkRootRedirect({
-      status: root.status,
-      location: root.headers.get("location"),
-    }),
+    checkRootRedirect(
+      { status: root.status, location: root.headers.get("location") },
+      fallback,
+    ),
   ];
-  for (const locale of ["de", "en"]) {
+  for (const locale of locales) {
     const page = await fetch(`${url}/${locale}/`);
     problems.push(
       checkLocalePage(locale, {
@@ -353,6 +371,13 @@ async function main(argv) {
   for (const { name, command, args: commandArgs, cwd } of build.steps) {
     if (!(await step(name, command, commandArgs, cwd))) return 1;
   }
+  const [spaWebConfig] = globSync(SPA_WEB_CONFIG, { cwd: root });
+  if (!spaWebConfig) {
+    console.error(`✘ image smoke test: no ${SPA_WEB_CONFIG}`);
+    return 1;
+  }
+  const locales = builtLocales(read("frontend/angular.json"));
+  const fallback = defaultLocale(read(spaWebConfig));
   const endpoint = appEndpoint(process.env.DOCKER_HOST);
   const names = plan({
     id: randomBytes(4).toString("hex"),
@@ -369,9 +394,9 @@ async function main(argv) {
   try {
     docker(["network", "create", names.network], { quiet: true });
     docker(names.dbRun, { quiet: true });
-    await smoke(names, `http://${endpoint.host}`);
+    await smoke(names, `http://${endpoint.host}`, { locales, fallback });
     console.log(
-      `✔ ${image} (${args.builder}) is healthy and serves /de/ and /en/`,
+      `✔ ${image} (${args.builder}) is healthy and serves ${locales.map((locale) => `/${locale}/`).join(", ")}`,
     );
     return 0;
   } catch (error) {
