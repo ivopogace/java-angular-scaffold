@@ -75,6 +75,9 @@ dependencies or annotations:
   --tests "*ArchitectureRulesNegativeTest*"
 ```
 
-`ModularityTests` checks what one area may see of another, `ArchitectureTest` the rules above
-(`ArchitectureRules`), `ArchitectureRulesNegativeTest` that each rule fails on a violating fixture;
-a new rule gets a negative fixture in the same change.
+`ModularityTests` checks what one area may see of another. `ArchitectureTest` applies
+`ArchitectureRules`: the package shape and *What may cross* above, plus package-private adapter
+classes and `web`; no JPA anywhere; no Spring beyond Modulith and no `java.sql` / `javax.sql` in
+`application-core`; jMolecules' DDD and hexagonal rules; and, over the tests, area tests are
+`@ApplicationModuleTest`, never `@SpringBootTest`. `ArchitectureRulesNegativeTest` proves each rule
+fails on a violating fixture; a new rule gets one in the same change.

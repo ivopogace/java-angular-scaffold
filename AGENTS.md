@@ -14,7 +14,7 @@ It ships one removable sample business area (see *Business areas*).
 ## Commands
 
 ```bash
-node scripts/verify.mjs            # everything CI runs (CI calls nothing else); needs Docker
+node scripts/verify.mjs            # everything CI runs; the CI wrappers call nothing else; needs Docker
 node scripts/verify.mjs --quick    # inner loop: skips Testcontainers ITs, npm audit, e2e, image smoke
 ```
 
