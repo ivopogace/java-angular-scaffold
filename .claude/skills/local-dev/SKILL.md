@@ -110,7 +110,6 @@ database has applied the sample migration, remove by hand and add a forward drop
 | Testcontainers `Could not find a valid Docker environment` | `docker info` must succeed for the same user; the ITs do not skip themselves, `-PexcludeTags=container` does |
 | toolchain error naming Java 25 | install JDK 25 and point `JAVA_HOME` at it |
 | Playwright: browser executable doesn't exist | `npx playwright install chromium` from `frontend/` (the full verify does this) |
-| Flyway: `Detected resolved migration not applied to database: 0.9.1` | the local database migrated past `V1` before that sample migration (below `V1`) existed: `docker compose down -v` from the repo root (drops the local database), then `bootRun` again |
 | `bootRun` fails to bind 5432 | another Postgres holds the port; stop it |
 | `bootRun`'s Postgres exits with "data in /var/lib/postgresql/data (unused mount/volume)" | the container was created by an older Postgres major; `docker compose down -v` from the repo root (drops the local database), then `bootRun` again |
 | `frontend audit` fails | a high or critical advisory reached a dependency: take the patched version (`npm audit` names it; Renovate's lock-file maintenance and vulnerability PRs bring it too), never lower `--audit-level` |

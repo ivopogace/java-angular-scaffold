@@ -170,7 +170,6 @@ describe('ProductList', () => {
     ['NO_PRICE', 'Add a price before publishing.'],
     ['NOT_DRAFT', 'Only draft products can be published.'],
     ['NOT_PUBLISHED', 'Only published products can be retired.'],
-    ['CONCURRENT_CHANGE', 'Someone else changed this product at the same time. Try again.'],
   ])('explains a %s conflict in a snackbar', async (reason, message) => {
     await render([POSTER]);
 
@@ -180,6 +179,21 @@ describe('ProductList', () => {
       .flush({ reason }, { status: 409, statusText: 'Conflict' });
 
     expect(await snackBarMessage()).toBe(message);
+  });
+
+  it('explains a concurrent change and reloads the list to show the current state', async () => {
+    await render([POSTER]);
+
+    await (await button('Publish Poster')).click();
+    http
+      .expectOne(`${LIST_URL}/p2/publish`)
+      .flush({ reason: 'CONCURRENT_CHANGE' }, { status: 409, statusText: 'Conflict' });
+    await flushList([{ ...POSTER, state: 'PUBLISHED' }]);
+
+    expect(await snackBarMessage()).toBe(
+      'Someone else changed this product at the same time. Try again.',
+    );
+    expect((await rows())[0][2]).toBe('Published');
   });
 
   it('falls back to a generic message for other failures', async () => {

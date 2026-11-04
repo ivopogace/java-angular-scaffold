@@ -58,7 +58,7 @@ export const SAMPLE_FILES = [
     sha256: "300e7bbb97ae3889ea7b4850be7248f4917f4f1a224bc40b18e68d9cfe75cd8b",
   },
   {
-    path: "backend/adapters/src/main/resources/db/migration/V0_9_1__catalog_product_version.sql",
+    path: "backend/adapters/src/main/resources/db/migration/V2__catalog_product_version.sql",
     sha256: "3c297d9b0068e493880d0e7744a294ddfb86b36dc5ffff5c0a46ee3a6f866c3f",
   },
   {
@@ -119,7 +119,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/RetireOutcome.java",
-    sha256: "f95fd112c3ca3704e811d5cc8623d32ae4e09c1387bd9fc0231de120ecde6732",
+    sha256: "140cc28b8e2d27a89aa6fc952dc62d260f737d581df6b71ee28f123dbe986d35",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/RetireProduct.java",
@@ -251,11 +251,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.spec.ts",
-    sha256: "34556e72210434a0497bd74505cc05b3b2b82ac62664243e00da40b664bff1c5",
+    sha256: "41ac6c0b24ad8b515c628974f98d5312054bac178c76b6744d0e8bbd9c5c52b6",
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.ts",
-    sha256: "8dc6645019b62e33eaa0cb8714443c2591834af12eff08eed3d4e684f4eb3e44",
+    sha256: "db1c5f7d59f550607aeb7ef009072db04fb4d4c8802e5ab08c85851db6ef40b0",
   },
 ];
 
@@ -273,7 +273,7 @@ Usage: node scripts/remove-sample.mjs [--refresh-hashes]
 
 The script deletes a fixed list of files and refuses to run if any of them was
 edited. Removal is a setup-time action: once a shared database has run the
-sample migrations (V0_9__catalog_sample.sql, V0_9_1__catalog_product_version.sql),
+sample migrations (V0_9__catalog_sample.sql, V2__catalog_product_version.sql),
 remove the code by hand and add a forward migration that drops the catalog tables.
 
   --refresh-hashes   re-record the hashes of SAMPLE_FILES after editing a sample file
@@ -281,7 +281,7 @@ remove the code by hand and add a forward migration that drops the catalog table
 
 const DRIFT_INSTRUCTIONS = `Sample files were edited; nothing was removed.
 Removing them would no longer restore the shipped skeleton. If a shared
-database has already applied the V0_9* sample migrations, do not delete them:
+database has already applied the sample migrations, do not delete them:
 remove the catalog code by hand and add a forward migration that drops
 catalog_publication_log and catalog_product.`;
 

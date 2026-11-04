@@ -99,6 +99,7 @@ The service checks the result before publishing an event and returns a `Concurre
 which the controller maps to a 409 with `reason` `CONCURRENT_CHANGE`; the losing transaction
 writes nothing and publishes nothing (`ConcurrentPublishIT`). The version stays off the wire: a
 client retrying a command gets the server's answer for the current state.
+
 Schema rules live in the migration too; a Java constant mirroring a `check` (`MAX_NAME_LENGTH`
 ↔ `char_length(name) between 1 and 120`) changes with it.
 
