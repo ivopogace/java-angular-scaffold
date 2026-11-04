@@ -2,9 +2,9 @@
 name: java-conventions
 description: >-
   Java idioms for backend/ (Java 25, Spring Boot 4, no Lombok): typed ids, sealed outcomes
-  instead of exceptions, the ProblemDetail error contract, JdbcClient SQL, money and time, named
-  literals, comment and Javadoc budget, logging without secrets or PII, and which test kind
-  proves what. Load BEFORE writing or refactoring any Java — class, record, port, service,
+  instead of exceptions, the ProblemDetail error contract, Spring Data JDBC persistence and
+  JdbcClient SQL, money and time, named literals, comment and Javadoc budget, logging without
+  secrets or PII, and which test kind proves what. Load BEFORE writing or refactoring any Java — class, record, port, service,
   adapter, event or test. Which package or module a class belongs in is
   `backend-architecture`'s.
 ---
@@ -66,9 +66,34 @@ a breaking API change; `detail` wording is not.
 
 ## Persistence (invariant #1)
 
-`JdbcClient`, SQL in a text block next to the call, named parameters only — concatenate
-constants (`COLUMNS`), never input. Pass the SQL type for a nullable parameter and write instants
-as UTC offsets:
+Spring Data JDBC maps package-private row records in `adapter.out.persistence`, never the domain
+(ADR-0003). A row is a record with `@Table`, a `UUID` `@Id` and `Money` as
+`@Embedded.Nullable(prefix = "price_")`; the adapter maps row ↔ aggregate both ways and unwraps
+typed ids itself, without registered converters. Ids are domain-assigned, so writes say which
+they are; `CrudRepository.save` would treat every row as existing:
+
+```java
+@Override
+public void save(Product product) {
+    ProductRow row = ProductRow.from(product);
+    if (rows.existsById(row.id())) {
+        aggregates.update(row);
+    } else {
+        aggregates.insert(row);
+    }
+}
+```
+
+`aggregates` is the `JdbcAggregateTemplate`; `rows` a package-private `ListCrudRepository`
+interface used for reads. No `@Version`, `Persistable` or `@DomainEvents`: events leave through
+`DomainEventPublisher` in the service. An update deletes and re-inserts every `@MappedCollection`
+child, whose table carries the back-reference column (`@MappedCollection(idColumn, keyColumn)`).
+
+A statement the aggregate model cannot express is a `@Modifying @Query` on the repository
+interface (`insert … on conflict do nothing`); one that fits neither (a report, a bulk statement)
+uses `JdbcClient` in the same adapter. Hand-written SQL in either: a text block, named parameters
+only — concatenate constants (`COLUMNS`), never input. With `JdbcClient`, pass the SQL type for a
+nullable parameter and write instants as UTC offsets:
 
 ```java
 .param("priceMinor", price.map(Money::amountMinor).orElse(null), Types.BIGINT)

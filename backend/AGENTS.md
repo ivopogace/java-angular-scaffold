@@ -34,7 +34,7 @@ application-core:
                                              DomainEventPublisher; no logic, no area state
 adapters:  <area>/adapter/in/web/            REST controllers + request/response DTOs + mapping
            <area>/adapter/in/event/          listeners on other areas' events → call port/in
-           <area>/adapter/out/persistence/   JdbcClient adapters + row mapping
+           <area>/adapter/out/persistence/   Spring Data JDBC row records + repositories, mapping
            <area>/adapter/out/<gateway>/     external systems, one package per system
            web/                              ApiErrorHandler, the one @RestControllerAdvice
 ```
@@ -79,8 +79,9 @@ dependencies or annotations:
 `ArchitectureRules`: the package shape; `domain`'s imports; `port/in` and `domain/event` free of
 `domain/model` and data-only; adapters never using `service`; `adapter/in` never using
 `domain/model` or `port/out`; who may call `rehydrate`; package-private services (`@UseCase` when
-they implement `port/in`), adapter classes and `web`; no JPA anywhere; no Spring beyond Modulith
-and no `java.sql` / `javax.sql` in `application-core`; and, over the tests, area tests are
+they implement `port/in`), adapter classes and `web`; no JPA anywhere; Spring Data only in
+`adapter/out/persistence`; no Spring beyond Modulith and no `java.sql` / `javax.sql` in
+`application-core`; and, over the tests, area tests are
 `@ApplicationModuleTest`, never `@SpringBootTest`. It also applies jMolecules' DDD and hexagonal
 rules. No rule checks
 the raw-UUID, `adapter/out`-implements-`port/out` or `shared`-value-object points, and the `domain`

@@ -60,7 +60,8 @@ One row per business area: a Spring Modulith module `<base>.<area>` spanning `ap
 
 Cited by number — **never renumber**; append new ones at the end.
 
-1. Persistence through `JdbcClient` only; no JPA.
+1. Persistence through Spring Data JDBC (with `JdbcClient` for what doesn't fit) in
+   `adapter/out/persistence` only; no JPA.
 2. Schema changes only via forward Flyway migrations.
 3. Money is integer minor units + ISO currency.
 4. Store UTC `Instant`; the business time zone is named in config, never the JVM default.
