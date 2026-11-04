@@ -21,8 +21,8 @@ crossing rules between areas, an aggregate in a `port.in` or `domain.event` type
 listener, a `rehydrate` call outside `adapter.out` and `domain.model`, behaviour on a `port.in` or
 `domain.event` type, `@SpringBootTest` in an area, Spring or JPA in `application-core`, JPA
 anywhere, Spring Data outside `adapter.out.persistence`, cross-feature imports, inline templates,
-decorator inputs and outputs, `@HostBinding` / `@HostListener`, a root `@Injectable`, constructor injection, `*ngIf` / `*ngFor`, `ngClass` /
-`ngStyle`, `::ng-deep` / MDC selectors / colour literals in declarations and in `*-overrides` mixin
+decorator inputs and outputs, `@HostBinding` / `@HostListener`, a root `@Injectable`, constructor
+injection, `*ngIf` / `*ngFor`, `ngClass` / `ngStyle`, `::ng-deep` / MDC selectors / colour literals in declarations and in `*-overrides` mixin
 arguments, formatting under `frontend/` and `scripts/` (Prettier). Review what no test can see; a
 change that *loosens* one of those checks is an item (RC-FE-6, RC-TEST-7).
 
@@ -60,7 +60,8 @@ change that *loosens* one of those checks is an item (RC-FE-6, RC-TEST-7).
   neutralized in user text; one log per handled exception.
 - **RC-BE-12 New vs. existing** (#1) — Blocker. Ids are domain-assigned, so a write goes through
   `JdbcAggregateTemplate.insert` or `.update`, never `CrudRepository.save` (with a non-null id it
-  issues an UPDATE, which fails for a new row); no `@Version` or `Persistable` creeps into the domain to make `save` work.
+  issues an UPDATE, which fails for a new row); no `@Version` or `Persistable` creeps into the
+  domain to make `save` work.
 
 ## Frontend
 

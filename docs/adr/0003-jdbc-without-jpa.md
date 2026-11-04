@@ -23,8 +23,12 @@ schema keeps its own shape.
 - The domain assigns ids, so Spring Data cannot tell a new aggregate from a stored one. Adapters
   write through `JdbcAggregateTemplate.insert` or `.update` explicitly (`existsById` decides for an
   upsert-style port), never `CrudRepository.save`; there is no `@Version` and no `Persistable`.
-  Reads go through package-private `ListCrudRepository` interfaces. Typed ids are unwrapped to
-  `UUID` by the mapper, not by registered converters.
+  Reads go through package-private interfaces extending `Repository` that declare only the reads
+  they need, so `save` is not on offer. Typed ids are unwrapped to `UUID` by the mapper, not by
+  registered converters.
+- `existsById` then `insert` is two statements where the old upsert was one: two concurrent first
+  saves of the same id fail on the primary key. Acceptable while ids are fresh UUIDs; a port that
+  needs an atomic upsert uses a `@Modifying @Query`.
 - On every update Spring Data JDBC deletes and re-inserts an aggregate's `@MappedCollection`
   children, and wants each child table to carry a back-reference column
   (`@MappedCollection(idColumn, keyColumn)` names it).

@@ -4,8 +4,8 @@ description: >-
   Java idioms for backend/ (Java 25, Spring Boot 4, no Lombok): typed ids, sealed outcomes
   instead of exceptions, the ProblemDetail error contract, Spring Data JDBC persistence and
   JdbcClient SQL, money and time, named literals, comment and Javadoc budget, logging without
-  secrets or PII, and which test kind proves what. Load BEFORE writing or refactoring any Java — class, record, port, service,
-  adapter, event or test. Which package or module a class belongs in is
+  secrets or PII, and which test kind proves what. Load BEFORE writing or refactoring any Java —
+  class, record, port, service, adapter, event or test. Which package or module a class belongs in is
   `backend-architecture`'s.
 ---
 
@@ -75,17 +75,19 @@ they are; `CrudRepository.save` would treat every row as existing:
 ```java
 @Override
 public void save(Product product) {
-    ProductRow row = ProductRow.from(product);
+    ProductRow row = toRow(product);
     if (rows.existsById(row.id())) {
-        aggregates.update(row);
+        template.update(row);
     } else {
-        aggregates.insert(row);
+        template.insert(row);
     }
 }
 ```
 
-`aggregates` is the `JdbcAggregateTemplate`; `rows` a package-private `ListCrudRepository`
-interface used for reads. No `@Version`, `Persistable` or `@DomainEvents`: events leave through
+`template` is the `JdbcAggregateTemplate`; `rows` a package-private interface extending
+`Repository` that declares only the reads it needs (`findById`, `findAll`, `existsById`), so no
+`save` is on offer. `existsById` then `insert` is two statements: a concurrent first save of the
+same id fails on the primary key, acceptable while ids are fresh UUIDs. No `@Version`, `Persistable` or `@DomainEvents`: events leave through
 `DomainEventPublisher` in the service. An update deletes and re-inserts every `@MappedCollection`
 child, whose table carries the back-reference column (`@MappedCollection(idColumn, keyColumn)`).
 
