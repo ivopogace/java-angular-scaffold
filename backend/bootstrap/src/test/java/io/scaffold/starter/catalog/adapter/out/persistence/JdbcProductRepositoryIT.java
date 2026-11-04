@@ -8,6 +8,8 @@ import io.scaffold.starter.catalog.domain.model.Product;
 import io.scaffold.starter.catalog.domain.model.ProductStatus;
 import io.scaffold.starter.shared.Money;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.TimeZone;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,6 +72,42 @@ class JdbcProductRepositoryIT {
     }
 
     @Test
+    void savingAnExistingIdOverwritesEveryColumn() {
+        ProductId id = ProductId.newId();
+        products.save(Product.rehydrate(
+                id, "Old name", Money.of(500, "EUR"), ProductStatus.PUBLISHED, Instant.parse("2026-11-01T07:00:00Z")));
+
+        products.save(Product.rehydrate(id, "New name", null, ProductStatus.DRAFT, null));
+
+        Product loaded = products.findById(id).orElseThrow();
+        assertThat(rowCount(id)).isEqualTo(1);
+        assertThat(loaded.name()).isEqualTo("New name");
+        assertThat(loaded.price()).isEmpty();
+        assertThat(loaded.status()).isEqualTo(ProductStatus.DRAFT);
+        assertThat(loaded.publishedAt()).isEmpty();
+    }
+
+    @Test
+    void instantsRoundTripWhenTheJvmDefaultZoneIsNotUtc() {
+        // 01:30 local time happens twice in New York on this date; only the instant tells them apart.
+        Instant publishedAt = Instant.parse("2026-11-01T05:30:00.123456Z");
+        TimeZone original = TimeZone.getDefault();
+        TimeZone.setDefault(TimeZone.getTimeZone("America/New_York"));
+        try {
+            Product product = Product.rehydrate(
+                    ProductId.newId(), "Lamp", Money.of(2500, "USD"), ProductStatus.PUBLISHED, publishedAt);
+            products.save(product);
+            publicationLog.append(product.id(), publishedAt);
+
+            assertThat(products.findById(product.id()).orElseThrow().publishedAt()).contains(publishedAt);
+            assertThat(storedInstant("catalog_product", "id", product.id())).isEqualTo(publishedAt);
+            assertThat(storedInstant("catalog_publication_log", "product_id", product.id())).isEqualTo(publishedAt);
+        } finally {
+            TimeZone.setDefault(original);
+        }
+    }
+
+    @Test
     void findByIdOfAnUnknownIdIsEmpty() {
         assertThat(products.findById(ProductId.newId())).isEmpty();
     }
@@ -85,7 +123,7 @@ class JdbcProductRepositoryIT {
     }
 
     @Test
-    void appendingTheSamePublicationTwiceLeavesOneRow() {
+    void appendingALoggedIdAgainIsANoOp() {
         Product product = Product.draft(ProductId.newId(), "Mug", Money.of(800, "EUR"));
         products.save(product);
         Instant publishedAt = Instant.parse("2026-11-01T09:00:00Z");
@@ -98,6 +136,14 @@ class JdbcProductRepositoryIT {
                 .query(Long.class)
                 .single();
         assertThat(rows).isEqualTo(1);
+        assertThat(storedInstant("catalog_publication_log", "product_id", product.id())).isEqualTo(publishedAt);
+    }
+
+    private Instant storedInstant(String table, String idColumn, ProductId id) {
+        return jdbc.sql("select published_at from " + table + " where " + idColumn + " = :id")
+                .param("id", id.value())
+                .query((row, _) -> row.getObject("published_at", OffsetDateTime.class).toInstant())
+                .single();
     }
 
     private long rowCount(ProductId id) {

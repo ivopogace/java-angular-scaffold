@@ -43,11 +43,31 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepository.java",
-    sha256: "03b612e57ca1db1c28fe1237e579767ec9823a085f1fd69d77e823052898edaa",
+    sha256: "4e34cb3a427dca510f118c6fc0c4ef602181fb94c0f4badfebfe174a63e1fa05",
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcPublicationLog.java",
-    sha256: "0e7666784dca9cb74253c2a96e7e00e499f3e9616f248f6011de9ffc14040e90",
+    sha256: "ee91e2d76213bc5ae510becef4eaa4c53f26a8416a6034828facbe3ee16c20c1",
+  },
+  {
+    path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/MoneyRow.java",
+    sha256: "1fd5cbb4d761a5abe5b86474e96355b3b27cd40b6ff1c91a8ef01dae25de49e0",
+  },
+  {
+    path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/ProductRow.java",
+    sha256: "69716c045c1e908df6409656e9403fc95b8d41a82b7f6fa6ae2258445c141ef9",
+  },
+  {
+    path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/ProductRows.java",
+    sha256: "bc1c1db9442b6be28eb112fcb6d769999661eabb33de04c0dba5113576157f28",
+  },
+  {
+    path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/PublicationLogRow.java",
+    sha256: "e675bc03f117e0682f125c2a7dec3aab540b92772aac4804d0f4d228166d7d79",
+  },
+  {
+    path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/PublicationLogRows.java",
+    sha256: "d22c05d0c360f312819749b65732aba5b025a9fa46f28a2f0c29096ec742b55a",
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/package-info.java",
@@ -71,7 +91,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepositoryIT.java",
-    sha256: "8d3e8b8155935e00652cee3385913aa1044cb4845f97a7459cb8b5303d5219c8",
+    sha256: "11617bfc72a2ea46cc3397e89b52ab04940e729aa10d1176ee6212c3ad089977",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProduct.java",
