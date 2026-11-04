@@ -54,6 +54,7 @@ final class ArchitectureRules {
                 areaPackageShape(),
                 servicesArePackagePrivateUseCases(),
                 noJpa(),
+                springDataOnlyInPersistenceAdapters(),
                 adaptersDoNotUseServices(),
                 adaptersArePackagePrivate(),
                 publishedSurfaceIsAggregateFree(),
@@ -147,6 +148,14 @@ final class ArchitectureRules {
                 .should().dependOnClassesThat().resideInAnyPackage(
                         "jakarta.persistence..", "org.hibernate..", "org.springframework.data.jpa..")
                 .as("nothing depends on JPA, Hibernate or Spring Data JPA")
+                .allowEmptyShould(true);
+    }
+
+    ArchRule springDataOnlyInPersistenceAdapters() {
+        return noClasses()
+                .that().resideOutsideOfPackage("..adapter.out.persistence..")
+                .should().dependOnClassesThat().resideInAPackage("org.springframework.data..")
+                .as("only adapter.out.persistence depends on Spring Data")
                 .allowEmptyShould(true);
     }
 

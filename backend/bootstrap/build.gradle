@@ -21,6 +21,7 @@ dependencies {
     testImplementation platform(libs.jmolecules.bom)
     testImplementation 'org.jmolecules.integrations:jmolecules-archunit'
     testImplementation 'jakarta.persistence:jakarta.persistence-api' // negative architecture fixtures only
+    testImplementation 'org.springframework.data:spring-data-commons' // architecture fixtures only
     testImplementation libs.archunit.junit5
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

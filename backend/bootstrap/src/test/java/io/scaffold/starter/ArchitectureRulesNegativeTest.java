@@ -28,6 +28,10 @@ class ArchitectureRulesNegativeTest {
                 violation("domainIsPure", ArchitectureRules::domainIsPure, "archfixture.orders.domain.model.SpringyOrder"),
                 violation("domainIsPure", ArchitectureRules::domainIsPure, "archfixture.orders.domain.model.JpaOrder"),
                 violation("noJpa", ArchitectureRules::noJpa, "archfixture.orders.domain.model.JpaOrder"),
+                violation("springDataOnlyInPersistenceAdapters", ArchitectureRules::springDataOnlyInPersistenceAdapters,
+                        "archfixture.orders.adapter.in.web.SpringDataController"),
+                violation("springDataOnlyInPersistenceAdapters", ArchitectureRules::springDataOnlyInPersistenceAdapters,
+                        "archfixture.SpringDataWiring"),
                 violation("servicesArePackagePrivateUseCases", ArchitectureRules::servicesArePackagePrivateUseCases,
                         "archfixture.orders.application.service.PublicOrderService"),
                 violation("servicesArePackagePrivateUseCases", ArchitectureRules::servicesArePackagePrivateUseCases,
@@ -89,7 +93,7 @@ class ArchitectureRulesNegativeTest {
 
     @Test
     void noRuleReportsTheCleanArea() {
-        assertThat(RULES.all()).hasSize(11);
+        assertThat(RULES.all()).hasSize(12);
         assertThat(RULES.testRules()).hasSize(1);
         for (ArchRule rule : everyRule()) {
             EvaluationResult result = rule.evaluate(FIXTURES);
