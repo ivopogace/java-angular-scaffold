@@ -62,7 +62,8 @@ The listed packages are the whole shape; no sub-packages beneath them.
 ## Migrations
 
 Infrastructure is `V1…`; project migrations continue after it; never edit an applied one
-(invariant #2).
+(invariant #2). While the sample exists, its migrations sit below it (`V0_9…`), so removing it
+leaves the project's numbering untouched.
 
 ## The structural net
 

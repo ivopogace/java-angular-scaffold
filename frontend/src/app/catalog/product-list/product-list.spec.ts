@@ -170,6 +170,7 @@ describe('ProductList', () => {
     ['NO_PRICE', 'Add a price before publishing.'],
     ['NOT_DRAFT', 'Only draft products can be published.'],
     ['NOT_PUBLISHED', 'Only published products can be retired.'],
+    ['CONCURRENT_CHANGE', 'Someone else changed this product at the same time. Try again.'],
   ])('explains a %s conflict in a snackbar', async (reason, message) => {
     await render([POSTER]);
 

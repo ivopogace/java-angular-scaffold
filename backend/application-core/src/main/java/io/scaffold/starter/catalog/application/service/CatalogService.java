@@ -40,7 +40,7 @@ class CatalogService implements CreateProduct, FindProduct, PublishProduct, Reti
     @Transactional
     public ProductView create(CreateProductCommand command) {
         Product product = Product.draft(ProductId.newId(), command.name(), command.price());
-        products.save(product);
+        products.add(product);
         return toView(product);
     }
 
@@ -63,7 +63,9 @@ class CatalogService implements CreateProduct, FindProduct, PublishProduct, Reti
             return new PublishOutcome.Rejected(reasonFor(check));
         }
         ProductPublished event = product.publish(clock.instant());
-        products.save(product);
+        if (!products.update(product)) {
+            return new PublishOutcome.ConcurrentChange();
+        }
         events.publish(event);
         return new PublishOutcome.Published(toView(product));
     }
@@ -80,7 +82,9 @@ class CatalogService implements CreateProduct, FindProduct, PublishProduct, Reti
             return new RetireOutcome.NotPublished();
         }
         product.retire();
-        products.save(product);
+        if (!products.update(product)) {
+            return new RetireOutcome.ConcurrentChange();
+        }
         return new RetireOutcome.Retired(toView(product));
     }
 

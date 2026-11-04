@@ -10,4 +10,8 @@ public sealed interface RetireOutcome {
 
     record NotPublished() implements RetireOutcome {
     }
+
+    /** Another write changed the product after it was loaded; nothing was written or published. */
+    record ConcurrentChange() implements RetireOutcome {
+    }
 }

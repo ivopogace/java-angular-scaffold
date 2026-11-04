@@ -273,6 +273,16 @@ class ProductControllerTest {
     }
 
     @Test
+    void aConcurrentlyChangedPublishIs409WithTheReason() throws Exception {
+        when(publishProduct.publish(ID)).thenReturn(new PublishOutcome.ConcurrentChange());
+
+        mockMvc.perform(post("/api/catalog/products/{id}/publish", ID.value()))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.reason").value("CONCURRENT_CHANGE"));
+    }
+
+    @Test
     void publishWithAMalformedIdIs400() throws Exception {
         mockMvc.perform(post("/api/catalog/products/not-a-uuid/publish"))
                 .andExpect(status().isBadRequest());
@@ -305,6 +315,16 @@ class ProductControllerTest {
         mockMvc.perform(post("/api/catalog/products/{id}/retire", ID.value()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.reason").value("NOT_PUBLISHED"));
+    }
+
+    @Test
+    void aConcurrentlyChangedRetireIs409WithTheReason() throws Exception {
+        when(retireProduct.retire(ID)).thenReturn(new RetireOutcome.ConcurrentChange());
+
+        mockMvc.perform(post("/api/catalog/products/{id}/retire", ID.value()))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.reason").value("CONCURRENT_CHANGE"));
     }
 
     private static ProductView view(ProductState state, Money price, Instant publishedAt) {

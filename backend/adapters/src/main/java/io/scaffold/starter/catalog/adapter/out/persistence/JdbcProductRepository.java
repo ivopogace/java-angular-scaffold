@@ -14,12 +14,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.jdbc.core.simple.JdbcClient.StatementSpec;
 import org.springframework.stereotype.Repository;
 
 @Repository
 class JdbcProductRepository implements ProductRepository {
 
-    private static final String COLUMNS = "id, name, price_minor, price_currency, status, published_at";
+    private static final String COLUMNS = "id, name, price_minor, price_currency, status, published_at, version";
 
     private final JdbcClient jdbc;
 
@@ -28,27 +29,30 @@ class JdbcProductRepository implements ProductRepository {
     }
 
     @Override
-    public void save(Product product) {
-        Optional<Money> price = product.price();
-        jdbc.sql("""
-                        insert into catalog_product (id, name, price_minor, price_currency, status, published_at)
-                        values (:id, :name, :priceMinor, :priceCurrency, :status, :publishedAt)
-                        on conflict (id) do update set
-                            name = excluded.name,
-                            price_minor = excluded.price_minor,
-                            price_currency = excluded.price_currency,
-                            status = excluded.status,
-                            published_at = excluded.published_at
-                        """)
-                .param("id", product.id().value())
-                .param("name", product.name())
-                .param("priceMinor", price.map(Money::amountMinor).orElse(null), Types.BIGINT)
-                .param("priceCurrency", price.map(money -> money.currency().getCurrencyCode()).orElse(null), Types.CHAR)
-                .param("status", product.status().name())
-                .param("publishedAt",
-                        product.publishedAt().map(at -> at.atOffset(ZoneOffset.UTC)).orElse(null),
-                        Types.TIMESTAMP_WITH_TIMEZONE)
+    public void add(Product product) {
+        bindState(jdbc.sql("""
+                        insert into catalog_product (id, name, price_minor, price_currency, status, published_at, version)
+                        values (:id, :name, :priceMinor, :priceCurrency, :status, :publishedAt, :version)
+                        """), product)
+                .param("version", product.version())
                 .update();
+    }
+
+    @Override
+    public boolean update(Product product) {
+        int updated = bindState(jdbc.sql("""
+                        update catalog_product set
+                            name = :name,
+                            price_minor = :priceMinor,
+                            price_currency = :priceCurrency,
+                            status = :status,
+                            published_at = :publishedAt,
+                            version = version + 1
+                        where id = :id and version = :expected
+                        """), product)
+                .param("expected", product.version())
+                .update();
+        return updated == 1;
     }
 
     @Override
@@ -66,6 +70,19 @@ class JdbcProductRepository implements ProductRepository {
                 .list();
     }
 
+    private static StatementSpec bindState(StatementSpec statement, Product product) {
+        Optional<Money> price = product.price();
+        return statement
+                .param("id", product.id().value())
+                .param("name", product.name())
+                .param("priceMinor", price.map(Money::amountMinor).orElse(null), Types.BIGINT)
+                .param("priceCurrency", price.map(money -> money.currency().getCurrencyCode()).orElse(null), Types.CHAR)
+                .param("status", product.status().name())
+                .param("publishedAt",
+                        product.publishedAt().map(at -> at.atOffset(ZoneOffset.UTC)).orElse(null),
+                        Types.TIMESTAMP_WITH_TIMEZONE);
+    }
+
     private static Product toProduct(ResultSet row, int rowNumber) throws SQLException {
         long priceMinor = row.getLong("price_minor");
         Money price = row.wasNull() ? null : Money.of(priceMinor, row.getString("price_currency"));
@@ -75,6 +92,7 @@ class JdbcProductRepository implements ProductRepository {
                 row.getString("name"),
                 price,
                 ProductStatus.valueOf(row.getString("status")),
-                publishedAt == null ? null : publishedAt.toInstant());
+                publishedAt == null ? null : publishedAt.toInstant(),
+                row.getLong("version"));
     }
 }

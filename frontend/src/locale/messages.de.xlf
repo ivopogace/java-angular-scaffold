@@ -33,6 +33,7 @@
     <unit id="catalog.conflict.noPrice"><segment><source>Add a price before publishing.</source><target>Legen Sie vor dem Veröffentlichen einen Preis fest.</target></segment></unit> <!-- sample:catalog -->
     <unit id="catalog.conflict.notDraft"><segment><source>Only draft products can be published.</source><target>Nur Entwürfe können veröffentlicht werden.</target></segment></unit> <!-- sample:catalog -->
     <unit id="catalog.conflict.notPublished"><segment><source>Only published products can be retired.</source><target>Nur veröffentlichte Produkte können zurückgezogen werden.</target></segment></unit> <!-- sample:catalog -->
+    <unit id="catalog.conflict.concurrentChange"><segment><source>Someone else changed this product at the same time. Try again.</source><target>Jemand anderes hat dieses Produkt gleichzeitig geändert. Versuchen Sie es erneut.</target></segment></unit> <!-- sample:catalog -->
     <unit id="catalog.error.generic"><segment><source>Something went wrong. Try again.</source><target>Etwas ist schiefgelaufen. Versuchen Sie es erneut.</target></segment></unit> <!-- sample:catalog -->
     <unit id="catalog.list.noPrice"><segment><source>No price</source><target>Kein Preis</target></segment></unit> <!-- sample:catalog -->
     <unit id="catalog.state.draft"><segment><source>Draft</source><target>Entwurf</target></segment></unit> <!-- sample:catalog -->

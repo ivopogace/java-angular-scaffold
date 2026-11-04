@@ -31,7 +31,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/in/web/ProductController.java",
-    sha256: "8456a3d5652317463e597aee9b1f228ab6fb9df3149adb5d61211aa52468763e",
+    sha256: "9d0dfd9e7078f7c63c877847f11dff6ed7883294b865cb8f5289feec92c4a2f3",
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/in/web/ProductResponse.java",
@@ -43,7 +43,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepository.java",
-    sha256: "03b612e57ca1db1c28fe1237e579767ec9823a085f1fd69d77e823052898edaa",
+    sha256: "646ee6f597bab8926397eba58c45a6c9cce80c3b2f8cf6394f7ac1aeaf4e7c57",
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcPublicationLog.java",
@@ -58,8 +58,16 @@ export const SAMPLE_FILES = [
     sha256: "300e7bbb97ae3889ea7b4850be7248f4917f4f1a224bc40b18e68d9cfe75cd8b",
   },
   {
+    path: "backend/adapters/src/main/resources/db/migration/V0_9_1__catalog_product_version.sql",
+    sha256: "3c297d9b0068e493880d0e7744a294ddfb86b36dc5ffff5c0a46ee3a6f866c3f",
+  },
+  {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/CatalogFlowIT.java",
     sha256: "34c520862e3154a28b16c71cb763846d59a0536031b1e4daf067e807eca2426a",
+  },
+  {
+    path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/ConcurrentPublishIT.java",
+    sha256: "4640f786e8f01b84ca9b8fe31e9c8cb9a74428292ac6bc09e13737f466771101",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/PublishRollbackIT.java",
@@ -67,11 +75,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/in/web/ProductControllerTest.java",
-    sha256: "19d1e9ab41a2b86c3a4c4a4df090faefa79501fa855f702e8e5bd3a178cdfc1c",
+    sha256: "4fb9186101c46f432d36a781a11673f1dc5ec5294c5cb43fd6c31528a97d4f4c",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepositoryIT.java",
-    sha256: "8d3e8b8155935e00652cee3385913aa1044cb4845f97a7459cb8b5303d5219c8",
+    sha256: "31105f39ce541d624ed6a4bd99921ea9298a5e3dc5c5636fb4073f276751a4e0",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProduct.java",
@@ -99,7 +107,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/PublishOutcome.java",
-    sha256: "5a1b0bf1e2c2bba1f0ba8e89c29e574b97c4c037c77f0d404ab076ba598ac293",
+    sha256: "3297be8ffb7eac398be5337f492caae3d796c096609fe91f57e2b52feb32de0b",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/PublishProduct.java",
@@ -111,7 +119,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/RetireOutcome.java",
-    sha256: "390cce92b6141bbd1bac46b512b43af1690deb56f64d89e7178f9a31e5199f69",
+    sha256: "f95fd112c3ca3704e811d5cc8623d32ae4e09c1387bd9fc0231de120ecde6732",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/RetireProduct.java",
@@ -123,7 +131,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/out/ProductRepository.java",
-    sha256: "37e55bda9e195bb5e1e5c9d5994d9aeb4d5964a79be05a05873b0a59f9c2b272",
+    sha256: "17e7758ac73f57077c09a5aa0714f116deec5cabb4916b38871ae7b70dc2aa87",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/out/PublicationLog.java",
@@ -135,7 +143,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/service/CatalogService.java",
-    sha256: "e92adfa8fd36bba03cd206d754a7a1587b33ad427cc318254fd1dddfc36585f7",
+    sha256: "305fba6424924b155905dab3c90cf44a4d5cd2b24a18dc14b2487c80012c5ae1",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/service/PublicationRecorder.java",
@@ -159,7 +167,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/model/Product.java",
-    sha256: "516510f37f42e0fd81117bdbc2c4e906434b5383a82da31d00e04884c71eae66",
+    sha256: "11a283ee385482f441068031b6789a80166bb8bd0509619d7d7d4c0b1b1dcbe7",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/model/ProductStatus.java",
@@ -179,11 +187,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/application/service/CatalogServiceTest.java",
-    sha256: "43db1b076bc027b04f0128db0c4c1b3e18a1b08ed30e51ef8df98ad7bf577373",
+    sha256: "4493e5997e0f5a167540a05c8412895dd0d623e680c4c0ec17dd2f05c730d74f",
   },
   {
     path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/application/service/InMemoryProductRepository.java",
-    sha256: "7cd8e9759f0b1427f5c38deacc61e37f095a2231874891c3b8564aba3cc018a0",
+    sha256: "e3fa112cc659644a07bac552d1d1759ae280b9d8ee9970118b640f08df013c11",
   },
   {
     path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/application/service/RecordingEventPublisher.java",
@@ -191,7 +199,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/domain/model/ProductTest.java",
-    sha256: "357f994d1ad0e0a8cdbbd632002b9f85e91729e932b3d6ab2fc37ea3bdc3b4e5",
+    sha256: "650ddc9aec4003b6e86be1d2153e3b7e4d0de6713000973691622bab6b9b3619",
   },
   {
     path: "frontend/e2e/catalog.e2e.ts",
@@ -243,11 +251,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.spec.ts",
-    sha256: "0d74a2c90febe28b676efa5c970c749cca6658be688e045920ec7499d7f1c083",
+    sha256: "34556e72210434a0497bd74505cc05b3b2b82ac62664243e00da40b664bff1c5",
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.ts",
-    sha256: "5816884ea60c0f8f1712cb6d10fd25f7141408bfc62b31810e08b5b303b0633a",
+    sha256: "8dc6645019b62e33eaa0cb8714443c2591834af12eff08eed3d4e684f4eb3e44",
   },
 ];
 
@@ -265,17 +273,17 @@ Usage: node scripts/remove-sample.mjs [--refresh-hashes]
 
 The script deletes a fixed list of files and refuses to run if any of them was
 edited. Removal is a setup-time action: once a shared database has run the
-sample migration (V0_9__catalog_sample.sql), remove the code by hand and add a
-forward migration that drops the catalog tables.
+sample migrations (V0_9__catalog_sample.sql, V0_9_1__catalog_product_version.sql),
+remove the code by hand and add a forward migration that drops the catalog tables.
 
   --refresh-hashes   re-record the hashes of SAMPLE_FILES after editing a sample file
 `;
 
 const DRIFT_INSTRUCTIONS = `Sample files were edited; nothing was removed.
 Removing them would no longer restore the shipped skeleton. If a shared
-database has already applied V0_9__catalog_sample.sql, do not delete that
-migration: remove the catalog code by hand and add a forward migration that
-drops catalog_publication_log and catalog_product.`;
+database has already applied the V0_9* sample migrations, do not delete them:
+remove the catalog code by hand and add a forward migration that drops
+catalog_publication_log and catalog_product.`;
 
 /** Re-runnable: a listed file already gone is skipped; nothing changes on `drifted` or `markerProblems`. */
 export function removeSample(root, { rm = rmSync } = {}) {

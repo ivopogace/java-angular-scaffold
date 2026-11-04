@@ -13,6 +13,7 @@ import org.jmolecules.ddd.annotation.Identity;
 public class Product {
 
     static final int MAX_NAME_LENGTH = 120;
+    static final long INITIAL_VERSION = 0;
 
     @Identity
     private final ProductId id;
@@ -20,13 +21,16 @@ public class Product {
     private final Money price;
     private ProductStatus status;
     private Instant publishedAt;
+    private final long version;
 
-    private Product(ProductId id, String name, Money price, ProductStatus status, Instant publishedAt) {
+    private Product(
+            ProductId id, String name, Money price, ProductStatus status, Instant publishedAt, long version) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = name;
         this.price = price;
         this.status = status;
         this.publishedAt = publishedAt;
+        this.version = version;
     }
 
     /**
@@ -38,13 +42,17 @@ public class Product {
         if (trimmed.isEmpty() || trimmed.length() > MAX_NAME_LENGTH) {
             throw new IllegalArgumentException("Product name must be 1 to " + MAX_NAME_LENGTH + " characters");
         }
-        return new Product(id, trimmed, price, ProductStatus.DRAFT, null);
+        return new Product(id, trimmed, price, ProductStatus.DRAFT, null, INITIAL_VERSION);
     }
 
-    /** Rebuilds a stored product without re-running creation rules. */
+    /**
+     * Rebuilds a stored product without re-running creation rules.
+     *
+     * @param version the stored version, which a later update must still find
+     */
     public static Product rehydrate(
-            ProductId id, String name, Money price, ProductStatus status, Instant publishedAt) {
-        return new Product(id, name, price, Objects.requireNonNull(status, "status"), publishedAt);
+            ProductId id, String name, Money price, ProductStatus status, Instant publishedAt, long version) {
+        return new Product(id, name, price, Objects.requireNonNull(status, "status"), publishedAt, version);
     }
 
     public PublishCheck checkPublish() {
@@ -95,5 +103,10 @@ public class Product {
 
     public Optional<Instant> publishedAt() {
         return Optional.ofNullable(publishedAt);
+    }
+
+    /** The stored version this instance was loaded with; transitions do not change it. */
+    public long version() {
+        return version;
     }
 }
