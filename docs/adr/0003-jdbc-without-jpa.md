@@ -18,3 +18,7 @@ visible in the adapter.
 
 - Every query is written by hand and covered by a Testcontainers test against real PostgreSQL. An
   ArchUnit rule fails the build on any `jakarta.persistence` use.
+- No ORM checks versions for us, so optimistic locking is explicit: the aggregate carries the
+  version it was loaded with as a plain value, and the adapter's `update … where id = :id and
+  version = :loadedVersion` reports a stale write as a count of 0, which the use case returns as an
+  outcome. A blind `on conflict do update` save would silently lose a concurrent write.

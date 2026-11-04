@@ -7,13 +7,17 @@ import io.scaffold.starter.catalog.application.port.in.ProductState;
 import io.scaffold.starter.catalog.application.port.in.ProductView;
 import io.scaffold.starter.catalog.application.port.in.PublishOutcome;
 import io.scaffold.starter.catalog.application.port.in.RetireOutcome;
+import io.scaffold.starter.catalog.application.port.out.ProductRepository;
+import io.scaffold.starter.catalog.application.port.out.ProductRepository.UpdateResult;
 import io.scaffold.starter.catalog.domain.event.ProductPublished;
 import io.scaffold.starter.catalog.domain.id.ProductId;
+import io.scaffold.starter.catalog.domain.model.Product;
 import io.scaffold.starter.shared.Money;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class CatalogServiceTest {
@@ -22,8 +26,8 @@ class CatalogServiceTest {
     private static final Money PRICE = Money.of(1_250, "EUR");
 
     private final RecordingEventPublisher events = new RecordingEventPublisher();
-    private final CatalogService service = new CatalogService(
-            new InMemoryProductRepository(), events, Clock.fixed(NOW, ZoneOffset.UTC));
+    private final InterleavingRepository products = new InterleavingRepository(new InMemoryProductRepository());
+    private final CatalogService service = new CatalogService(products, events, Clock.fixed(NOW, ZoneOffset.UTC));
 
     @Test
     void createReturnsADraftView() {
@@ -136,5 +140,72 @@ class CatalogServiceTest {
 
         assertThat(service.list()).extracting(ProductView::name)
                 .isEqualTo(List.of("apple", "Banana", "cherry"));
+    }
+
+    @Test
+    void ofTwoPublishesThatLoadedTheSameDraftOnlyTheFirstToSaveWinsAndPublishes() {
+        ProductView draft = service.create(new CreateProductCommand("Lamp", PRICE));
+        PublishOutcome[] concurrent = new PublishOutcome[1];
+        products.runBeforeNextUpdate(() -> concurrent[0] = service.publish(draft.id()));
+
+        PublishOutcome stale = service.publish(draft.id());
+
+        assertThat(concurrent[0]).isInstanceOf(PublishOutcome.Published.class);
+        assertThat(stale).isInstanceOf(PublishOutcome.ConcurrentChange.class);
+        assertThat(events.published()).containsExactly(new ProductPublished(draft.id(), NOW));
+    }
+
+    @Test
+    void aRetireThatLoadedTheProductBeforeAConcurrentRetireIsAConcurrentChange() {
+        ProductView draft = service.create(new CreateProductCommand("Lamp", PRICE));
+        service.publish(draft.id());
+        RetireOutcome[] concurrent = new RetireOutcome[1];
+        products.runBeforeNextUpdate(() -> concurrent[0] = service.retire(draft.id()));
+
+        RetireOutcome stale = service.retire(draft.id());
+
+        assertThat(concurrent[0]).isInstanceOf(RetireOutcome.Retired.class);
+        assertThat(stale).isInstanceOf(RetireOutcome.ConcurrentChange.class);
+        assertThat(service.find(draft.id())).hasValueSatisfying(
+                stored -> assertThat(stored.state()).isEqualTo(ProductState.RETIRED));
+    }
+
+    private static final class InterleavingRepository implements ProductRepository {
+
+        private final ProductRepository delegate;
+        private Runnable pendingConcurrentUseCase;
+
+        InterleavingRepository(ProductRepository delegate) {
+            this.delegate = delegate;
+        }
+
+        void runBeforeNextUpdate(Runnable concurrentUseCase) {
+            pendingConcurrentUseCase = concurrentUseCase;
+        }
+
+        @Override
+        public void addNew(Product product) {
+            delegate.addNew(product);
+        }
+
+        @Override
+        public UpdateResult updateIfUnchangedSinceLoad(Product product) {
+            Runnable concurrentUseCase = pendingConcurrentUseCase;
+            pendingConcurrentUseCase = null;
+            if (concurrentUseCase != null) {
+                concurrentUseCase.run();
+            }
+            return delegate.updateIfUnchangedSinceLoad(product);
+        }
+
+        @Override
+        public Optional<Product> findById(ProductId id) {
+            return delegate.findById(id);
+        }
+
+        @Override
+        public List<Product> findAll() {
+            return delegate.findAll();
+        }
     }
 }

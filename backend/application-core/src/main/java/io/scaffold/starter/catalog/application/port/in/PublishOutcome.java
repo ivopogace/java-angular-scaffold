@@ -15,4 +15,7 @@ public sealed interface PublishOutcome {
 
     record Rejected(Reason reason) implements PublishOutcome {
     }
+
+    record ConcurrentChange() implements PublishOutcome {
+    }
 }

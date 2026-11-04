@@ -34,6 +34,7 @@ class ProductController {
 
     private static final String REASON = "reason";
     private static final String NOT_PUBLISHED = "NOT_PUBLISHED";
+    private static final String CONCURRENT_CHANGE = "CONCURRENT_CHANGE";
 
     private final CreateProduct createProduct;
     private final FindProduct findProduct;
@@ -82,6 +83,7 @@ class ProductController {
             case PublishOutcome.NotFound _ -> notFound(id);
             case PublishOutcome.Rejected rejected -> conflict(
                     "Product " + id + " cannot be published: " + rejected.reason(), rejected.reason().name());
+            case PublishOutcome.ConcurrentChange _ -> concurrentChange(id);
         };
     }
 
@@ -91,6 +93,7 @@ class ProductController {
             case RetireOutcome.Retired retired -> ResponseEntity.ok(ProductResponse.from(retired.product()));
             case RetireOutcome.NotFound _ -> notFound(id);
             case RetireOutcome.NotPublished _ -> conflict("Product " + id + " is not published", NOT_PUBLISHED);
+            case RetireOutcome.ConcurrentChange _ -> concurrentChange(id);
         };
     }
 
@@ -108,6 +111,10 @@ class ProductController {
     private static ResponseEntity<ProblemDetail> notFound(UUID id) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, "No product " + id);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problem);
+    }
+
+    private static ResponseEntity<ProblemDetail> concurrentChange(UUID id) {
+        return conflict("Product " + id + " was changed by another request; reload it and retry", CONCURRENT_CHANGE);
     }
 
     private static ResponseEntity<ProblemDetail> conflict(String detail, String reason) {

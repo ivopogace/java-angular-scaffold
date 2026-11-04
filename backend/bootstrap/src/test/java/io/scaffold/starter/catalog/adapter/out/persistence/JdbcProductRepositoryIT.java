@@ -3,6 +3,7 @@ package io.scaffold.starter.catalog.adapter.out.persistence;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.scaffold.starter.TestcontainersConfiguration;
+import io.scaffold.starter.catalog.application.port.out.ProductRepository.UpdateResult;
 import io.scaffold.starter.catalog.domain.id.ProductId;
 import io.scaffold.starter.catalog.domain.model.Product;
 import io.scaffold.starter.catalog.domain.model.ProductStatus;
@@ -33,9 +34,9 @@ class JdbcProductRepositoryIT {
     void roundTripsAPricedPublishedProduct() {
         Instant publishedAt = Instant.parse("2026-11-01T10:15:30.123456Z");
         Product saved = Product.rehydrate(
-                ProductId.newId(), "Linen shirt", Money.of(4999, "EUR"), ProductStatus.PUBLISHED, publishedAt);
+                ProductId.newId(), "Linen shirt", Money.of(4999, "EUR"), ProductStatus.PUBLISHED, publishedAt, 4);
 
-        products.save(saved);
+        products.addNew(saved);
 
         Product loaded = products.findById(saved.id()).orElseThrow();
         assertThat(loaded.id()).isEqualTo(saved.id());
@@ -43,13 +44,14 @@ class JdbcProductRepositoryIT {
         assertThat(loaded.price()).contains(Money.of(4999, "EUR"));
         assertThat(loaded.status()).isEqualTo(ProductStatus.PUBLISHED);
         assertThat(loaded.publishedAt()).contains(publishedAt);
+        assertThat(loaded.loadedVersion()).isEqualTo(4);
     }
 
     @Test
     void roundTripsAnUnpricedDraft() {
         Product draft = Product.draft(ProductId.newId(), "Mystery box", null);
 
-        products.save(draft);
+        products.addNew(draft);
 
         Product loaded = products.findById(draft.id()).orElseThrow();
         assertThat(loaded.price()).isEmpty();
@@ -58,15 +60,45 @@ class JdbcProductRepositoryIT {
     }
 
     @Test
-    void savingTwiceUpdatesInsteadOfInserting() {
-        Product product = Product.draft(ProductId.newId(), "Candle", Money.of(1200, "EUR"));
-        products.save(product);
-        product.publish(Instant.parse("2026-11-01T08:00:00Z"));
+    void anUpdateAtTheLoadedVersionWritesAndIncrementsTheVersion() {
+        Product draft = Product.draft(ProductId.newId(), "Candle", Money.of(1200, "EUR"));
+        products.addNew(draft);
+        Product loaded = products.findById(draft.id()).orElseThrow();
+        loaded.publish(Instant.parse("2026-11-01T08:00:00Z"));
 
-        products.save(product);
+        assertThat(products.updateIfUnchangedSinceLoad(loaded)).isEqualTo(UpdateResult.UPDATED);
 
-        assertThat(rowCount(product.id())).isEqualTo(1);
-        assertThat(products.findById(product.id()).orElseThrow().status()).isEqualTo(ProductStatus.PUBLISHED);
+        assertThat(rowCount(draft.id())).isEqualTo(1);
+        Product stored = products.findById(draft.id()).orElseThrow();
+        assertThat(stored.status()).isEqualTo(ProductStatus.PUBLISHED);
+        assertThat(stored.loadedVersion()).isEqualTo(loaded.loadedVersion() + 1);
+    }
+
+    @Test
+    void anUpdateFromAStaleLoadWritesNothing() {
+        Product draft = Product.draft(ProductId.newId(), "Candle", Money.of(1200, "EUR"));
+        products.addNew(draft);
+        Product first = products.findById(draft.id()).orElseThrow();
+        Product second = products.findById(draft.id()).orElseThrow();
+        Instant firstPublish = Instant.parse("2026-11-01T08:00:00Z");
+        first.publish(firstPublish);
+        second.publish(firstPublish.plusSeconds(60));
+        assertThat(products.updateIfUnchangedSinceLoad(first)).isEqualTo(UpdateResult.UPDATED);
+
+        assertThat(products.updateIfUnchangedSinceLoad(second)).isEqualTo(UpdateResult.CHANGED_SINCE_LOAD);
+
+        Product stored = products.findById(draft.id()).orElseThrow();
+        assertThat(stored.publishedAt()).contains(firstPublish);
+        assertThat(stored.loadedVersion()).isEqualTo(first.loadedVersion() + 1);
+    }
+
+    @Test
+    void anUpdateOfAProductThatIsNotStoredWritesNothing() {
+        Product unsaved = Product.draft(ProductId.newId(), "Ghost", null);
+
+        assertThat(products.updateIfUnchangedSinceLoad(unsaved)).isEqualTo(UpdateResult.CHANGED_SINCE_LOAD);
+
+        assertThat(rowCount(unsaved.id())).isZero();
     }
 
     @Test
@@ -78,8 +110,8 @@ class JdbcProductRepositoryIT {
     void findAllReturnsEveryStoredProduct() {
         Product first = Product.draft(ProductId.newId(), "First", null);
         Product second = Product.draft(ProductId.newId(), "Second", Money.of(100, "ALL"));
-        products.save(first);
-        products.save(second);
+        products.addNew(first);
+        products.addNew(second);
 
         assertThat(products.findAll()).extracting(Product::id).contains(first.id(), second.id());
     }
@@ -87,7 +119,7 @@ class JdbcProductRepositoryIT {
     @Test
     void appendingTheSamePublicationTwiceLeavesOneRow() {
         Product product = Product.draft(ProductId.newId(), "Mug", Money.of(800, "EUR"));
-        products.save(product);
+        products.addNew(product);
         Instant publishedAt = Instant.parse("2026-11-01T09:00:00Z");
 
         publicationLog.append(product.id(), publishedAt);

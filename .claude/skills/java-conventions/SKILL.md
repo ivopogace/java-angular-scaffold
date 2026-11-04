@@ -79,6 +79,27 @@ as UTC offsets:
 Rows rebuild aggregates through a factory that skips creation rules, named `rehydrate`
 (`Product.rehydrate`); only `adapter.out` and `domain.model` may call it
 (`onlyDrivenAdaptersRehydrate`).
+
+Writes are optimistically locked. The aggregate carries the `loadedVersion` it was loaded with, a
+plain `long` that transitions leave alone (no `@Version`, invariant #5). The repository port splits
+`addNew` (insert at the initial version) from `updateIfUnchangedSinceLoad`, which returns
+`UpdateResult.CHANGED_SINCE_LOAD` when the row has moved on; no upsert:
+
+```java
+int updated = bindState(jdbc.sql("""
+        update catalog_product set status = :status, …, version = version + 1
+        where id = :id and version = :loadedVersion
+        """), product)
+        .param("loadedVersion", product.loadedVersion())
+        .update();
+return updated == 1 ? UpdateResult.UPDATED : UpdateResult.CHANGED_SINCE_LOAD;
+```
+
+The service checks the result before publishing an event and returns a `ConcurrentChange` outcome,
+which the controller maps to a 409 with `reason` `CONCURRENT_CHANGE`; the losing transaction
+writes nothing and publishes nothing (`ConcurrentPublishIT`). The version stays off the wire: a
+client retrying a command gets the server's answer for the current state.
+
 Schema rules live in the migration too; a Java constant mirroring a `check` (`MAX_NAME_LENGTH`
 ↔ `char_length(name) between 1 and 120`) changes with it.
 

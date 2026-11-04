@@ -41,6 +41,7 @@ class ProductTest {
         assertThat(product.status()).isEqualTo(ProductStatus.DRAFT);
         assertThat(product.price()).contains(PRICE);
         assertThat(product.publishedAt()).isEmpty();
+        assertThat(product.loadedVersion()).isEqualTo(Product.INITIAL_VERSION);
     }
 
     @Test
@@ -88,10 +89,21 @@ class ProductTest {
     void rehydrateRestoresStoredState() {
         ProductId id = ProductId.newId();
 
-        Product product = Product.rehydrate(id, "Lamp", PRICE, ProductStatus.PUBLISHED, NOW);
+        Product product = Product.rehydrate(id, "Lamp", PRICE, ProductStatus.PUBLISHED, NOW, 7);
 
         assertThat(product.id()).isEqualTo(id);
         assertThat(product.status()).isEqualTo(ProductStatus.PUBLISHED);
         assertThat(product.publishedAt()).contains(NOW);
+        assertThat(product.loadedVersion()).isEqualTo(7);
+    }
+
+    @Test
+    void aTransitionKeepsTheLoadedVersion() {
+        Product product = Product.rehydrate(ProductId.newId(), "Lamp", PRICE, ProductStatus.DRAFT, null, 3);
+
+        product.publish(NOW);
+        product.retire();
+
+        assertThat(product.loadedVersion()).isEqualTo(3);
     }
 }

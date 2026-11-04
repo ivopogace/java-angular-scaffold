@@ -10,4 +10,7 @@ public sealed interface RetireOutcome {
 
     record NotPublished() implements RetireOutcome {
     }
+
+    record ConcurrentChange() implements RetireOutcome {
+    }
 }

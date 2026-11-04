@@ -7,8 +7,14 @@ import java.util.Optional;
 
 public interface ProductRepository {
 
-    /** Inserts the product, or overwrites the stored one with the same id. */
-    void save(Product product);
+    enum UpdateResult {
+        UPDATED,
+        CHANGED_SINCE_LOAD
+    }
+
+    void addNew(Product product);
+
+    UpdateResult updateIfUnchangedSinceLoad(Product product);
 
     Optional<Product> findById(ProductId id);
 

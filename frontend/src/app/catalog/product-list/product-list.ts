@@ -11,10 +11,12 @@ import { TypedCellDef } from '../../shared/typed-cell-def/typed-cell-def';
 import { Product, ProductState } from '../catalog.model';
 import { CatalogService } from '../catalog.service';
 
+const CONCURRENT_CHANGE = 'CONCURRENT_CHANGE';
 const CONFLICT_MESSAGES: Record<string, string> = {
   NO_PRICE: $localize`:@@catalog.conflict.noPrice:Add a price before publishing.`,
   NOT_DRAFT: $localize`:@@catalog.conflict.notDraft:Only draft products can be published.`,
   NOT_PUBLISHED: $localize`:@@catalog.conflict.notPublished:Only published products can be retired.`,
+  [CONCURRENT_CHANGE]: $localize`:@@catalog.conflict.concurrentChange:Someone else changed this product at the same time. Try again.`,
 };
 const FALLBACK_MESSAGE = $localize`:@@catalog.error.generic:Something went wrong. Try again.`;
 const DISMISS = $localize`:@@catalog.dismiss:Dismiss`;
@@ -65,22 +67,26 @@ export class ProductList {
   }
 
   protected publish(product: Product): void {
-    this.change(product, this.catalog.publish(product.id));
+    this.changeUnlessBusy(product, this.catalog.publish(product.id));
   }
 
   protected retire(product: Product): void {
-    this.change(product, this.catalog.retire(product.id));
+    this.changeUnlessBusy(product, this.catalog.retire(product.id));
   }
 
-  /** Runs one change per product at a time, so a double click sends one request. */
-  private change(product: Product, request: Observable<Product>): void {
+  private changeUnlessBusy(product: Product, request: Observable<Product>): void {
     if (this.busy(product)) {
       return;
     }
     this.mark(product.id, true);
     request.pipe(finalize(() => this.mark(product.id, false))).subscribe({
       next: () => this.products.reload(),
-      error: (error: unknown) => this.snackBar.open(messageFor(error), DISMISS),
+      error: (error: unknown) => {
+        this.snackBar.open(messageFor(error), DISMISS);
+        if (conflictReason(error) === CONCURRENT_CHANGE) {
+          this.products.reload();
+        }
+      },
     });
   }
 
@@ -97,12 +103,15 @@ export class ProductList {
   }
 }
 
-function messageFor(error: unknown): string {
+function conflictReason(error: unknown): string | undefined {
   if (error instanceof HttpErrorResponse && error.status === 409) {
     const reason: unknown = error.error?.reason;
-    return typeof reason === 'string'
-      ? (CONFLICT_MESSAGES[reason] ?? FALLBACK_MESSAGE)
-      : FALLBACK_MESSAGE;
+    return typeof reason === 'string' ? reason : undefined;
   }
-  return FALLBACK_MESSAGE;
+  return undefined;
+}
+
+function messageFor(error: unknown): string {
+  const reason = conflictReason(error);
+  return reason === undefined ? FALLBACK_MESSAGE : (CONFLICT_MESSAGES[reason] ?? FALLBACK_MESSAGE);
 }
