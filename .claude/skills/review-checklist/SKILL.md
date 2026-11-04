@@ -59,7 +59,7 @@ change that *loosens* one of those checks is an item (RC-FE-6, RC-TEST-7).
 - **RC-BE-11 Logging** — Major. Placeholders, no secret, token or personal data, `\r\n`
   neutralized in user text; one log per handled exception.
 - **RC-BE-12 Save without a version check** — Major. Every write of a loaded aggregate is an
-  `update … where id = :id and version = :expected` that sets `version = version + 1` and
+  `update … where id = :id and version = :loadedVersion` that sets `version = version + 1` and
   checks the count; a count of 0 becomes the use case's `ConcurrentChange` outcome, decided
   before any event is published. A blind overwrite, an upsert (`on conflict … do update`) of an
   existing aggregate, or an ignored update result loses a concurrent write.

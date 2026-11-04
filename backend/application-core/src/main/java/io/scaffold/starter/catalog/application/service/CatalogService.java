@@ -11,6 +11,7 @@ import io.scaffold.starter.catalog.application.port.in.PublishProduct;
 import io.scaffold.starter.catalog.application.port.in.RetireOutcome;
 import io.scaffold.starter.catalog.application.port.in.RetireProduct;
 import io.scaffold.starter.catalog.application.port.out.ProductRepository;
+import io.scaffold.starter.catalog.application.port.out.ProductRepository.UpdateResult;
 import io.scaffold.starter.catalog.domain.event.ProductPublished;
 import io.scaffold.starter.catalog.domain.id.ProductId;
 import io.scaffold.starter.catalog.domain.model.Product;
@@ -40,7 +41,7 @@ class CatalogService implements CreateProduct, FindProduct, PublishProduct, Reti
     @Transactional
     public ProductView create(CreateProductCommand command) {
         Product product = Product.draft(ProductId.newId(), command.name(), command.price());
-        products.add(product);
+        products.addNew(product);
         return toView(product);
     }
 
@@ -63,7 +64,7 @@ class CatalogService implements CreateProduct, FindProduct, PublishProduct, Reti
             return new PublishOutcome.Rejected(reasonFor(check));
         }
         ProductPublished event = product.publish(clock.instant());
-        if (!products.update(product)) {
+        if (products.updateIfUnchangedSinceLoad(product) == UpdateResult.CHANGED_SINCE_LOAD) {
             return new PublishOutcome.ConcurrentChange();
         }
         events.publish(event);
@@ -82,7 +83,7 @@ class CatalogService implements CreateProduct, FindProduct, PublishProduct, Reti
             return new RetireOutcome.NotPublished();
         }
         product.retire();
-        if (!products.update(product)) {
+        if (products.updateIfUnchangedSinceLoad(product) == UpdateResult.CHANGED_SINCE_LOAD) {
             return new RetireOutcome.ConcurrentChange();
         }
         return new RetireOutcome.Retired(toView(product));

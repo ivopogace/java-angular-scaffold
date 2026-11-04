@@ -21,22 +21,18 @@ public class Product {
     private final Money price;
     private ProductStatus status;
     private Instant publishedAt;
-    private final long version;
+    private final long loadedVersion;
 
     private Product(
-            ProductId id, String name, Money price, ProductStatus status, Instant publishedAt, long version) {
+            ProductId id, String name, Money price, ProductStatus status, Instant publishedAt, long loadedVersion) {
         this.id = Objects.requireNonNull(id, "id");
         this.name = name;
         this.price = price;
         this.status = status;
         this.publishedAt = publishedAt;
-        this.version = version;
+        this.loadedVersion = loadedVersion;
     }
 
-    /**
-     * @param price {@code null} while undecided
-     * @throws IllegalArgumentException if the stripped name is empty or longer than 120 characters
-     */
     public static Product draft(ProductId id, String name, Money price) {
         String trimmed = Objects.requireNonNull(name, "name").strip();
         if (trimmed.isEmpty() || trimmed.length() > MAX_NAME_LENGTH) {
@@ -45,14 +41,9 @@ public class Product {
         return new Product(id, trimmed, price, ProductStatus.DRAFT, null, INITIAL_VERSION);
     }
 
-    /**
-     * Rebuilds a stored product without re-running creation rules.
-     *
-     * @param version the stored version, which a later update must still find
-     */
     public static Product rehydrate(
-            ProductId id, String name, Money price, ProductStatus status, Instant publishedAt, long version) {
-        return new Product(id, name, price, Objects.requireNonNull(status, "status"), publishedAt, version);
+            ProductId id, String name, Money price, ProductStatus status, Instant publishedAt, long storedVersion) {
+        return new Product(id, name, price, Objects.requireNonNull(status, "status"), publishedAt, storedVersion);
     }
 
     public PublishCheck checkPublish() {
@@ -62,7 +53,6 @@ public class Product {
         return price == null ? PublishCheck.NO_PRICE : PublishCheck.OK;
     }
 
-    /** @throws IllegalStateException unless {@link #checkPublish()} is {@link PublishCheck#OK} */
     public ProductPublished publish(Instant now) {
         PublishCheck check = checkPublish();
         if (check != PublishCheck.OK) {
@@ -77,7 +67,6 @@ public class Product {
         return status == ProductStatus.PUBLISHED;
     }
 
-    /** @throws IllegalStateException unless the product is published */
     public void retire() {
         if (!canRetire()) {
             throw new IllegalStateException("Cannot retire product " + id.value() + " in status " + status);
@@ -105,8 +94,7 @@ public class Product {
         return Optional.ofNullable(publishedAt);
     }
 
-    /** The stored version this instance was loaded with; transitions do not change it. */
-    public long version() {
-        return version;
+    public long loadedVersion() {
+        return loadedVersion;
     }
 }

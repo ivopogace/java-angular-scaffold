@@ -8,6 +8,7 @@ import io.scaffold.starter.catalog.application.port.in.ProductView;
 import io.scaffold.starter.catalog.application.port.in.PublishOutcome;
 import io.scaffold.starter.catalog.application.port.in.RetireOutcome;
 import io.scaffold.starter.catalog.application.port.out.ProductRepository;
+import io.scaffold.starter.catalog.application.port.out.ProductRepository.UpdateResult;
 import io.scaffold.starter.catalog.domain.event.ProductPublished;
 import io.scaffold.starter.catalog.domain.id.ProductId;
 import io.scaffold.starter.catalog.domain.model.Product;
@@ -145,7 +146,7 @@ class CatalogServiceTest {
     void ofTwoPublishesThatLoadedTheSameDraftOnlyTheFirstToSaveWinsAndPublishes() {
         ProductView draft = service.create(new CreateProductCommand("Lamp", PRICE));
         PublishOutcome[] concurrent = new PublishOutcome[1];
-        products.beforeNextUpdate(() -> concurrent[0] = service.publish(draft.id()));
+        products.runBeforeNextUpdate(() -> concurrent[0] = service.publish(draft.id()));
 
         PublishOutcome stale = service.publish(draft.id());
 
@@ -159,7 +160,7 @@ class CatalogServiceTest {
         ProductView draft = service.create(new CreateProductCommand("Lamp", PRICE));
         service.publish(draft.id());
         RetireOutcome[] concurrent = new RetireOutcome[1];
-        products.beforeNextUpdate(() -> concurrent[0] = service.retire(draft.id()));
+        products.runBeforeNextUpdate(() -> concurrent[0] = service.retire(draft.id()));
 
         RetireOutcome stale = service.retire(draft.id());
 
@@ -169,33 +170,32 @@ class CatalogServiceTest {
                 stored -> assertThat(stored.state()).isEqualTo(ProductState.RETIRED));
     }
 
-    /** Runs a concurrent use case after the service loaded and before it updates: two interleaved transactions. */
     private static final class InterleavingRepository implements ProductRepository {
 
         private final ProductRepository delegate;
-        private Runnable beforeNextUpdate;
+        private Runnable pendingConcurrentUseCase;
 
         InterleavingRepository(ProductRepository delegate) {
             this.delegate = delegate;
         }
 
-        void beforeNextUpdate(Runnable concurrentUseCase) {
-            beforeNextUpdate = concurrentUseCase;
+        void runBeforeNextUpdate(Runnable concurrentUseCase) {
+            pendingConcurrentUseCase = concurrentUseCase;
         }
 
         @Override
-        public void add(Product product) {
-            delegate.add(product);
+        public void addNew(Product product) {
+            delegate.addNew(product);
         }
 
         @Override
-        public boolean update(Product product) {
-            Runnable concurrentUseCase = beforeNextUpdate;
-            beforeNextUpdate = null;
+        public UpdateResult updateIfUnchangedSinceLoad(Product product) {
+            Runnable concurrentUseCase = pendingConcurrentUseCase;
+            pendingConcurrentUseCase = null;
             if (concurrentUseCase != null) {
                 concurrentUseCase.run();
             }
-            return delegate.update(product);
+            return delegate.updateIfUnchangedSinceLoad(product);
         }
 
         @Override

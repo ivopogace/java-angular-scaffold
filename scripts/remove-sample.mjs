@@ -11,7 +11,6 @@ import { pruneEmptyParents } from "./lib/fs.mjs";
 
 const MARKER = "sample:catalog";
 
-/** Editing one of these files needs `node scripts/remove-sample.mjs --refresh-hashes` in the same commit. */
 export const SAMPLE_FILES = [
   {
     path: "GLOSSARY.md",
@@ -43,7 +42,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepository.java",
-    sha256: "646ee6f597bab8926397eba58c45a6c9cce80c3b2f8cf6394f7ac1aeaf4e7c57",
+    sha256: "7f89b8672466a6a9338ad8e84aa8c2bcf263dc973ad04e23dcaafdfa61477a0a",
   },
   {
     path: "backend/adapters/src/main/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcPublicationLog.java",
@@ -59,7 +58,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/adapters/src/main/resources/db/migration/V2__catalog_product_version.sql",
-    sha256: "3c297d9b0068e493880d0e7744a294ddfb86b36dc5ffff5c0a46ee3a6f866c3f",
+    sha256: "fcfea29a5cc9424143010289246fef060f1bc1feb3403990ea609a8bbc34c02b",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/CatalogFlowIT.java",
@@ -67,7 +66,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/ConcurrentPublishIT.java",
-    sha256: "4640f786e8f01b84ca9b8fe31e9c8cb9a74428292ac6bc09e13737f466771101",
+    sha256: "83b17c1b94fc60c00a448b6027a2e0cf1e0efb8835647887a5327f5361887a05",
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/PublishRollbackIT.java",
@@ -79,7 +78,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/bootstrap/src/test/java/io/scaffold/starter/catalog/adapter/out/persistence/JdbcProductRepositoryIT.java",
-    sha256: "31105f39ce541d624ed6a4bd99921ea9298a5e3dc5c5636fb4073f276751a4e0",
+    sha256: "65ba65cc0dfa9582164c1262eec64ff14c9dab329566448d4a11d60065a10004",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/CreateProduct.java",
@@ -107,7 +106,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/PublishOutcome.java",
-    sha256: "3297be8ffb7eac398be5337f492caae3d796c096609fe91f57e2b52feb32de0b",
+    sha256: "838423fff6fb2c7608e2d0996090e31e181249b11840b87bee47367056b1ad16",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/PublishProduct.java",
@@ -119,7 +118,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/RetireOutcome.java",
-    sha256: "140cc28b8e2d27a89aa6fc952dc62d260f737d581df6b71ee28f123dbe986d35",
+    sha256: "b16492f8fba90773add2376b60e3159f183d9d3006833f1d205ddc7ea4d5f036",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/in/RetireProduct.java",
@@ -131,7 +130,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/out/ProductRepository.java",
-    sha256: "17e7758ac73f57077c09a5aa0714f116deec5cabb4916b38871ae7b70dc2aa87",
+    sha256: "6abfc2a38549e3d736dd4a7b9a322c4f03830887901b15b39f687b6698ac6a24",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/port/out/PublicationLog.java",
@@ -143,7 +142,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/service/CatalogService.java",
-    sha256: "305fba6424924b155905dab3c90cf44a4d5cd2b24a18dc14b2487c80012c5ae1",
+    sha256: "79fdbad6d7253c45eae3454c819742a42e99138eed8252a2b646b65bdf4241a8",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/application/service/PublicationRecorder.java",
@@ -167,7 +166,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/model/Product.java",
-    sha256: "11a283ee385482f441068031b6789a80166bb8bd0509619d7d7d4c0b1b1dcbe7",
+    sha256: "0a8e1d4456c89cc1443810c8222f871c617c7247397b693d6c7edb00a7785b92",
   },
   {
     path: "backend/application-core/src/main/java/io/scaffold/starter/catalog/domain/model/ProductStatus.java",
@@ -187,11 +186,11 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/application/service/CatalogServiceTest.java",
-    sha256: "4493e5997e0f5a167540a05c8412895dd0d623e680c4c0ec17dd2f05c730d74f",
+    sha256: "d718348e6de3930ea8ce171b41d6e939b8281a93e394412578c986571193654f",
   },
   {
     path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/application/service/InMemoryProductRepository.java",
-    sha256: "e3fa112cc659644a07bac552d1d1759ae280b9d8ee9970118b640f08df013c11",
+    sha256: "2e15cc6ea77feeb23f721472ad5db8ac5fccd245235e93c4f298c2a3b850c289",
   },
   {
     path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/application/service/RecordingEventPublisher.java",
@@ -199,7 +198,7 @@ export const SAMPLE_FILES = [
   },
   {
     path: "backend/application-core/src/test/java/io/scaffold/starter/catalog/domain/model/ProductTest.java",
-    sha256: "650ddc9aec4003b6e86be1d2153e3b7e4d0de6713000973691622bab6b9b3619",
+    sha256: "fa412162be9bebc21117eb8d796207c38a5e812a4bb7fcbadac3204b75d4c5b6",
   },
   {
     path: "frontend/e2e/catalog.e2e.ts",
@@ -251,15 +250,14 @@ export const SAMPLE_FILES = [
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.spec.ts",
-    sha256: "41ac6c0b24ad8b515c628974f98d5312054bac178c76b6744d0e8bbd9c5c52b6",
+    sha256: "5448ce645d937e3203815bfad3ae4f78f2367ff4b059afc7203882fc96f1be33",
   },
   {
     path: "frontend/src/app/catalog/product-list/product-list.ts",
-    sha256: "db1c5f7d59f550607aeb7ef009072db04fb4d4c8802e5ab08c85851db6ef40b0",
+    sha256: "cf8f8df624d590dfc8b5d090af46465822498308e9d96b72aa2a168b35e41472",
   },
 ];
 
-/** Files that keep their content but lose every line containing the marker. */
 export const MARKED_FILES = [
   "AGENTS.md",
   "frontend/src/app/app.routes.ts",
@@ -285,7 +283,6 @@ database has already applied the sample migrations, do not delete them:
 remove the catalog code by hand and add a forward migration that drops
 catalog_publication_log and catalog_product.`;
 
-/** Re-runnable: a listed file already gone is skipped; nothing changes on `drifted` or `markerProblems`. */
 export function removeSample(root, { rm = rmSync } = {}) {
   const present = SAMPLE_FILES.filter((f) => existsSync(join(root, f.path)));
   const marked = MARKED_FILES.filter((f) => existsSync(join(root, f)));
@@ -348,7 +345,6 @@ function markerLines(file) {
     .filter((line) => line.includes(MARKER)).length;
 }
 
-/** Rewrites the recorded hashes in this script from the files on disk. */
 export function refreshHashes(root, scriptPath) {
   const missing = SAMPLE_FILES.filter(
     (f) => !existsSync(join(root, f.path)),

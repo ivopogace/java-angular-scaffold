@@ -41,7 +41,7 @@ class ProductTest {
         assertThat(product.status()).isEqualTo(ProductStatus.DRAFT);
         assertThat(product.price()).contains(PRICE);
         assertThat(product.publishedAt()).isEmpty();
-        assertThat(product.version()).isEqualTo(Product.INITIAL_VERSION);
+        assertThat(product.loadedVersion()).isEqualTo(Product.INITIAL_VERSION);
     }
 
     @Test
@@ -94,7 +94,7 @@ class ProductTest {
         assertThat(product.id()).isEqualTo(id);
         assertThat(product.status()).isEqualTo(ProductStatus.PUBLISHED);
         assertThat(product.publishedAt()).contains(NOW);
-        assertThat(product.version()).isEqualTo(7);
+        assertThat(product.loadedVersion()).isEqualTo(7);
     }
 
     @Test
@@ -104,6 +104,6 @@ class ProductTest {
         product.publish(NOW);
         product.retire();
 
-        assertThat(product.version()).isEqualTo(3);
+        assertThat(product.loadedVersion()).isEqualTo(3);
     }
 }

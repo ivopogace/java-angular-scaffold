@@ -20,5 +20,5 @@ visible in the adapter.
   ArchUnit rule fails the build on any `jakarta.persistence` use.
 - No ORM checks versions for us, so optimistic locking is explicit: the aggregate carries the
   version it was loaded with as a plain value, and the adapter's `update … where id = :id and
-  version = :expected` reports a stale write as a count of 0, which the use case returns as an
+  version = :loadedVersion` reports a stale write as a count of 0, which the use case returns as an
   outcome. A blind `on conflict do update` save would silently lose a concurrent write.

@@ -1,6 +1,7 @@
 package io.scaffold.starter.catalog.adapter.out.persistence;
 
 import io.scaffold.starter.catalog.application.port.out.ProductRepository;
+import io.scaffold.starter.catalog.application.port.out.ProductRepository.UpdateResult;
 import io.scaffold.starter.catalog.domain.id.ProductId;
 import io.scaffold.starter.catalog.domain.model.Product;
 import io.scaffold.starter.catalog.domain.model.ProductStatus;
@@ -29,17 +30,17 @@ class JdbcProductRepository implements ProductRepository {
     }
 
     @Override
-    public void add(Product product) {
+    public void addNew(Product product) {
         bindState(jdbc.sql("""
                         insert into catalog_product (id, name, price_minor, price_currency, status, published_at, version)
                         values (:id, :name, :priceMinor, :priceCurrency, :status, :publishedAt, :version)
                         """), product)
-                .param("version", product.version())
+                .param("version", product.loadedVersion())
                 .update();
     }
 
     @Override
-    public boolean update(Product product) {
+    public UpdateResult updateIfUnchangedSinceLoad(Product product) {
         int updated = bindState(jdbc.sql("""
                         update catalog_product set
                             name = :name,
@@ -48,11 +49,11 @@ class JdbcProductRepository implements ProductRepository {
                             status = :status,
                             published_at = :publishedAt,
                             version = version + 1
-                        where id = :id and version = :expected
+                        where id = :id and version = :loadedVersion
                         """), product)
-                .param("expected", product.version())
+                .param("loadedVersion", product.loadedVersion())
                 .update();
-        return updated == 1;
+        return updated == 1 ? UpdateResult.UPDATED : UpdateResult.CHANGED_SINCE_LOAD;
     }
 
     @Override

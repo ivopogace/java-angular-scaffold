@@ -16,7 +16,6 @@ public sealed interface PublishOutcome {
     record Rejected(Reason reason) implements PublishOutcome {
     }
 
-    /** Another write changed the product after it was loaded; nothing was written or published. */
     record ConcurrentChange() implements PublishOutcome {
     }
 }

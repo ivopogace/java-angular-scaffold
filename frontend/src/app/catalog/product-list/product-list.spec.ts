@@ -39,7 +39,6 @@ const SHIRT: Product = {
   publishedAt: '2030-01-14T12:00:00Z',
 };
 
-// The list `httpResource` is a pending task that holds every harness call until flushed; the POSTs are not.
 describe('ProductList', () => {
   let http: HttpTestingController;
   let fixture: ComponentFixture<ProductList>;
@@ -54,8 +53,7 @@ describe('ProductList', () => {
     loader = TestbedHarnessEnvironment.loader(fixture);
   }
 
-  /** Renders, which sends the list request the resource has queued, then answers it. */
-  async function flushList(products: Product[]): Promise<void> {
+  async function renderAndAnswerListRequest(products: Product[]): Promise<void> {
     TestBed.tick();
     http.expectOne(LIST_URL).flush(products);
     await fixture.whenStable();
@@ -63,7 +61,7 @@ describe('ProductList', () => {
 
   async function render(products: Product[]): Promise<HTMLElement> {
     create();
-    await flushList(products);
+    await renderAndAnswerListRequest(products);
     return fixture.nativeElement as HTMLElement;
   }
 
@@ -114,7 +112,7 @@ describe('ProductList', () => {
 
     await (await button('Publish Mug')).click();
     http.expectOne(`${LIST_URL}/p1/publish`).flush({ ...MUG, state: 'PUBLISHED' });
-    await flushList([{ ...MUG, state: 'PUBLISHED' }]);
+    await renderAndAnswerListRequest([{ ...MUG, state: 'PUBLISHED' }]);
 
     expect(await rows()).toEqual([['Mug', '€12.50', 'Published', 'Retire']]);
   });
@@ -123,7 +121,6 @@ describe('ProductList', () => {
     await render([POSTER]);
     const publish = await button('Publish Poster');
 
-    // Without a render between the clicks the second one reaches the component's guard, not a disabled button.
     await manualChangeDetection(async () => {
       await publish.click();
       await publish.click();
@@ -141,7 +138,6 @@ describe('ProductList', () => {
     await render([MUG]);
     const publish = await button('Publish Mug');
 
-    // A successful change reloads the list, whose open request would hold every harness call.
     await manualChangeDetection(async () => {
       await publish.click();
       TestBed.tick();
@@ -152,7 +148,7 @@ describe('ProductList', () => {
       expect(await publish.isDisabled()).toBe(false);
     });
 
-    await flushList([{ ...MUG, state: 'PUBLISHED' }]);
+    await renderAndAnswerListRequest([{ ...MUG, state: 'PUBLISHED' }]);
     expect(await (await button('Retire Mug')).isDisabled()).toBe(false);
   });
 
@@ -161,7 +157,7 @@ describe('ProductList', () => {
 
     await (await button('Retire Shirt')).click();
     http.expectOne(`${LIST_URL}/p3/retire`).flush({ ...SHIRT, state: 'RETIRED' });
-    await flushList([{ ...SHIRT, state: 'RETIRED' }]);
+    await renderAndAnswerListRequest([{ ...SHIRT, state: 'RETIRED' }]);
 
     expect(await rows()).toEqual([['Shirt', '€20.00', 'Retired', '']]);
   });
@@ -188,7 +184,7 @@ describe('ProductList', () => {
     http
       .expectOne(`${LIST_URL}/p2/publish`)
       .flush({ reason: 'CONCURRENT_CHANGE' }, { status: 409, statusText: 'Conflict' });
-    await flushList([{ ...POSTER, state: 'PUBLISHED' }]);
+    await renderAndAnswerListRequest([{ ...POSTER, state: 'PUBLISHED' }]);
 
     expect(await snackBarMessage()).toBe(
       'Someone else changed this product at the same time. Try again.',

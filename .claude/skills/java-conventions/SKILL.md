@@ -80,19 +80,19 @@ Rows rebuild aggregates through a factory that skips creation rules, named `rehy
 (`Product.rehydrate`); only `adapter.out` and `domain.model` may call it
 (`onlyDrivenAdaptersRehydrate`).
 
-Writes are optimistically locked. The aggregate carries the `version` it was loaded with, a plain
-`long` that transitions leave alone (no `@Version`, invariant #5). The repository port splits
-`add` (insert at the initial version) from `update`, which returns `false` when the row has
-moved on; no upsert:
+Writes are optimistically locked. The aggregate carries the `loadedVersion` it was loaded with, a
+plain `long` that transitions leave alone (no `@Version`, invariant #5). The repository port splits
+`addNew` (insert at the initial version) from `updateIfUnchangedSinceLoad`, which returns
+`UpdateResult.CHANGED_SINCE_LOAD` when the row has moved on; no upsert:
 
 ```java
 int updated = bindState(jdbc.sql("""
         update catalog_product set status = :status, …, version = version + 1
-        where id = :id and version = :expected
+        where id = :id and version = :loadedVersion
         """), product)
-        .param("expected", product.version())
+        .param("loadedVersion", product.loadedVersion())
         .update();
-return updated == 1;
+return updated == 1 ? UpdateResult.UPDATED : UpdateResult.CHANGED_SINCE_LOAD;
 ```
 
 The service checks the result before publishing an event and returns a `ConcurrentChange` outcome,

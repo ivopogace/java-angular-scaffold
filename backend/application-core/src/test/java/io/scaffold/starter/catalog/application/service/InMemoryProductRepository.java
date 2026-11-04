@@ -8,48 +8,48 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * Stores and returns copies, so a change only persists through {@link #add} or {@link #update}, and checks the
- * version on update, as the database does.
- */
 class InMemoryProductRepository implements ProductRepository {
 
-    private final Map<ProductId, Product> stored = new LinkedHashMap<>();
+    private final Map<ProductId, Product> storedCopies = new LinkedHashMap<>();
 
     @Override
-    public void add(Product product) {
-        if (stored.putIfAbsent(product.id(), copyOf(product, product.version())) != null) {
+    public void addNew(Product product) {
+        if (storedCopies.putIfAbsent(product.id(), copyAt(product, product.loadedVersion())) != null) {
             throw new IllegalStateException("Product " + product.id().value() + " is already stored");
         }
     }
 
     @Override
-    public boolean update(Product product) {
-        Product current = stored.get(product.id());
-        if (current == null || current.version() != product.version()) {
-            return false;
+    public UpdateResult updateIfUnchangedSinceLoad(Product product) {
+        Product current = storedCopies.get(product.id());
+        if (current == null || current.loadedVersion() != product.loadedVersion()) {
+            return UpdateResult.CHANGED_SINCE_LOAD;
         }
-        stored.put(product.id(), copyOf(product, product.version() + 1));
-        return true;
+        storedCopies.put(product.id(), copyAt(product, product.loadedVersion() + 1));
+        return UpdateResult.UPDATED;
     }
 
     @Override
     public Optional<Product> findById(ProductId id) {
-        return Optional.ofNullable(stored.get(id)).map(product -> copyOf(product, product.version()));
+        return Optional.ofNullable(storedCopies.get(id)).map(InMemoryProductRepository::copyOf);
     }
 
     @Override
     public List<Product> findAll() {
-        return stored.values().stream().map(product -> copyOf(product, product.version())).toList();
+        return storedCopies.values().stream().map(InMemoryProductRepository::copyOf).toList();
     }
 
-    private static Product copyOf(Product product, long version) {
+    private static Product copyOf(Product product) {
+        return copyAt(product, product.loadedVersion());
+    }
+
+    private static Product copyAt(Product product, long storedVersion) {
         return Product.rehydrate(
                 product.id(),
                 product.name(),
                 product.price().orElse(null),
                 product.status(),
                 product.publishedAt().orElse(null),
-                version);
+                storedVersion);
     }
 }

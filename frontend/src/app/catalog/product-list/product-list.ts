@@ -67,15 +67,14 @@ export class ProductList {
   }
 
   protected publish(product: Product): void {
-    this.change(product, this.catalog.publish(product.id));
+    this.changeUnlessBusy(product, this.catalog.publish(product.id));
   }
 
   protected retire(product: Product): void {
-    this.change(product, this.catalog.retire(product.id));
+    this.changeUnlessBusy(product, this.catalog.retire(product.id));
   }
 
-  /** Runs one change per product at a time, so a double click sends one request. */
-  private change(product: Product, request: Observable<Product>): void {
+  private changeUnlessBusy(product: Product, request: Observable<Product>): void {
     if (this.busy(product)) {
       return;
     }

@@ -1,6 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!-- German translations. Source strings: `npm run extract-i18n` writes src/locale/messages.xlf. -->
-<!-- One unit per line, so a feature's units can be removed line by line, by hand or by marker. -->
 <xliff version="2.0" xmlns="urn:oasis:names:tc:xliff:document:2.0" srcLang="en" trgLang="de">
   <file id="ngi18n" original="ng.template">
     <unit id="nav.catalog"><segment><source>Catalog</source><target>Katalog</target></segment></unit> <!-- sample:catalog -->

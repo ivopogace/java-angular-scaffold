@@ -9,6 +9,7 @@ import io.scaffold.starter.catalog.application.port.in.ProductView;
 import io.scaffold.starter.catalog.application.port.in.PublishOutcome;
 import io.scaffold.starter.catalog.application.port.in.PublishProduct;
 import io.scaffold.starter.catalog.application.port.out.ProductRepository;
+import io.scaffold.starter.catalog.application.port.out.ProductRepository.UpdateResult;
 import io.scaffold.starter.catalog.domain.event.ProductPublished;
 import io.scaffold.starter.catalog.domain.id.ProductId;
 import io.scaffold.starter.catalog.domain.model.Product;
@@ -33,12 +34,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.modulith.test.ApplicationModuleTest;
 
-/**
- * Two publishes of one draft in separate transactions, both past their load before either updates: the row's
- * version lets exactly one write and publish {@link ProductPublished}.
- */
 @ApplicationModuleTest
-@Import({TestcontainersConfiguration.class, ConcurrentPublishIT.BothLoadFirstConfiguration.class})
+@Import({TestcontainersConfiguration.class, ConcurrentPublishIT.UpdatesWaitUntilBothPublishesLoaded.class})
 @Tag("container")
 class ConcurrentPublishIT {
 
@@ -90,20 +87,19 @@ class ConcurrentPublishIT {
     }
 
     @TestConfiguration(proxyBeanMethods = false)
-    static class BothLoadFirstConfiguration {
+    static class UpdatesWaitUntilBothPublishesLoaded {
 
-        /** Holds each update until both publishes have loaded the draft, so neither sees the other's write. */
         @Bean
         @Primary
-        ProductRepository bothLoadFirst(@Qualifier("jdbcProductRepository") ProductRepository jdbc) {
+        ProductRepository updateAfterBothLoaded(@Qualifier("jdbcProductRepository") ProductRepository jdbc) {
             return new ProductRepository() {
                 @Override
-                public void add(Product product) {
-                    jdbc.add(product);
+                public void addNew(Product product) {
+                    jdbc.addNew(product);
                 }
 
                 @Override
-                public boolean update(Product product) {
+                public UpdateResult updateIfUnchangedSinceLoad(Product product) {
                     try {
                         BOTH_LOADED.await(10, TimeUnit.SECONDS);
                     } catch (InterruptedException e) {
@@ -112,7 +108,7 @@ class ConcurrentPublishIT {
                     } catch (BrokenBarrierException | TimeoutException e) {
                         throw new IllegalStateException("The other publish never reached its update", e);
                     }
-                    return jdbc.update(product);
+                    return jdbc.updateIfUnchangedSinceLoad(product);
                 }
 
                 @Override
