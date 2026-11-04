@@ -1,7 +1,7 @@
 # jOOQ for persistence, generated per business area
 
 Persistence adapters query through jOOQ's DSL over classes generated from the Flyway migrations;
-JPA, Hibernate and Spring Data are not used. Plain SQL — Spring's `JdbcClient` / `JdbcTemplate` or
+JPA, Hibernate and Spring Data are not used. Plain SQL — JDBC such as Spring's `JdbcClient` or
 jOOQ's `@PlainSQL` API — is the escape hatch for PostgreSQL features jOOQ does not model (full-text
 search's `@@`), allowed only in an area's `adapter.out.persistence`. Generated classes turn a
 renamed or dropped column into a compile error in every query that uses it, and the typed DSL keeps
@@ -24,17 +24,19 @@ at the persistence edge (ADR-0004): jOOQ records are the adapter's model, never 
 
 ## Consequences
 
-- `./gradlew :adapters:generateJooq` migrates a throwaway PostgreSQL (the image `compose.yaml`
-  runs, as the Testcontainers ITs do; a Postgres-compatible image such as pgvector works) and
-  writes `backend/adapters/src/generated/jooq/`. The output is committed, so compiling needs no
-  Docker; `checkJooqGenerated`, part of `check` unless `-PexcludeTags=container`, fails
+- `./gradlew :adapters:generateJooq` migrates a throwaway PostgreSQL (the image of `compose.yaml`'s
+  `postgres` service, as the Testcontainers ITs do; a Postgres-compatible image such as pgvector
+  works) and writes `backend/adapters/src/generated/jooq/`. The output is committed, so compiling
+  needs no Docker; `checkJooqGenerated`, part of `check` unless `-PexcludeTags=container`, fails
   when it no longer matches the migrations. A migration and its regenerated classes ship together.
 - Tables are named `<area>_<name>` and generate into `<base>.<area>.adapter.out.persistence.jooq`,
-  so Spring Modulith keeps an area's tables internal to it. A table of no area fails generation,
-  unless it is Flyway's history or listed in `infrastructureTables` in `backend/adapters/build.gradle`
-  (Spring Modulith's `event_publication`). `timestamptz` columns generate as `Instant`.
-- ArchUnit rules fail the build on JPA, Hibernate or Spring Data anywhere, on `JdbcClient`,
-  `JdbcTemplate` or a jOOQ plain-SQL string outside an area's `adapter.out.persistence` (tests
-  included), and on a driving adapter touching the generated classes. Escape-hatch SQL is checked
+  so Spring Modulith keeps an area's tables internal to it; a name matching two areas belongs to the
+  longer. A table, view or materialized, partitioned or foreign table of no area fails generation,
+  unless it is Flyway's history or listed in `infrastructureTables` in
+  `backend/adapters/build.gradle` (Spring Modulith's `event_publication`). `timestamptz` columns generate as `Instant`.
+- ArchUnit rules fail the build on JPA, Hibernate or Spring Data anywhere, on JDBC (`java.sql`,
+  `javax.sql`, Spring's `JdbcClient` and the like) or a jOOQ plain-SQL string outside an area's
+  `adapter.out.persistence` (tests included), and on a driving adapter touching the generated
+  classes. Escape-hatch SQL is checked
   only when a test runs it, so each use states why and has an IT.
 - jOOQ's open-source edition covers PostgreSQL; another database may need a commercial edition.

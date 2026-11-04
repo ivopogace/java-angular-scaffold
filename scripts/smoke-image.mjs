@@ -62,9 +62,18 @@ export function checkDockerfilePins(dockerfile, { nvmrc, javaConventions }) {
 
 /** The Postgres image of `compose.yaml`, so the smoke test runs the database `bootRun` runs. */
 export function postgresImage(composeYaml) {
-  const image = composeYaml.match(/^\s*image:\s*["']?([^\s"']+)/m);
-  if (!image) throw new Error("compose.yaml names no image");
-  return image[1];
+  const lines = composeYaml.split(/\r?\n/);
+  const service = lines.findIndex((line) => /^\s+postgres:\s*$/.test(line));
+  if (service !== -1) {
+    const indent = lines[service].search(/\S/);
+    for (const line of lines.slice(service + 1)) {
+      if (line.trim() === "" || line.trim().startsWith("#")) continue;
+      if (line.search(/\S/) <= indent) break;
+      const image = line.match(/^\s*image:\s*["']?([^\s"'#]+)/);
+      if (image) return image[1];
+    }
+  }
+  throw new Error("compose.yaml has no postgres service with an image");
 }
 
 /** The daemon's host for a TCP `DOCKER_HOST` (Docker-in-Docker in CI), else loopback. */

@@ -35,19 +35,23 @@ import org.testcontainers.utility.DockerImageName;
 /**
  * Migrates a throwaway PostgreSQL with the Flyway migrations and generates each business area's jOOQ
  * classes into {@code <base>.<area>.adapter.out.persistence.jooq}, from the tables named
- * {@code <area>_…}. A table that belongs to no area and is not infrastructure fails the run.
+ * {@code <area>_…}; a table matching two areas belongs to the longer one. A table, view or
+ * partitioned, foreign or materialized table that belongs to no area and is not infrastructure
+ * fails the run.
  *
- * <p>Arguments: {@code generate|check <basePackage> <postgresImage> <migrationsDir> <areasDir>
- * <outputDir> <infrastructureTables>}, the last comma-separated and possibly empty; Flyway's history
- * table is always infrastructure. The image may be any PostgreSQL-compatible one, such as
- * {@code pgvector/pgvector:pg18}. {@code check} generates into a temporary directory and exits 1,
- * listing the files, when it differs from {@code outputDir}.
+ * <p>Arguments: {@code generate|check <basePackage> <postgresImage> <migrationsDir> <areas> <outputDir>
+ * <infrastructureTables>}, the two lists comma-separated and possibly empty; Flyway's history table
+ * is always infrastructure. The image may be any PostgreSQL-compatible one, such as
+ * {@code pgvector/pgvector:pg18}. Generation runs into a temporary directory: {@code generate}
+ * replaces {@code outputDir} with it only after every area generated, {@code check} exits 1, listing
+ * the files, when it differs from {@code outputDir}.
  */
 public final class JooqCodegen {
 
     private static final String FLYWAY_HISTORY = "flyway_schema_history";
-    private static final Set<String> NON_AREA_PACKAGES = Set.of("shared", "web");
     private static final String SCHEMA = "public";
+    private static final String[] TABLE_TYPES =
+            {"TABLE", "VIEW", "PARTITIONED TABLE", "MATERIALIZED VIEW", "FOREIGN TABLE"};
     private static final String TIMESTAMPTZ = "(?i:timestamp\\ with\\ time\\ zone)";
     private static final String REGENERATE = "./gradlew :adapters:generateJooq";
 
@@ -57,41 +61,50 @@ public final class JooqCodegen {
     public static void main(String[] args) throws Exception {
         if (args.length != 7 || !Set.of("generate", "check").contains(args[0])) {
             throw new IllegalArgumentException("Usage: JooqCodegen generate|check <basePackage> <postgresImage> "
-                    + "<migrationsDir> <areasDir> <outputDir> <infrastructureTables>");
+                    + "<migrationsDir> <areas> <outputDir> <infrastructureTables>");
         }
         boolean check = args[0].equals("check");
         String basePackage = args[1];
+        Set<String> areas = names(args[4]);
         Path output = Path.of(args[5]).toAbsolutePath();
         Set<String> infrastructure = infrastructureTables(args[6]);
-        Path target = check ? Files.createTempDirectory("jooq-check") : output;
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer(
-                DockerImageName.parse(args[2]).asCompatibleSubstituteFor("postgres"))) {
-            postgres.start();
-            Flyway.configure()
-                    .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
-                    .locations("filesystem:" + Path.of(args[3]).toAbsolutePath())
-                    .load()
-                    .migrate();
-            Map<String, List<String>> tablesByArea = tablesByArea(tables(postgres), areas(Path.of(args[4])),
-                    infrastructure);
-            deleteRecursively(target);
-            for (String area : tablesByArea.keySet()) {
-                GenerationTool.generate(configuration(postgres, area, basePackage + "." + area
-                        + ".adapter.out.persistence.jooq", target));
+        Path generated = Files.createTempDirectory("jooq-generated");
+        List<String> differences;
+        try {
+            try (PostgreSQLContainer postgres = new PostgreSQLContainer(
+                    DockerImageName.parse(args[2]).asCompatibleSubstituteFor("postgres"))) {
+                postgres.start();
+                Flyway.configure()
+                        .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
+                        .locations("filesystem:" + Path.of(args[3]).toAbsolutePath())
+                        .load()
+                        .migrate();
+                Map<String, List<String>> tablesByArea;
+                try (Connection connection = DriverManager.getConnection(
+                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())) {
+                    tablesByArea = tablesByArea(tables(connection), areas, infrastructure);
+                }
+                for (String area : tablesByArea.keySet()) {
+                    GenerationTool.generate(configuration(postgres, database(area, areas),
+                            basePackage + "." + area + ".adapter.out.persistence.jooq", generated));
+                }
             }
+            differences = differences(output, generated);
+            if (!check && !differences.isEmpty()) {
+                deleteRecursively(output);
+                copyRecursively(generated, output);
+            }
+        } finally {
+            deleteRecursively(generated);
         }
-        if (check) {
-            List<String> differences = differences(output, target);
-            deleteRecursively(target);
-            if (!differences.isEmpty()) {
-                System.err.println("The committed jOOQ classes do not match the migrations; run " + REGENERATE
-                        + " and commit the result. Differing files:\n  " + String.join("\n  ", differences));
-                System.exit(1);
-            }
+        if (check && !differences.isEmpty()) {
+            System.err.println("The committed jOOQ classes do not match the migrations; run " + REGENERATE
+                    + " and commit the result. Differing files:\n  " + String.join("\n  ", differences));
+            System.exit(1);
         }
     }
 
-    private static Configuration configuration(PostgreSQLContainer postgres, String area, String targetPackage,
+    private static Configuration configuration(PostgreSQLContainer postgres, Database database, String targetPackage,
             Path directory) {
         return new Configuration()
                 .withLogging(Logging.WARN)
@@ -101,11 +114,7 @@ public final class JooqCodegen {
                         .withPassword(postgres.getPassword()))
                 .withGenerator(new Generator()
                         .withStrategy(new Strategy().withName(FlatPackageStrategy.class.getName()))
-                        .withDatabase(new Database()
-                                .withName("org.jooq.meta.postgres.PostgresDatabase")
-                                .withInputSchema(SCHEMA)
-                                .withIncludes(area + "_.*")
-                                .withForcedTypes(new ForcedType().withName("INSTANT").withIncludeTypes(TIMESTAMPTZ)))
+                        .withDatabase(database)
                         .withGenerate(new Generate().withDeprecated(false))
                         .withTarget(new Target()
                                 .withPackageName(targetPackage)
@@ -113,10 +122,23 @@ public final class JooqCodegen {
                                 .withEncoding(StandardCharsets.UTF_8.name())));
     }
 
-    private static List<String> tables(PostgreSQLContainer postgres) throws SQLException {
-        try (Connection connection = DriverManager.getConnection(
-                        postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());
-                ResultSet rows = connection.getMetaData().getTables(null, SCHEMA, "%", new String[] {"TABLE", "VIEW"})) {
+    /** The area's objects: named {@code <area>_…}, but not those of a longer area such as {@code <area>_admin}. */
+    static Database database(String area, Set<String> areas) {
+        Database database = new Database()
+                .withName("org.jooq.meta.postgres.PostgresDatabase")
+                .withInputSchema(SCHEMA)
+                .withIncludes(area + "_.*")
+                .withForcedTypes(new ForcedType().withName("INSTANT").withIncludeTypes(TIMESTAMPTZ));
+        String longer = areas.stream()
+                .filter(other -> other.startsWith(area + "_"))
+                .sorted()
+                .map(other -> other + "_.*")
+                .collect(Collectors.joining("|"));
+        return longer.isEmpty() ? database : database.withExcludes(longer);
+    }
+
+    static List<String> tables(Connection connection) throws SQLException {
+        try (ResultSet rows = connection.getMetaData().getTables(null, SCHEMA, "%", TABLE_TYPES)) {
             List<String> names = new ArrayList<>();
             while (rows.next()) {
                 names.add(rows.getString("TABLE_NAME"));
@@ -125,21 +147,16 @@ public final class JooqCodegen {
         }
     }
 
-    private static Set<String> areas(Path areasDir) throws IOException {
-        try (Stream<Path> children = Files.list(areasDir)) {
-            return children.filter(Files::isDirectory)
-                    .map(dir -> dir.getFileName().toString())
-                    .filter(name -> !NON_AREA_PACKAGES.contains(name))
-                    .collect(TreeSet::new, Set::add, Set::addAll);
-        }
+    static Set<String> names(String commaSeparated) {
+        return Stream.of(commaSeparated.split(","))
+                .map(String::trim)
+                .filter(name -> !name.isEmpty())
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     /** The configured infrastructure tables, comma-separated, plus Flyway's history table. */
     static Set<String> infrastructureTables(String commaSeparated) {
-        Set<String> tables = Stream.of(commaSeparated.split(","))
-                .map(String::trim)
-                .filter(name -> !name.isEmpty())
-                .collect(Collectors.toCollection(TreeSet::new));
+        Set<String> tables = names(commaSeparated);
         tables.add(FLYWAY_HISTORY);
         return tables;
     }
@@ -153,7 +170,7 @@ public final class JooqCodegen {
             }
             areas.stream()
                     .filter(area -> table.startsWith(area + "_"))
-                    .findFirst()
+                    .max(Comparator.comparingInt(String::length))
                     .ifPresentOrElse(area -> byArea.computeIfAbsent(area, _ -> new ArrayList<>()).add(table),
                             () -> orphans.add(table));
         }
@@ -195,6 +212,19 @@ public final class JooqCodegen {
             return Files.readString(file);
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
+        }
+    }
+
+    private static void copyRecursively(Path source, Path target) throws IOException {
+        try (Stream<Path> paths = Files.walk(source)) {
+            for (Path path : paths.toList()) {
+                Path copy = target.resolve(source.relativize(path).toString());
+                if (Files.isDirectory(path)) {
+                    Files.createDirectories(copy);
+                } else {
+                    Files.copy(path, copy);
+                }
+            }
         }
     }
 

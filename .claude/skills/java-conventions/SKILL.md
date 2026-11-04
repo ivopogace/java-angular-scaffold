@@ -80,7 +80,7 @@ dsl.insertInto(CATALOG_PRODUCT)
         .execute();
 ```
 
-Plain-SQL strings (`DSL.field("…")`, `dsl.execute("…")`, `JdbcClient`) bypass the generated
+Plain-SQL strings (`DSL.field("…")`, `dsl.execute("…")`, `JdbcClient` or any other JDBC) bypass the generated
 schema, so a column change no longer fails the compile. They are the escape hatch for what jOOQ
 does not model (full-text search's `@@`), allowed only in an area's `adapter.out.persistence` and
 its tests there; `noPlainSql` and `persistenceGoesThroughJooq` fail the build anywhere else. Each

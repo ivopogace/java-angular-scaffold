@@ -10,7 +10,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaAccess;
-import com.tngtech.archunit.core.domain.JavaCall;
+import com.tngtech.archunit.core.domain.JavaCodeUnit;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.domain.JavaModifier;
@@ -69,7 +69,7 @@ final class ArchitectureRules {
     }
 
     List<ArchRule> testRules() {
-        return List.of(areaTestsAreModuleTests(), noPlainSql());
+        return List.of(areaTestsAreModuleTests(), persistenceGoesThroughJooq(), noPlainSql());
     }
 
     ArchRule areaTestsAreModuleTests() {
@@ -148,27 +148,27 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
-    /** {@code JdbcClient} is the escape hatch for SQL jOOQ does not model, so only an area's persistence adapters use it. */
+    /** JDBC ({@code JdbcClient} and the like) is the escape hatch for SQL jOOQ does not model, so only an area's persistence adapters use it. */
     ArchRule persistenceGoesThroughJooq() {
         DescribedPredicate<JavaClass> neverUsed = resideInAnyPackage(
                 "jakarta.persistence..", "org.hibernate..", "org.springframework.data..");
-        DescribedPredicate<JavaClass> springJdbc = resideInAnyPackage("org.springframework.jdbc.core..");
+        DescribedPredicate<JavaClass> jdbc = resideInAnyPackage("org.springframework.jdbc..", "java.sql..", "javax.sql..");
         DescribedPredicate<JavaClass> escapeHatch = inLayer(PERSISTENCE);
         return classes()
                 .should(new ArchCondition<JavaClass>("not depend on JPA, Hibernate or Spring Data, "
-                        + "nor on JdbcClient or JdbcTemplate outside " + PERSISTENCE) {
+                        + "nor on JDBC outside " + PERSISTENCE) {
                     @Override
                     public void check(JavaClass item, ConditionEvents events) {
                         for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
                             JavaClass target = dependency.getTargetClass().getBaseComponentType();
-                            if (neverUsed.test(target) || (springJdbc.test(target) && !escapeHatch.test(item))) {
+                            if (neverUsed.test(target) || (jdbc.test(target) && !escapeHatch.test(item))) {
                                 events.add(violated(dependency, dependency.getDescription()));
                             }
                         }
                     }
                 })
-                .as("persistence goes through jOOQ: no JPA, Hibernate or Spring Data, and JdbcClient or JdbcTemplate "
-                        + "only in an area's " + PERSISTENCE)
+                .as("persistence goes through jOOQ: no JPA, Hibernate or Spring Data, and JDBC (java.sql, javax.sql, "
+                        + "Spring's JdbcClient, JdbcTemplate, SqlQuery …) only in an area's " + PERSISTENCE)
                 .allowEmptyShould(true);
     }
 
@@ -177,15 +177,38 @@ final class ArchitectureRules {
      * persistence adapters (and their tests) may use one as the escape hatch for SQL jOOQ does not model.
      */
     ArchRule noPlainSql() {
-        DescribedPredicate<JavaCall<?>> plainSql = DescribedPredicate.describe("jOOQ's @PlainSQL API",
-                call -> call.getTarget().resolveMember()
-                        .map(member -> member.isAnnotatedWith(PlainSQL.class))
-                        .orElse(false));
-        return noClasses()
+        return classes()
                 .that(not(inLayer(PERSISTENCE)))
-                .should().callCodeUnitWhere(plainSql)
+                .should(new ArchCondition<JavaClass>("not call or reference jOOQ's @PlainSQL API") {
+                    @Override
+                    public void check(JavaClass item, ConditionEvents events) {
+                        for (JavaAccess<?> access : item.getAccessesFromSelf()) {
+                            boolean plainSql = access.getTarget().resolveMember()
+                                    .filter(JavaCodeUnit.class::isInstance)
+                                    .map(member -> isPlainSql((JavaCodeUnit) member))
+                                    .orElse(false);
+                            if (plainSql) {
+                                events.add(violated(access, access.getDescription()));
+                            }
+                        }
+                    }
+                })
                 .as("queries use the generated jOOQ classes; plain-SQL strings only in an area's " + PERSISTENCE)
                 .allowEmptyShould(true);
+    }
+
+    /** Annotated itself, or overriding an annotated method: an implementation such as DefaultDSLContext repeats no annotation. */
+    private static boolean isPlainSql(JavaCodeUnit member) {
+        if (member.isAnnotatedWith(PlainSQL.class)) {
+            return true;
+        }
+        JavaClass owner = member.getOwner();
+        List<JavaClass> parameters = member.getRawParameterTypes();
+        return Stream.concat(owner.getAllRawSuperclasses().stream(), owner.getAllRawInterfaces().stream())
+                .flatMap(type -> type.getMethods().stream())
+                .anyMatch(method -> method.getName().equals(member.getName())
+                        && method.getRawParameterTypes().equals(parameters)
+                        && method.isAnnotatedWith(PlainSQL.class));
     }
 
     ArchRule adaptersDoNotUseServices() {

@@ -66,12 +66,14 @@ The listed packages are the whole shape; no sub-packages beneath them.
 ## Migrations
 
 Infrastructure is `V1…`; project migrations continue after it; never edit an applied one
-(invariant #2). An area's tables are named `<area>_<name>`, or `generateJooq` fails; a table of no
-area (ShedLock, Modulith's `event_publication_archive`) goes into `infrastructureTables` in
-`adapters/build.gradle` in the same change. `generateJooq` and the Testcontainers ITs run
-`compose.yaml`'s image; a Postgres-compatible one (`pgvector/pgvector:pg18`) works. After a
-migration, run `./gradlew :adapters:generateJooq` and commit its output with it;
-`checkJooqGenerated` (part of `build`, skipped by `-PexcludeTags=container`) fails otherwise.
+(invariant #2). An area's tables, views and materialized, partitioned or foreign tables are named
+`<area>_<name>` (a name matching two areas belongs to the longer), or `generateJooq` fails; a
+table of no area (ShedLock, Modulith's `event_publication_archive`) goes into
+`infrastructureTables` in `adapters/build.gradle` in the same change. `generateJooq` and the
+Testcontainers ITs run the image of `compose.yaml`'s `postgres` service; a Postgres-compatible one
+(`pgvector/pgvector:pg18`) works. After a migration, run `./gradlew :adapters:generateJooq` and
+commit its output with it; `checkJooqGenerated` (part of `build`, skipped by
+`-PexcludeTags=container`) fails otherwise.
 
 ## The structural net
 
@@ -90,7 +92,8 @@ dependencies or annotations:
 `domain/model`, `port/out` or the generated jOOQ classes; who may call `rehydrate`;
 package-private services (`@UseCase` when they implement `port/in`), adapter classes (generated
 jOOQ classes aside) and `web`; persistence only through jOOQ (no JPA, Hibernate or Spring Data;
-`JdbcClient`, `JdbcTemplate` and jOOQ plain-SQL strings only in an area's `adapter/out/persistence`,
+JDBC (`java.sql`, `javax.sql`, Spring's `JdbcClient` and the like) and jOOQ plain-SQL strings,
+called or method-referenced, only in an area's `adapter/out/persistence`,
 the escape hatch for SQL jOOQ does not model, which also holds over the tests); no
 Spring beyond Modulith
 and no `java.sql` / `javax.sql` in `application-core`; and, over the tests, area tests are

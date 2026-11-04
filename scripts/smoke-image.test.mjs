@@ -59,18 +59,29 @@ test("the Dockerfile's base images follow .nvmrc and the Gradle toolchain", () =
   );
 });
 
-test("Postgres comes from compose.yaml, the image bootRun uses", () => {
+test("Postgres comes from compose.yaml's postgres service, the image bootRun uses", () => {
   assert.equal(
     postgresImage("services:\n  postgres:\n    image: postgres:18-alpine\n"),
     "postgres:18-alpine",
   );
-  assert.equal(postgresImage('    image: "postgres:17"\n'), "postgres:17");
   assert.equal(
-    postgresImage("    image: pgvector/pgvector:pg18\n"),
+    postgresImage(
+      'services:\n  redis:\n    image: redis:7\n  postgres:\n    # pinned\n    image: "pgvector/pgvector:pg18"\n    ports:\n      - "5432:5432"\n',
+    ),
     "pgvector/pgvector:pg18",
   );
   assert.match(postgresImage(repoFile("compose.yaml")), /\S:\S/);
-  assert.throws(() => postgresImage("services: {}\n"), /no image/);
+  assert.throws(
+    () => postgresImage("services:\n  redis:\n    image: redis:7\n"),
+    /no postgres service with an image/,
+  );
+  assert.throws(
+    () =>
+      postgresImage(
+        "services:\n  postgres:\n    ports: []\n  redis:\n    image: redis:7\n",
+      ),
+    /no postgres service with an image/,
+  );
 });
 
 test("the app is published on loopback, or on the TCP daemon's host", () => {

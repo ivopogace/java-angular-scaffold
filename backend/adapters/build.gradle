@@ -54,10 +54,13 @@ dependencies {
 }
 
 def testJooqCodegen = tasks.register('testJooqCodegen', Test) {
-    description = 'Runs the unit tests of the jOOQ code generator.'
+    description = 'Runs the jOOQ code generator\'s tests; those tagged container need Docker.'
     group = 'verification'
     testClassesDirs = sourceSets.jooqCodegenTest.output.classesDirs
     classpath = sourceSets.jooqCodegenTest.runtimeClasspath
+    def image = rootProject.ext.postgresImage
+    inputs.property('postgresImage', image)
+    jvmArgumentProviders.add({ ["-Dpostgres.image=${image.get()}".toString()] } as CommandLineArgumentProvider)
 }
 
 def basePackage = project.group.toString()
@@ -67,9 +70,13 @@ def postgresImage = rootProject.ext.postgresImage
 def infrastructureTables = ['event_publication']
 def migrations = layout.projectDirectory.dir('src/main/resources/db/migration')
 def areas = project(':application-core').layout.projectDirectory.dir("src/main/java/${basePackage.replace('.', '/')}")
-def areaNames = providers.provider { (areas.asFile.listFiles()?.findAll { it.isDirectory() }*.name ?: []).sort() }
+// The base package's sub-packages that are no business area; ArchitectureRules names the same two.
+def nonAreaPackages = ['shared', 'web']
+def areaNames = providers.provider {
+    (areas.asFile.listFiles()?.findAll { it.isDirectory() }*.name ?: []).findAll { !(it in nonAreaPackages) }.sort()
+}
 
-def configureCodegen = { JavaExec task, String mode, outputDir ->
+def configureCodegen = { JavaExec task, String mode ->
     task.group = 'jooq'
     task.classpath = sourceSets.jooqCodegen.runtimeClasspath
     task.mainClass = 'io.scaffold.starter.codegen.JooqCodegen'
@@ -83,14 +90,14 @@ def configureCodegen = { JavaExec task, String mode, outputDir ->
     task.inputs.property('postgresImage', postgresImage)
     task.inputs.property('infrastructureTables', infrastructureTables)
     task.argumentProviders.add({
-        [mode, basePackage, postgresImage.get(), migrations.asFile.path, areas.asFile.path,
+        [mode, basePackage, postgresImage.get(), migrations.asFile.path, areaNames.get().join(','),
          generatedJooq.asFile.path, infrastructureTables.join(',')]
     } as CommandLineArgumentProvider)
 }
 
 tasks.register('generateJooq', JavaExec) {
     description = 'Regenerates src/generated/jooq from the Flyway migrations against a throwaway Postgres (needs Docker).'
-    configureCodegen(it, 'generate', generatedJooq)
+    configureCodegen(it, 'generate')
     outputs.dir(generatedJooq)
 }
 
@@ -101,7 +108,7 @@ def excludedTags = providers.gradleProperty('excludeTags')
 
 def checkJooqGenerated = tasks.register('checkJooqGenerated', JavaExec) {
     description = 'Fails unless src/generated/jooq is what generateJooq produces from the migrations (needs Docker).'
-    configureCodegen(it, 'check', generatedJooq)
+    configureCodegen(it, 'check')
     inputs.files(generatedJooq).withPathSensitivity(PathSensitivity.RELATIVE)
     outputs.file(jooqCheckMarker)
     onlyIf('Docker is available (-PexcludeTags=container skips it)') { !excludedTags.get().contains('container') }

@@ -31,8 +31,16 @@ class ArchitectureRulesNegativeTest {
                         "archfixture.orders.domain.model.JpaOrder"),
                 violation("persistenceGoesThroughJooq", ArchitectureRules::persistenceGoesThroughJooq,
                         "archfixture.orders.adapter.out.reporting.JdbcClientOrderReport"),
+                violation("persistenceGoesThroughJooq", ArchitectureRules::persistenceGoesThroughJooq,
+                        "archfixture.orders.adapter.out.reporting.DataSourceOrderReport"),
+                violation("persistenceGoesThroughJooq", ArchitectureRules::persistenceGoesThroughJooq,
+                        "archfixture.orders.adapter.out.reporting.SqlUpdateOrderReport"),
                 violation("noPlainSql", ArchitectureRules::noPlainSql,
                         "archfixture.orders.adapter.out.reporting.PlainSqlOrderReport"),
+                violation("noPlainSql", ArchitectureRules::noPlainSql,
+                        "archfixture.orders.adapter.out.reporting.MethodReferenceOrderReport"),
+                violation("noPlainSql", ArchitectureRules::noPlainSql,
+                        "archfixture.orders.adapter.out.reporting.DefaultContextOrderReport"),
                 violation("servicesArePackagePrivateUseCases", ArchitectureRules::servicesArePackagePrivateUseCases,
                         "archfixture.orders.application.service.PublicOrderService"),
                 violation("servicesArePackagePrivateUseCases", ArchitectureRules::servicesArePackagePrivateUseCases,
@@ -99,7 +107,7 @@ class ArchitectureRulesNegativeTest {
     @Test
     void noRuleReportsTheCleanArea() {
         assertThat(RULES.all()).hasSize(12);
-        assertThat(RULES.testRules()).hasSize(2);
+        assertThat(RULES.testRules()).hasSize(3);
         for (ArchRule rule : everyRule()) {
             EvaluationResult result = rule.evaluate(FIXTURES);
             assertThat(String.join("\n", result.getFailureReport().getDetails()))

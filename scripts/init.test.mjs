@@ -19,6 +19,7 @@ import { checkAgentDocs } from "./check-agent-docs.mjs";
 import {
   TEMPLATE_VERSION,
   freshHistory,
+  layoutJooqImports,
   nodeVersionProblem,
   parseArgs,
   replaceTokens,
@@ -220,6 +221,56 @@ async function initWithPackage(t, pkg) {
 
 test("TEMPLATE_VERSION is X.Y.Z", () => {
   assert.match(TEMPLATE_VERSION, /^\d+\.\d+\.\d+$/);
+});
+
+test("layoutJooqImports leaves every committed generated jOOQ file as jOOQ wrote it", () => {
+  const generated = "backend/adapters/src/generated/jooq";
+  const files = readdirSync(join(repoRoot, generated), {
+    recursive: true,
+  }).filter((file) => file.endsWith(".java"));
+  for (const file of files) {
+    const text = normalizeEol(
+      readFileSync(join(repoRoot, generated, file), "utf8"),
+    );
+    assert.equal(layoutJooqImports(text), text, file);
+  }
+});
+
+test("layoutJooqImports moves a renamed import into its top-level package's group", () => {
+  const renamed = [
+    "package org.acme.shop.catalog;",
+    "",
+    "",
+    "import org.acme.shop.catalog.Other.OtherPath;",
+    "",
+    "import java.util.List;",
+    "",
+    "import org.jooq.Table;",
+    "import org.jooq.impl.DSL;",
+    "",
+    "",
+    "public class Shop {}",
+  ].join("\n");
+  assert.equal(
+    layoutJooqImports(renamed),
+    [
+      "package org.acme.shop.catalog;",
+      "",
+      "",
+      "import java.util.List;",
+      "",
+      "import org.acme.shop.catalog.Other.OtherPath;",
+      "import org.jooq.Table;",
+      "import org.jooq.impl.DSL;",
+      "",
+      "",
+      "public class Shop {}",
+    ].join("\n"),
+  );
+  assert.equal(
+    layoutJooqImports("package a;\n\nclass A {}"),
+    "package a;\n\nclass A {}",
+  );
 });
 
 /** `afterInit` writes the saved `.git` back over the fresh one `times` times, as a lingering git process would. */
@@ -642,6 +693,25 @@ describe("init on a throwaway copy", { concurrency: true }, () => {
     assert.deepEqual(tokenHits(root, TOKENS), []);
     assert.deepEqual(checkAgentDocs(root), []);
   });
+
+  test(
+    "a package sorting after java. regroups the generated jOOQ imports",
+    { skip: !sampleShipped && "sample already removed" },
+    async (t) => {
+      const root = await initWithPackage(t, "org.acme.shop");
+      const product = readFileSync(
+        join(
+          root,
+          "backend/adapters/src/generated/jooq/org/acme/shop/catalog/adapter/out/persistence/jooq/CatalogProduct.java",
+        ),
+        "utf8",
+      );
+      assert.match(
+        product,
+        /import java\.util\.UUID;\r?\n\r?\nimport org\.acme\.shop\.catalog\.adapter\.out\.persistence\.jooq\.CatalogPublicationLog\.CatalogPublicationLogPath;\r?\nimport org\.jooq\.Check;/,
+      );
+    },
+  );
 
   test("init removing the sample leaves no catalog path and no remove-sample script", async (t) => {
     const root = await copyRepo(t);

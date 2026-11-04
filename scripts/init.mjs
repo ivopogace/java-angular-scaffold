@@ -64,6 +64,7 @@ const SAMPLE_SCRIPTS = [
 ];
 const JAVA_ROOT =
   /^(backend\/(?:application-core|adapters|bootstrap)\/src\/(?:(?:main|test|jooqCodegen|jooqCodegenTest)\/java|generated\/jooq)\/)io\/scaffold\/starter\//;
+const GENERATED_JOOQ = /^backend\/adapters\/src\/generated\/jooq\//;
 const WHAT_THIS_IS =
   /(<!-- fill-in:what -->\n)[\s\S]*?(\n<!-- \/fill-in:what -->)/;
 const WHAT_THIS_IS_BODY = "TODO: describe this project.";
@@ -312,9 +313,12 @@ export async function applyChanges(root, changes) {
         runRemoveSample(root);
         break;
       case "rewrite":
-        rewritePreservingEol(at(change.path), (text) =>
-          replaceTokens(text, change.replacements),
-        );
+        rewritePreservingEol(at(change.path), (text) => {
+          const renamed = replaceTokens(text, change.replacements);
+          return GENERATED_JOOQ.test(change.path)
+            ? layoutJooqImports(renamed)
+            : renamed;
+        });
         break;
       case "move":
         mkdirSync(dirname(at(change.to)), { recursive: true });
@@ -366,6 +370,38 @@ export function replaceTokens(text, replacements) {
     "g",
   );
   return text.replace(pattern, (token) => byToken.get(token));
+}
+
+/**
+ * Lays out a generated jOOQ file's imports as jOOQ writes them: sorted by name, a blank line
+ * before each new top-level package. A renamed base package can move an import to another group
+ * (`io.` sorts before `java.`, `org.` after), and checkJooqGenerated compares the bytes.
+ */
+export function layoutJooqImports(text) {
+  const lines = text.split("\n");
+  const first = lines.findIndex((line) => line.startsWith("import "));
+  if (first === -1) return text;
+  let last = first;
+  for (let i = first; i < lines.length; i++) {
+    if (lines[i].startsWith("import ")) last = i;
+    else if (lines[i] !== "") break;
+  }
+  const types = lines
+    .slice(first, last + 1)
+    .filter((line) => line.startsWith("import "))
+    .map((line) => line.slice("import ".length, -";".length))
+    .sort();
+  const block = [];
+  let previous;
+  for (const type of types) {
+    const topLevel = type.split(".")[0];
+    if (previous !== undefined && topLevel !== previous) block.push("");
+    block.push(`import ${type};`);
+    previous = topLevel;
+  }
+  return [...lines.slice(0, first), ...block, ...lines.slice(last + 1)].join(
+    "\n",
+  );
 }
 
 /** An error raised before anything under the root was changed. */

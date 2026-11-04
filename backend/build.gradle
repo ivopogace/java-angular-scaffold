@@ -1,11 +1,24 @@
-// compose.yaml's first image is the one Postgres image: bootRun and smoke-image.mjs run it, and
-// generateJooq and the Testcontainers ITs receive it from here.
+// The image of compose.yaml's postgres service is the one Postgres image: bootRun and smoke-image.mjs
+// (with the same lookup) run it, and generateJooq and the Testcontainers ITs receive it from here.
 def postgresImageFromCompose = providers.fileContents(layout.projectDirectory.file('../compose.yaml')).asText.map { yaml ->
-    def image = yaml =~ /(?m)^\s*image:\s*["']?([^\s"']+)/
-    if (!image.find()) {
-        throw new GradleException('compose.yaml names no image')
+    def lines = yaml.readLines()
+    def service = lines.findIndexOf { it ==~ /\s+postgres:\s*/ }
+    if (service >= 0) {
+        def indent = lines[service].indexOf(lines[service].trim())
+        for (line in lines.drop(service + 1)) {
+            if (!line.trim() || line.trim().startsWith('#')) {
+                continue
+            }
+            if (line.indexOf(line.trim()) <= indent) {
+                break
+            }
+            def image = line =~ /^\s*image:\s*["']?([^\s"'#]+)/
+            if (image.find()) {
+                return image.group(1)
+            }
+        }
     }
-    image.group(1)
+    throw new GradleException('compose.yaml has no postgres service with an image')
 }
 
 allprojects {

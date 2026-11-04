@@ -20,7 +20,7 @@ crossing rules between areas, an aggregate in a `port.in` or `domain.event` type
 `@UseCase` services, package-private adapters, an aggregate or `port.out` in a controller or
 listener, a `rehydrate` call outside `adapter.out` and `domain.model`, behaviour on a `port.in` or
 `domain.event` type, `@SpringBootTest` in an area, Spring or JPA in `application-core`, JPA or
-Spring Data anywhere, `JdbcClient`, `JdbcTemplate` or jOOQ plain-SQL strings outside an area's
+Spring Data anywhere, JDBC (`JdbcClient`, `DataSource` …) or jOOQ plain-SQL strings outside an area's
 `adapter.out.persistence`, generated jOOQ classes out of date with the migrations, cross-feature imports, inline templates, decorator inputs and outputs, `@HostBinding` /
 `@HostListener`, a root `@Injectable`, constructor injection, `*ngIf` / `*ngFor`, `ngClass` /
 `ngStyle`, `::ng-deep` / MDC selectors / colour literals in declarations and in `*-overrides` mixin
