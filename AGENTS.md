@@ -61,8 +61,9 @@ One row per business area: a Spring Modulith module `<base>.<area>` spanning `ap
 
 Cited by number — **never renumber**; append new ones at the end.
 
-1. Persistence through jOOQ over classes generated from the migrations; no JPA, Spring Data or
-   `JdbcClient`.
+1. Persistence through jOOQ over classes generated from the migrations; no JPA or Spring Data.
+   Plain SQL (`JdbcClient`, `JdbcTemplate`, jOOQ's `@PlainSQL` API) only in an area's
+   `adapter.out.persistence`, as the escape hatch for what jOOQ does not model.
 2. Schema changes only via forward Flyway migrations.
 3. Money is integer minor units + ISO currency.
 4. Store UTC `Instant`; the business time zone is named in config, never the JVM default.

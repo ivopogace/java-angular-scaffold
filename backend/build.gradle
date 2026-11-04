@@ -1,4 +1,15 @@
+// compose.yaml's first image is the one Postgres image: bootRun and smoke-image.mjs run it, and
+// generateJooq and the Testcontainers ITs receive it from here.
+def postgresImageFromCompose = providers.fileContents(layout.projectDirectory.file('../compose.yaml')).asText.map { yaml ->
+    def image = yaml =~ /(?m)^\s*image:\s*["']?([^\s"']+)/
+    if (!image.find()) {
+        throw new GradleException('compose.yaml names no image')
+    }
+    image.group(1)
+}
+
 allprojects {
     group = 'io.scaffold.starter'
     version = '0.0.1-SNAPSHOT'
+    ext.postgresImage = postgresImageFromCompose
 }

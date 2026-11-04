@@ -12,7 +12,18 @@ sourceSets {
             srcDir generatedJooq
         }
     }
+    // The code generator and its tests: their classpaths (Testcontainers, jooq-codegen, slf4j-simple)
+    // stay off the adapters' main and test classpaths.
     jooqCodegen
+    jooqCodegenTest {
+        compileClasspath += jooqCodegen.output
+        runtimeClasspath += jooqCodegen.output
+    }
+}
+
+configurations {
+    jooqCodegenTestImplementation.extendsFrom jooqCodegenImplementation
+    jooqCodegenTestRuntimeOnly.extendsFrom jooqCodegenRuntimeOnly
 }
 
 dependencies {
@@ -37,21 +48,23 @@ dependencies {
     jooqCodegenRuntimeOnly 'org.postgresql:postgresql'
     jooqCodegenRuntimeOnly 'org.slf4j:slf4j-simple'
 
-    testImplementation sourceSets.jooqCodegen.output
-    testImplementation sourceSets.jooqCodegen.runtimeClasspath
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation 'org.assertj:assertj-core'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    jooqCodegenTestImplementation 'org.junit.jupiter:junit-jupiter'
+    jooqCodegenTestImplementation 'org.assertj:assertj-core'
+    jooqCodegenTestRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+def testJooqCodegen = tasks.register('testJooqCodegen', Test) {
+    description = 'Runs the unit tests of the jOOQ code generator.'
+    group = 'verification'
+    testClassesDirs = sourceSets.jooqCodegenTest.output.classesDirs
+    classpath = sourceSets.jooqCodegenTest.runtimeClasspath
 }
 
 def basePackage = project.group.toString()
-def postgresImage = providers.fileContents(rootProject.layout.projectDirectory.file('../compose.yaml')).asText.map { yaml ->
-    def image = yaml =~ /(?m)^\s*image:\s*["']?(postgres:[^\s"']+)/
-    if (!image.find()) {
-        throw new GradleException('compose.yaml names no postgres image')
-    }
-    image.group(1)
-}
+def postgresImage = rootProject.ext.postgresImage
+// Tables that belong to no business area, which generateJooq skips instead of failing on. Add one
+// here in the change whose migration creates it (Flyway's own history table is always skipped).
+def infrastructureTables = ['event_publication']
 def migrations = layout.projectDirectory.dir('src/main/resources/db/migration')
 def areas = project(':application-core').layout.projectDirectory.dir("src/main/java/${basePackage.replace('.', '/')}")
 def areaNames = providers.provider { (areas.asFile.listFiles()?.findAll { it.isDirectory() }*.name ?: []).sort() }
@@ -68,9 +81,10 @@ def configureCodegen = { JavaExec task, String mode, outputDir ->
     task.inputs.property('areas', areaNames)
     task.inputs.property('basePackage', basePackage)
     task.inputs.property('postgresImage', postgresImage)
+    task.inputs.property('infrastructureTables', infrastructureTables)
     task.argumentProviders.add({
         [mode, basePackage, postgresImage.get(), migrations.asFile.path, areas.asFile.path,
-         generatedJooq.asFile.path]
+         generatedJooq.asFile.path, infrastructureTables.join(',')]
     } as CommandLineArgumentProvider)
 }
 
@@ -97,5 +111,5 @@ def checkJooqGenerated = tasks.register('checkJooqGenerated', JavaExec) {
 }
 
 tasks.named('check') {
-    dependsOn checkJooqGenerated
+    dependsOn testJooqCodegen, checkJooqGenerated
 }

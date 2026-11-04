@@ -80,9 +80,12 @@ dsl.insertInto(CATALOG_PRODUCT)
         .execute();
 ```
 
-No plain-SQL strings (`DSL.field("…")`, `dsl.execute("…")`; `noPlainSql` fails the build): they
-bypass the generated schema, so a column change no longer fails the compile. Generated records stay in the adapter: map them to
-the aggregate (`toProduct`) and never return one from a port.
+Plain-SQL strings (`DSL.field("…")`, `dsl.execute("…")`, `JdbcClient`) bypass the generated
+schema, so a column change no longer fails the compile. They are the escape hatch for what jOOQ
+does not model (full-text search's `@@`), allowed only in an area's `adapter.out.persistence` and
+its tests there; `noPlainSql` and `persistenceGoesThroughJooq` fail the build anywhere else. Each
+use names its reason in a one-line comment and has an IT that runs it. Generated records stay in
+the adapter: map them to the aggregate (`toProduct`) and never return one from a port.
 
 Rows rebuild aggregates through a factory that skips creation rules, named `rehydrate`
 (`Product.rehydrate`); only `adapter.out` and `domain.model` may call it

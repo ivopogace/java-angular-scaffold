@@ -65,7 +65,11 @@ test("Postgres comes from compose.yaml, the image bootRun uses", () => {
     "postgres:18-alpine",
   );
   assert.equal(postgresImage('    image: "postgres:17"\n'), "postgres:17");
-  assert.match(postgresImage(repoFile("compose.yaml")), /^postgres:/);
+  assert.equal(
+    postgresImage("    image: pgvector/pgvector:pg18\n"),
+    "pgvector/pgvector:pg18",
+  );
+  assert.match(postgresImage(repoFile("compose.yaml")), /\S:\S/);
   assert.throws(() => postgresImage("services: {}\n"), /no image/);
 });
 

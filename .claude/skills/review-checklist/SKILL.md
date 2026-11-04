@@ -19,9 +19,9 @@ RC-DOC. Invariant numbers cite the root `AGENTS.md`. Full worked example of conf
 crossing rules between areas, an aggregate in a `port.in` or `domain.event` type, package-private
 `@UseCase` services, package-private adapters, an aggregate or `port.out` in a controller or
 listener, a `rehydrate` call outside `adapter.out` and `domain.model`, behaviour on a `port.in` or
-`domain.event` type, `@SpringBootTest` in an area, Spring or JPA in `application-core`, JPA,
-Spring Data, `JdbcClient` or `JdbcTemplate` anywhere, jOOQ plain-SQL strings, generated jOOQ
-classes out of date with the migrations, cross-feature imports, inline templates, decorator inputs and outputs, `@HostBinding` /
+`domain.event` type, `@SpringBootTest` in an area, Spring or JPA in `application-core`, JPA or
+Spring Data anywhere, `JdbcClient`, `JdbcTemplate` or jOOQ plain-SQL strings outside an area's
+`adapter.out.persistence`, generated jOOQ classes out of date with the migrations, cross-feature imports, inline templates, decorator inputs and outputs, `@HostBinding` /
 `@HostListener`, a root `@Injectable`, constructor injection, `*ngIf` / `*ngFor`, `ngClass` /
 `ngStyle`, `::ng-deep` / MDC selectors / colour literals in declarations and in `*-overrides` mixin
 arguments, formatting under `frontend/` and `scripts/` (Prettier). Review what no test can see; a
@@ -59,6 +59,9 @@ change that *loosens* one of those checks is an item (RC-FE-6, RC-TEST-7).
   test that proves it.
 - **RC-BE-11 Logging** — Major. Placeholders, no secret, token or personal data, `\r\n`
   neutralized in user text; one log per handled exception.
+- **RC-BE-12 Escape-hatch SQL** (#1) — Major. `JdbcClient` or a jOOQ plain-SQL string in
+  `adapter.out.persistence` states in a comment what jOOQ's DSL cannot express, and an IT runs it
+  against Postgres; a query the generated classes can write is a finding.
 
 ## Frontend
 

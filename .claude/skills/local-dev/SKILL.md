@@ -110,6 +110,7 @@ database has applied the sample migration, remove by hand and add a forward drop
 | Testcontainers `Could not find a valid Docker environment` | `docker info` must succeed for the same user; the ITs do not skip themselves, `-PexcludeTags=container` does |
 | toolchain error naming Java 25 | install JDK 25 and point `JAVA_HOME` at it |
 | Playwright: browser executable doesn't exist | `npx playwright install chromium` from `frontend/` (the full verify does this) |
+| `generateJooq` fails: `Tables [shedlock] belong to no business area` for an infrastructure table | add it to `infrastructureTables` in `backend/adapters/build.gradle` |
 | `checkJooqGenerated` fails: `The committed jOOQ classes do not match the migrations` | a migration changed without regenerating: `./gradlew :adapters:generateJooq` from `backend/` (needs Docker), commit `backend/adapters/src/generated/jooq/` |
 | `bootRun` fails to bind 5432 | another Postgres holds the port; stop it |
 | `bootRun`'s Postgres exits with "data in /var/lib/postgresql/data (unused mount/volume)" | the container was created by an older Postgres major; `docker compose down -v` from the repo root (drops the local database), then `bootRun` again |

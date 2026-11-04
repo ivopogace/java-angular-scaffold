@@ -30,9 +30,9 @@ class ArchitectureRulesNegativeTest {
                 violation("persistenceGoesThroughJooq", ArchitectureRules::persistenceGoesThroughJooq,
                         "archfixture.orders.domain.model.JpaOrder"),
                 violation("persistenceGoesThroughJooq", ArchitectureRules::persistenceGoesThroughJooq,
-                        "archfixture.orders.adapter.out.persistence.JdbcClientOrderRepository"),
+                        "archfixture.orders.adapter.out.reporting.JdbcClientOrderReport"),
                 violation("noPlainSql", ArchitectureRules::noPlainSql,
-                        "archfixture.orders.adapter.out.persistence.PlainSqlOrderRepository"),
+                        "archfixture.orders.adapter.out.reporting.PlainSqlOrderReport"),
                 violation("servicesArePackagePrivateUseCases", ArchitectureRules::servicesArePackagePrivateUseCases,
                         "archfixture.orders.application.service.PublicOrderService"),
                 violation("servicesArePackagePrivateUseCases", ArchitectureRules::servicesArePackagePrivateUseCases,
@@ -99,7 +99,7 @@ class ArchitectureRulesNegativeTest {
     @Test
     void noRuleReportsTheCleanArea() {
         assertThat(RULES.all()).hasSize(12);
-        assertThat(RULES.testRules()).hasSize(1);
+        assertThat(RULES.testRules()).hasSize(2);
         for (ArchRule rule : everyRule()) {
             EvaluationResult result = rule.evaluate(FIXTURES);
             assertThat(String.join("\n", result.getFailureReport().getDetails()))

@@ -45,7 +45,7 @@
       "groupName": "spring-boot"
     },
     {
-      "description": "compose.yaml and TestcontainersConfiguration run the same image; readme-versions.test.mjs keeps them equal.",
+      "description": "compose.yaml's image and the README rows move together; generateJooq and the Testcontainers ITs read compose.yaml.",
       "matchDatasources": ["docker"],
       "matchPackageNames": ["postgres"],
       "groupName": "postgres"
@@ -94,13 +94,6 @@
     }
   ],
   "customManagers": [
-    {
-      "customType": "regex",
-      "description": "The Postgres image of the Testcontainers ITs.",
-      "managerFilePatterns": ["/(^|/)TestcontainersConfiguration\\.java$/"],
-      "matchStrings": ["new PostgreSQLContainer\\(\"(?<depName>postgres):(?<currentValue>[^\"]+)\"\\)"],
-      "datasourceTemplate": "docker"
-    },
     {
       "customType": "regex",
       "description": "README version table rows (readme-versions.test.mjs), so each bump updates its row.",

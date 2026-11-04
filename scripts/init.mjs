@@ -63,7 +63,7 @@ const SAMPLE_SCRIPTS = [
   "scripts/remove-sample.test.mjs",
 ];
 const JAVA_ROOT =
-  /^(backend\/(?:application-core|adapters|bootstrap)\/src\/(?:(?:main|test|jooqCodegen)\/java|generated\/jooq)\/)io\/scaffold\/starter\//;
+  /^(backend\/(?:application-core|adapters|bootstrap)\/src\/(?:(?:main|test|jooqCodegen|jooqCodegenTest)\/java|generated\/jooq)\/)io\/scaffold\/starter\//;
 const WHAT_THIS_IS =
   /(<!-- fill-in:what -->\n)[\s\S]*?(\n<!-- \/fill-in:what -->)/;
 const WHAT_THIS_IS_BODY = "TODO: describe this project.";

@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.flywaydb.core.Flyway;
 import org.jooq.codegen.GenerationTool;
@@ -29,6 +30,7 @@ import org.jooq.meta.jaxb.Logging;
 import org.jooq.meta.jaxb.Strategy;
 import org.jooq.meta.jaxb.Target;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /**
  * Migrates a throwaway PostgreSQL with the Flyway migrations and generates each business area's jOOQ
@@ -36,12 +38,14 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
  * {@code <area>_…}. A table that belongs to no area and is not infrastructure fails the run.
  *
  * <p>Arguments: {@code generate|check <basePackage> <postgresImage> <migrationsDir> <areasDir>
- * <outputDir>}. {@code check} generates into a temporary directory and exits 1, listing the files,
- * when it differs from {@code outputDir}.
+ * <outputDir> <infrastructureTables>}, the last comma-separated and possibly empty; Flyway's history
+ * table is always infrastructure. The image may be any PostgreSQL-compatible one, such as
+ * {@code pgvector/pgvector:pg18}. {@code check} generates into a temporary directory and exits 1,
+ * listing the files, when it differs from {@code outputDir}.
  */
 public final class JooqCodegen {
 
-    private static final Set<String> INFRASTRUCTURE_TABLES = Set.of("flyway_schema_history", "event_publication");
+    private static final String FLYWAY_HISTORY = "flyway_schema_history";
     private static final Set<String> NON_AREA_PACKAGES = Set.of("shared", "web");
     private static final String SCHEMA = "public";
     private static final String TIMESTAMPTZ = "(?i:timestamp\\ with\\ time\\ zone)";
@@ -51,22 +55,25 @@ public final class JooqCodegen {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length != 6 || !Set.of("generate", "check").contains(args[0])) {
-            throw new IllegalArgumentException(
-                    "Usage: JooqCodegen generate|check <basePackage> <postgresImage> <migrationsDir> <areasDir> <outputDir>");
+        if (args.length != 7 || !Set.of("generate", "check").contains(args[0])) {
+            throw new IllegalArgumentException("Usage: JooqCodegen generate|check <basePackage> <postgresImage> "
+                    + "<migrationsDir> <areasDir> <outputDir> <infrastructureTables>");
         }
         boolean check = args[0].equals("check");
         String basePackage = args[1];
         Path output = Path.of(args[5]).toAbsolutePath();
+        Set<String> infrastructure = infrastructureTables(args[6]);
         Path target = check ? Files.createTempDirectory("jooq-check") : output;
-        try (PostgreSQLContainer postgres = new PostgreSQLContainer(args[2])) {
+        try (PostgreSQLContainer postgres = new PostgreSQLContainer(
+                DockerImageName.parse(args[2]).asCompatibleSubstituteFor("postgres"))) {
             postgres.start();
             Flyway.configure()
                     .dataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())
                     .locations("filesystem:" + Path.of(args[3]).toAbsolutePath())
                     .load()
                     .migrate();
-            Map<String, List<String>> tablesByArea = tablesByArea(tables(postgres), areas(Path.of(args[4])));
+            Map<String, List<String>> tablesByArea = tablesByArea(tables(postgres), areas(Path.of(args[4])),
+                    infrastructure);
             deleteRecursively(target);
             for (String area : tablesByArea.keySet()) {
                 GenerationTool.generate(configuration(postgres, area, basePackage + "." + area
@@ -127,11 +134,21 @@ public final class JooqCodegen {
         }
     }
 
-    static Map<String, List<String>> tablesByArea(List<String> tables, Set<String> areas) {
+    /** The configured infrastructure tables, comma-separated, plus Flyway's history table. */
+    static Set<String> infrastructureTables(String commaSeparated) {
+        Set<String> tables = Stream.of(commaSeparated.split(","))
+                .map(String::trim)
+                .filter(name -> !name.isEmpty())
+                .collect(Collectors.toCollection(TreeSet::new));
+        tables.add(FLYWAY_HISTORY);
+        return tables;
+    }
+
+    static Map<String, List<String>> tablesByArea(List<String> tables, Set<String> areas, Set<String> infrastructure) {
         Map<String, List<String>> byArea = new TreeMap<>();
         List<String> orphans = new ArrayList<>();
         for (String table : tables) {
-            if (INFRASTRUCTURE_TABLES.contains(table)) {
+            if (infrastructure.contains(table)) {
                 continue;
             }
             areas.stream()
@@ -142,7 +159,8 @@ public final class JooqCodegen {
         }
         if (!orphans.isEmpty()) {
             throw new IllegalStateException("Tables " + orphans + " belong to no business area: name each table "
-                    + "<area>_<name>, where <area> is one of " + areas);
+                    + "<area>_<name>, where <area> is one of " + areas + ", or list an infrastructure table in "
+                    + "infrastructureTables in backend/adapters/build.gradle");
         }
         return byArea;
     }

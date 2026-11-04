@@ -106,13 +106,11 @@ for (const readme of ["README.md", "README.project.md"]) {
   });
 }
 
-test("the Testcontainers ITs run the Postgres image compose.yaml runs", () => {
+test("the Testcontainers ITs name no image of their own: Gradle passes compose.yaml's", () => {
   const [config] = globSync(TESTCONTAINERS_CONFIG, { cwd: root });
   assert.ok(config, `no ${TESTCONTAINERS_CONFIG}`);
-  assert.equal(
-    pinned(config, /new PostgreSQLContainer\("postgres:([^"]+)"\)/),
-    PINS.Postgres(),
-  );
+  assert.doesNotMatch(read(config), /"[^"\s]*postgres[^"\s]*:[^"\s]+"/);
+  assert.match(read(config), /System\.getProperty\(IMAGE_PROPERTY\)/);
 });
 
 /** Rows Renovate leaves alone: each moves with something it cannot bump (the CI JDK, Node). */

@@ -30,7 +30,7 @@ stay manual.
 | Spring Modulith | `2.1.2` | `backend/gradle/libs.versions.toml` | edit `spring-modulith` |
 | jMolecules BOM | `2025.0.2` | `backend/gradle/libs.versions.toml` | edit `jmolecules-bom` |
 | ArchUnit | `1.5.1` | `backend/gradle/libs.versions.toml` | edit `archunit` |
-| Postgres | `18-alpine` | `compose.yaml` | edit the image there and in `TestcontainersConfiguration` (the test keeps them equal); a new major needs `docker compose down -v` |
+| Postgres | `18-alpine` | `compose.yaml` | edit the image there; `generateJooq` and the Testcontainers ITs take it from there; a new major needs `docker compose down -v` |
 | Node | `26.13.0` | `.nvmrc` | edit `.nvmrc`, then set npm to the version that Node bundles |
 | npm | `11.20.0` | `frontend/package.json` | edit `packageManager` |
 | Angular | `22.2.4` | `frontend/package.json` | `npx ng update @angular/core @angular/cli` from `frontend/` |

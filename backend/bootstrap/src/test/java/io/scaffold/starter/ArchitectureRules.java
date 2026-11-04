@@ -33,7 +33,8 @@ final class ArchitectureRules {
 
     private static final Set<String> NON_AREA_PACKAGES = Set.of("shared", "web");
     private static final String REHYDRATE = "rehydrate";
-    private static final String GENERATED_JOOQ = "adapter.out.persistence.jooq";
+    private static final String PERSISTENCE = "adapter.out.persistence";
+    private static final String GENERATED_JOOQ = PERSISTENCE + ".jooq";
     private static final Pattern AREA_PACKAGE_SHAPE = Pattern.compile(
             "domain\\.(model|id|event)"
                     + "|application\\.(port\\.in|port\\.out|service)"
@@ -68,7 +69,7 @@ final class ArchitectureRules {
     }
 
     List<ArchRule> testRules() {
-        return List.of(areaTestsAreModuleTests());
+        return List.of(areaTestsAreModuleTests(), noPlainSql());
     }
 
     ArchRule areaTestsAreModuleTests() {
@@ -147,25 +148,43 @@ final class ArchitectureRules {
                 .allowEmptyShould(true);
     }
 
+    /** {@code JdbcClient} is the escape hatch for SQL jOOQ does not model, so only an area's persistence adapters use it. */
     ArchRule persistenceGoesThroughJooq() {
-        return noClasses()
-                .should().dependOnClassesThat().resideInAnyPackage(
-                        "jakarta.persistence..", "org.hibernate..", "org.springframework.data..",
-                        "org.springframework.jdbc.core..")
-                .as("persistence goes through jOOQ: nothing depends on JPA, Hibernate, Spring Data, JdbcClient or JdbcTemplate")
+        DescribedPredicate<JavaClass> neverUsed = resideInAnyPackage(
+                "jakarta.persistence..", "org.hibernate..", "org.springframework.data..");
+        DescribedPredicate<JavaClass> springJdbc = resideInAnyPackage("org.springframework.jdbc.core..");
+        DescribedPredicate<JavaClass> escapeHatch = inLayer(PERSISTENCE);
+        return classes()
+                .should(new ArchCondition<JavaClass>("not depend on JPA, Hibernate or Spring Data, "
+                        + "nor on JdbcClient or JdbcTemplate outside " + PERSISTENCE) {
+                    @Override
+                    public void check(JavaClass item, ConditionEvents events) {
+                        for (Dependency dependency : item.getDirectDependenciesFromSelf()) {
+                            JavaClass target = dependency.getTargetClass().getBaseComponentType();
+                            if (neverUsed.test(target) || (springJdbc.test(target) && !escapeHatch.test(item))) {
+                                events.add(violated(dependency, dependency.getDescription()));
+                            }
+                        }
+                    }
+                })
+                .as("persistence goes through jOOQ: no JPA, Hibernate or Spring Data, and JdbcClient or JdbcTemplate "
+                        + "only in an area's " + PERSISTENCE)
                 .allowEmptyShould(true);
     }
 
-    /** A plain-SQL string bypasses the generated schema, so a column change no longer fails the compile. */
+    /**
+     * A plain-SQL string bypasses the generated schema, so a column change no longer fails the compile; an area's
+     * persistence adapters (and their tests) may use one as the escape hatch for SQL jOOQ does not model.
+     */
     ArchRule noPlainSql() {
         DescribedPredicate<JavaCall<?>> plainSql = DescribedPredicate.describe("jOOQ's @PlainSQL API",
                 call -> call.getTarget().resolveMember()
                         .map(member -> member.isAnnotatedWith(PlainSQL.class))
                         .orElse(false));
         return noClasses()
-                .that(not(inLayer(GENERATED_JOOQ)))
+                .that(not(inLayer(PERSISTENCE)))
                 .should().callCodeUnitWhere(plainSql)
-                .as("queries use the generated jOOQ classes, not plain-SQL strings")
+                .as("queries use the generated jOOQ classes; plain-SQL strings only in an area's " + PERSISTENCE)
                 .allowEmptyShould(true);
     }
 

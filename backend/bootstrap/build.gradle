@@ -18,11 +18,19 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers-postgresql'
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
     testImplementation 'org.springframework.modulith:spring-modulith-starter-test'
+    testImplementation 'org.springframework.modulith:spring-modulith-events-api'
     testImplementation platform(libs.jmolecules.bom)
     testImplementation 'org.jmolecules.integrations:jmolecules-archunit'
     testImplementation 'jakarta.persistence:jakarta.persistence-api' // negative architecture fixtures only
     testImplementation libs.archunit.junit5
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+// TestcontainersConfiguration runs compose.yaml's Postgres image (the root build.gradle reads it).
+def postgresImage = rootProject.ext.postgresImage
+tasks.withType(Test).configureEach {
+    inputs.property('postgresImage', postgresImage)
+    jvmArgumentProviders.add({ ["-Dpostgres.image=${postgresImage.get()}".toString()] } as CommandLineArgumentProvider)
 }
 
 def frontendBrowser = layout.projectDirectory.dir('../../frontend/dist/scaffold-starter/browser')
