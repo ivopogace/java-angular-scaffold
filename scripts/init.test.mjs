@@ -223,8 +223,12 @@ test("TEMPLATE_VERSION is X.Y.Z", () => {
   assert.match(TEMPLATE_VERSION, /^\d+\.\d+\.\d+$/);
 });
 
-test("layoutJooqImports leaves every committed generated jOOQ file as jOOQ wrote it", () => {
+test("layoutJooqImports leaves every committed generated jOOQ file as jOOQ wrote it", (t) => {
   const generated = "backend/adapters/src/generated/jooq";
+  if (!existsSync(join(repoRoot, generated))) {
+    t.skip("no area has tables");
+    return;
+  }
   const files = readdirSync(join(repoRoot, generated), {
     recursive: true,
   }).filter((file) => file.endsWith(".java"));
