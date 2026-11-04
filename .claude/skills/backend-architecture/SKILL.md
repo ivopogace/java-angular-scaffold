@@ -31,7 +31,7 @@ Full worked example: the `catalog` sample, while it exists.
 | use-case implementation | `application.service` | `application-core` |
 | controller, request / response DTO | `adapter.in.web` | `adapters` |
 | listener on an event | `adapter.in.event` | `adapters` |
-| `JdbcClient` adapter of a `port.out` repository | `adapter.out.persistence` | `adapters` |
+| adapter of a `port.out` repository, its row records and Spring Data repositories | `adapter.out.persistence` | `adapters` |
 | client of one external system | `adapter.out.<system>` | `adapters` |
 | value object several areas need, `@UseCase`, `DomainEventPublisher` | `<base>.shared` | `application-core` |
 | the one `@RestControllerAdvice` | `<base>.web` | `adapters` |
