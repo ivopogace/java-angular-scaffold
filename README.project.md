@@ -32,8 +32,8 @@ stay manual.
 | Postgres | `18-alpine` | `compose.yaml` | edit the image there and in `TestcontainersConfiguration` (the test keeps them equal); a new major needs `docker compose down -v` |
 | Node | `26.13.0` | `.nvmrc` | edit `.nvmrc`, then set npm to the version that Node bundles |
 | npm | `11.20.0` | `frontend/package.json` | edit `packageManager` |
-| Angular | `22.2.4` | `frontend/package.json` | `npx ng update @angular/core @angular/cli` from `frontend/` |
-| Angular Material | `22.2.6` | `frontend/package.json` | `npx ng update @angular/material` from `frontend/` |
+| Angular | `22.2.6` | `frontend/package.json` | `npx ng update @angular/core @angular/cli` from `frontend/` |
+| Angular Material | `22.2.7` | `frontend/package.json` | `npx ng update @angular/material` from `frontend/` |
 | Angular CLI | `22.2.6` | `frontend/package.json` | with Angular, above |
 | TypeScript | `6.0.3` | `frontend/package.json` | `npm install --save-exact typescript@<version>` within the range `@angular/compiler-cli` accepts; a new major comes with an Angular major's `ng update` |
 | Vitest | `5.1.0` | `frontend/package.json` | `npm install --save-exact vitest@<version> @vitest/coverage-v8@<version>` from `frontend/` |
