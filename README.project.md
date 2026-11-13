@@ -24,7 +24,7 @@ stay manual.
 | Component | Version | Pinned in | To bump |
 |---|---|---|---|
 | Java toolchain | `25` | `backend/build-logic/src/main/groovy/java-conventions.gradle` | edit `JavaLanguageVersion.of(…)` and the JDK your CI wrapper installs |
-| Gradle | `9.8.2` | `backend/gradle/wrapper/gradle-wrapper.properties` | `./gradlew wrapper --gradle-version <version>` from `backend/`, run twice |
+| Gradle | `9.9.1` | `backend/gradle/wrapper/gradle-wrapper.properties` | `./gradlew wrapper --gradle-version <version>` from `backend/`, run twice |
 | Spring Boot | `4.1.2` | `backend/gradle/libs.versions.toml` | edit `spring-boot` |
 | Spring Modulith | `2.1.2` | `backend/gradle/libs.versions.toml` | edit `spring-modulith` |
 | jMolecules BOM | `2025.0.2` | `backend/gradle/libs.versions.toml` | edit `jmolecules-bom` |
