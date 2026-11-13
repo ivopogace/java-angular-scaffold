@@ -43,7 +43,7 @@ stay manual.
 | Angular CLI | `22.2.6` | `frontend/package.json` | with Angular, above |
 | TypeScript | `6.0.3` | `frontend/package.json` | `npm install --save-exact typescript@<version>` within the range `@angular/compiler-cli` accepts; a new major comes with an Angular major's `ng update` |
 | Vitest | `5.1.0` | `frontend/package.json` | `npm install --save-exact vitest@<version> @vitest/coverage-v8@<version>` from `frontend/` |
-| Playwright | `1.65.0` | `frontend/package.json` | `npm install --save-exact @playwright/test@<version>` from `frontend/`, then `npx playwright install chromium` |
+| Playwright | `1.65.1` | `frontend/package.json` | `npm install --save-exact @playwright/test@<version>` from `frontend/`, then `npx playwright install chromium` |
 | ESLint | `10.14.0` | `frontend/package.json` | `npm install --save-exact eslint@<version>` from `frontend/` |
 | Stylelint | `18.0.0` | `frontend/package.json` | `npm install --save-exact stylelint@<version>` from `frontend/` |
 | Playwright MCP | `0.0.84` | `scripts/mcp/playwright.mjs` | edit `PACKAGE` |
