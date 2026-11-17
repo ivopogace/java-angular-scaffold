@@ -9,6 +9,14 @@ export const WAIVERS_FILE = "frontend/audit-waivers.json";
 
 const BLOCKING = new Set(["high", "critical"]);
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+/** A waiver is a stopgap until the patched version ships, so it may not run longer than this. */
+export const MAX_WAIVER_DAYS = 31;
+
+function addDays(isoDate, days) {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 
 /** The GHSA id of an advisory, from the URL `npm audit` reports for it. */
 function advisoryId(via) {
@@ -53,7 +61,8 @@ export function invalidWaivers(waivers) {
 
 /**
  * Fails on every high or critical advisory without a waiver, on every waiver past its expiry date
- * and on every waiver whose advisory the report no longer names, so a waiver cannot outlive its need.
+ * or more than MAX_WAIVER_DAYS ahead of today, and on every waiver whose advisory the report no
+ * longer names, so a waiver cannot outlive its need.
  */
 export function evaluate(report, waivers, today) {
   const invalid = invalidWaivers(waivers);
@@ -79,7 +88,13 @@ export function evaluate(report, waivers, today) {
       );
     }
   }
+  const latest = addDays(today, MAX_WAIVER_DAYS);
   for (const w of waivers) {
+    if (w.expires > latest) {
+      problems.push(
+        `waiver for ${w.id} expires ${w.expires}, after ${latest}: a waiver may run at most ${MAX_WAIVER_DAYS} days`,
+      );
+    }
     if (!reported.has(w.id)) {
       problems.push(
         `waiver for ${w.id} is stale: npm audit no longer reports it; delete it`,
@@ -96,16 +111,26 @@ function main() {
     shell: process.platform === "win32",
     maxBuffer: 64 * 1024 * 1024,
   });
+  if (npm.error) {
+    console.error(`could not run npm audit: ${npm.error.message}`);
+    return 1;
+  }
   let report;
   try {
     report = JSON.parse(npm.stdout);
   } catch {
+    report = null;
+  }
+  if (report === null || typeof report !== "object") {
     console.error(npm.stderr || npm.stdout || "npm audit produced no output");
     return 1;
   }
   if (report.error) {
+    // npm 11 leaves code and summary empty for a network error; stderr then names the cause.
+    const { code, summary, detail } = report.error;
+    const message = [code, summary, detail].filter(Boolean).join(" ");
     console.error(
-      `npm audit failed: ${report.error.code ?? ""} ${report.error.summary ?? ""}`,
+      `npm audit failed: ${message || npm.stderr.trim() || JSON.stringify(report.error)}`,
     );
     return 1;
   }
