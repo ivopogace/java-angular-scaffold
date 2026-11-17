@@ -47,7 +47,17 @@ export function planSteps({
   return [
     ...(hasNodeModules ? [] : [npm("npm ci", "ci")]),
     // The registry's advisories change under an unchanged lockfile, so --quick leaves npm audit out.
-    ...(quick ? [] : [npm("frontend audit", "audit", "--audit-level=high")]),
+    // Fails on any high or critical advisory not waived, with an expiry, in frontend/audit-waivers.json.
+    ...(quick
+      ? []
+      : [
+          {
+            name: "frontend audit",
+            cwd: ".",
+            command: "node",
+            args: ["scripts/audit.mjs"],
+          },
+        ]),
     {
       name: "backend build",
       cwd: "backend",

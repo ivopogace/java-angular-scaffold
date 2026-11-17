@@ -84,7 +84,7 @@ test("the full run audits the frontend's dependencies for high and critical advi
     planSteps({ ...base, ...options }).find((s) => s.name === "frontend audit");
   assert.deepEqual(
     [audit({}).command, audit({}).args, audit({}).cwd],
-    ["npm", ["audit", "--audit-level=high"], "frontend"],
+    ["node", ["scripts/audit.mjs"], "."],
   );
   assert.equal(audit({ quick: true }), undefined);
   const order = names(planSteps({ ...base, hasNodeModules: false }));
