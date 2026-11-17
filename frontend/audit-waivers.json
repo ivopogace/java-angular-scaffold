@@ -1,0 +1,7 @@
+[
+  {
+    "id": "GHSA-fc5q-39xc-vjpf",
+    "reason": "picomatch ReDoS: every release up to the latest (4.0.7) is affected and no patched version exists yet; picomatch reaches only build and test tooling, which matches globs from this repo's own config, never the shipped bundle",
+    "expires": "2026-12-17"
+  }
+]
