@@ -26,9 +26,10 @@ breaks for an environmental reason.
 ## verify
 
 `node scripts/verify.mjs` is the one check entry point; CI runs the same command. It fails fast, in
-order: `npm ci` (only when `frontend/node_modules` is missing), `npm audit --audit-level=high` in
-`frontend/`, backend `gradlew build`, frontend lint (ESLint + Stylelint), Prettier check of
-`frontend/` and of `scripts/`, the ESLint-rule and Stylelint-config suite, Vitest, production build,
+order: `npm ci` (only when `frontend/node_modules` is missing), `scripts/audit.mjs` (`npm audit` in
+`frontend/`, failing on high and critical advisories not waived in `frontend/audit-waivers.json`),
+backend `gradlew build`, frontend lint (ESLint + Stylelint), Prettier check of `frontend/` and of
+`scripts/`, the ESLint-rule and Stylelint-config suite, Vitest, production build,
 e2e type check, then `playwright install chromium` and the mocked e2e, then the image smoke test
 (`scripts/smoke-image.mjs`, below), then the `scripts/` tests and
 `check-agent-docs.mjs`.
@@ -112,7 +113,7 @@ database has applied the sample migration, remove by hand and add a forward drop
 | Playwright: browser executable doesn't exist | `npx playwright install chromium` from `frontend/` (the full verify does this) |
 | `bootRun` fails to bind 5432 | another Postgres holds the port; stop it |
 | `bootRun`'s Postgres exits with "data in /var/lib/postgresql/data (unused mount/volume)" | the container was created by an older Postgres major; `docker compose down -v` from the repo root (drops the local database), then `bootRun` again |
-| `frontend audit` fails | a high or critical advisory reached a dependency: take the patched version (`npm audit` names it; Renovate's lock-file maintenance and vulnerability PRs bring it too), never lower `--audit-level` |
+| `frontend audit` fails | a high or critical advisory reached a dependency: take the patched version (`npm audit` names it; Renovate's lock-file maintenance and vulnerability PRs bring it too). Only when no patched version exists, add the GHSA id to `frontend/audit-waivers.json` with a reason and an expiry at most 31 days out (`scripts/audit.mjs` rejects a later one); an expired waiver, or one whose advisory is gone, fails the audit too |
 | `frontend audit` fails with `ENOAUDIT` or a network error | the registry in `.npmrc` (a mirror such as Nexus or Artifactory) has no audit endpoint, or there is no network: audit against `https://registry.npmjs.org`, or run `--quick` until it is reachable |
 | `docker build` or a `docker pull` fails with `429 Too Many Requests` or `toomanyrequests` | Docker Hub's anonymous pull limit: `docker login`, wait and retry; once the base and Postgres images are cached, later runs pull nothing |
 | `docker build` fails at `npm ci` with `SELF_SIGNED_CERT_IN_CHAIN`, or at `./gradlew` with `PKIX path building failed` | a TLS-inspecting proxy the build containers do not trust: build with your CA added to the base images locally (an uncommitted image that extends the pinned tag), never by committing it to the `Dockerfile` |
