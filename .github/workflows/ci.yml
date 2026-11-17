@@ -15,7 +15,21 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+          cache: gradle
+          cache-dependency-path: |
+            backend/**/*.gradle
+            backend/gradle/libs.versions.toml
+            backend/gradle/wrapper/gradle-wrapper.properties
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      # verify installs Chromium; keyed on the pinned Playwright, so a hit skips the download.
+      - id: playwright
+        run: echo "version=$(node -p "require('./frontend/package.json').devDependencies['@playwright/test']")" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
       - run: node scripts/verify.mjs
