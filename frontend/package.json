@@ -43,7 +43,7 @@
     "@types/node": "26.6.6",
     "@vitest/coverage-v8": "5.1.0",
     "angular-eslint": "22.7.0",
-    "axe-core": "4.14.0",
+    "axe-core": "4.14.1",
     "eslint": "10.15.0",
     "jsdom": "31.0.1",
     "postcss-scss": "4.0.9",
