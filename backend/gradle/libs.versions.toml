@@ -1,5 +1,5 @@
 [versions]
-spring-boot = "4.1.2"
+spring-boot = "4.2.0"
 spring-modulith = "2.1.2"
 jmolecules-bom = "2025.0.2"
 archunit = "1.5.1"
