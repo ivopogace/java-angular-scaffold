@@ -45,7 +45,7 @@ stay manual.
 | Vitest | `5.1.0` | `frontend/package.json` | `npm install --save-exact vitest@<version> @vitest/coverage-v8@<version>` from `frontend/` |
 | Playwright | `1.65.1` | `frontend/package.json` | `npm install --save-exact @playwright/test@<version>` from `frontend/`, then `npx playwright install chromium` |
 | ESLint | `10.15.0` | `frontend/package.json` | `npm install --save-exact eslint@<version>` from `frontend/` |
-| Stylelint | `18.0.0` | `frontend/package.json` | `npm install --save-exact stylelint@<version>` from `frontend/` |
+| Stylelint | `18.1.0` | `frontend/package.json` | `npm install --save-exact stylelint@<version>` from `frontend/` |
 | Playwright MCP | `0.0.84` | `scripts/mcp/playwright.mjs` | edit `PACKAGE` |
 
 ## Start a project
