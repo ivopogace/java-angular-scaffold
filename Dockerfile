@@ -9,7 +9,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # The JDK of the Gradle toolchain; smoke-image.mjs checks the two agree.
-FROM eclipse-temurin:25.0.5_8-jdk-noble AS backend
+FROM eclipse-temurin:25.0.5.1_2-jdk-noble AS backend
 WORKDIR /workspace/backend
 COPY backend/ ./
 # checkSpaPackaged reads the locales from angular.json.
@@ -22,7 +22,7 @@ WORKDIR /workspace
 # Dependencies change less often than the application, so they land in earlier, cacheable layers.
 RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
-FROM eclipse-temurin:25.0.5_8-jre-noble
+FROM eclipse-temurin:25.0.5.1_2-jre-noble
 RUN groupadd --gid 10001 app \
  && useradd --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
 WORKDIR /application
